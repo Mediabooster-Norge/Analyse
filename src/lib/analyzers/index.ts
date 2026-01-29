@@ -2,8 +2,8 @@ import { scrapeUrl, parseHtml } from '@/lib/services/scraper';
 import { analyzeSEO } from './seo-analyzer';
 import { analyzeContent } from './content-analyzer';
 import { analyzeSecurity, analyzeSecurityQuick } from './security-analyzer';
-import { generateAIAnalysis, generateKeywordResearch, KeywordData } from '@/lib/services/openai';
-import type { Analysis, SEOResults, ContentResults, SecurityResults, AISummary } from '@/types';
+import { generateAIAnalysis, generateKeywordResearch, KeywordData, checkAIVisibility, AIVisibilityData } from '@/lib/services/openai';
+import type { SEOResults, ContentResults, SecurityResults, AISummary } from '@/types';
 
 export interface FullAnalysisResult {
   seoResults: SEOResults;
@@ -11,6 +11,7 @@ export interface FullAnalysisResult {
   securityResults: SecurityResults;
   aiSummary: AISummary | null;
   keywordResearch?: KeywordData[];
+  aiVisibility?: AIVisibilityData;
   overallScore: number;
   tokensUsed: number;
   aiModel: string;
@@ -25,6 +26,8 @@ export async function runFullAnalysis(
     quickSecurityScan?: boolean;
     industry?: string;
     targetKeywords?: string[];
+    companyName?: string;
+    checkAiVisibility?: boolean;
   } = {}
 ): Promise<FullAnalysisResult> {
   const {
@@ -33,6 +36,8 @@ export async function runFullAnalysis(
     quickSecurityScan = false,
     industry,
     targetKeywords = [],
+    companyName,
+    checkAiVisibility: shouldCheckVisibility = true,
   } = options;
 
   // Step 1: Scrape the URL
@@ -55,18 +60,22 @@ export async function runFullAnalysis(
     (seoResults.score * 0.4 + contentResults.score * 0.3 + securityResults.score * 0.3)
   );
 
-  // Step 4: Generate AI analysis and keyword research (if enabled)
+  // Step 4: Generate AI analysis, keyword research, and AI visibility check (if enabled)
   let aiSummary: AISummary | null = null;
   let keywordResearch: KeywordData[] | undefined;
+  let aiVisibility: AIVisibilityData | undefined;
   let tokensUsed = 0;
   let aiModel = 'none';
   let costUsd = 0;
 
+  // Extract domain for AI visibility check
+  const domain = new URL(url).hostname.replace('www.', '');
+
   if (includeAI) {
     console.log('Generating AI analysis...');
     
-    // Run AI analysis and keyword research in parallel
-    const [aiResult, keywordResult] = await Promise.all([
+    // Run AI analysis, keyword research, and visibility check in parallel
+    const [aiResult, keywordResult, visibilityResult] = await Promise.all([
       generateAIAnalysis(
         {
           url,
@@ -87,6 +96,12 @@ export async function runFullAnalysis(
             return null;
           })
         : Promise.resolve(null),
+      shouldCheckVisibility
+        ? checkAIVisibility(domain, companyName, targetKeywords).catch(error => {
+            console.error('AI visibility check failed:', error);
+            return null;
+          })
+        : Promise.resolve(null),
     ]);
 
     if (aiResult) {
@@ -101,6 +116,12 @@ export async function runFullAnalysis(
       tokensUsed += keywordResult.tokensUsed;
       costUsd += keywordResult.costUsd;
     }
+
+    if (visibilityResult) {
+      aiVisibility = visibilityResult.visibility;
+      tokensUsed += visibilityResult.tokensUsed;
+      costUsd += visibilityResult.costUsd;
+    }
   }
 
   return {
@@ -109,6 +130,7 @@ export async function runFullAnalysis(
     securityResults,
     aiSummary,
     keywordResearch,
+    aiVisibility,
     overallScore,
     tokensUsed,
     aiModel,
@@ -123,12 +145,13 @@ export async function runCompetitorAnalysis(
     usePremiumAI?: boolean;
     industry?: string;
     targetKeywords?: string[];
+    companyName?: string;
   } = {}
 ): Promise<{
   mainResults: FullAnalysisResult;
   competitorResults: Array<{ url: string; results: FullAnalysisResult }>;
 }> {
-  const { usePremiumAI = false, industry, targetKeywords = [] } = options;
+  const { usePremiumAI = false, industry, targetKeywords = [], companyName } = options;
   
   // Step 1: Scrape main URL
   console.log(`Scraping main URL ${mainUrl}...`);
@@ -200,8 +223,11 @@ export async function runCompetitorAnalysis(
   let aiModel = 'none';
   let costUsd = 0;
 
-  // Run AI analysis and keyword research in parallel
-  const [aiResult, keywordResult] = await Promise.all([
+  // Extract domain for AI visibility check
+  const domain = new URL(mainUrl).hostname.replace('www.', '');
+
+  // Run AI analysis, keyword research, and visibility check in parallel
+  const [aiResult, keywordResult, visibilityResult] = await Promise.all([
     generateAIAnalysis(
       {
         url: mainUrl,
@@ -231,7 +257,13 @@ export async function runCompetitorAnalysis(
           return null;
         })
       : Promise.resolve(null),
+    checkAIVisibility(domain, companyName, targetKeywords).catch(error => {
+      console.error('AI visibility check failed:', error);
+      return null;
+    }),
   ]);
+
+  let aiVisibility: AIVisibilityData | undefined;
 
   if (aiResult) {
     aiSummary = aiResult.summary;
@@ -246,6 +278,12 @@ export async function runCompetitorAnalysis(
     costUsd += keywordResult.costUsd;
   }
 
+  if (visibilityResult) {
+    aiVisibility = visibilityResult.visibility;
+    tokensUsed += visibilityResult.tokensUsed;
+    costUsd += visibilityResult.costUsd;
+  }
+
   return {
     mainResults: {
       seoResults: mainSeoResults,
@@ -253,6 +291,7 @@ export async function runCompetitorAnalysis(
       securityResults: mainSecurityResults,
       aiSummary,
       keywordResearch,
+      aiVisibility,
       overallScore: mainOverallScore,
       tokensUsed,
       aiModel,

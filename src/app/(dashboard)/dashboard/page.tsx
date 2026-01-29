@@ -38,6 +38,7 @@ import {
   ArrowUpDown,
   ChevronUp,
   ChevronDown,
+  Eye,
 } from 'lucide-react';
 
 // AI Suggestion types
@@ -124,6 +125,87 @@ function ScoreRing({
           {score >= 90 ? 'Veldig bra' : score >= 70 ? 'Bra' : score >= 50 ? 'Ok' : 'Trenger forbedring'}
         </span>
       )}
+    </div>
+  );
+}
+
+// Action Plan Tabs Component
+function ActionPlanTabs({ actionPlan }: { 
+  actionPlan: { 
+    immediate?: string[]; 
+    shortTerm?: string[]; 
+    longTerm?: string[]; 
+  } 
+}) {
+  const [activeTab, setActiveTab] = useState<'immediate' | 'shortTerm' | 'longTerm'>('immediate');
+  
+  const tabs = [
+    { id: 'immediate' as const, label: 'Nå', icon: Zap, color: 'red', items: actionPlan.immediate || [] },
+    { id: 'shortTerm' as const, label: 'Kort sikt', icon: Clock, color: 'amber', items: actionPlan.shortTerm || [] },
+    { id: 'longTerm' as const, label: 'Lang sikt', icon: TrendingUp, color: 'green', items: actionPlan.longTerm || [] },
+  ].filter(tab => tab.items.length > 0);
+
+  const currentTab = tabs.find(t => t.id === activeTab) || tabs[0];
+  
+  if (tabs.length === 0) return null;
+
+  return (
+    <div>
+      <h5 className="text-sm font-medium text-neutral-700 mb-3">Handlingsplan</h5>
+      
+      {/* Tab buttons */}
+      <div className="flex gap-1 p-1 bg-neutral-100 rounded-lg mb-3">
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-md text-xs font-medium transition-all cursor-pointer ${
+              activeTab === tab.id
+                ? tab.color === 'red' 
+                  ? 'bg-red-500 text-white shadow-sm'
+                  : tab.color === 'amber'
+                  ? 'bg-amber-500 text-white shadow-sm'
+                  : 'bg-green-500 text-white shadow-sm'
+                : 'text-neutral-600 hover:text-neutral-900 hover:bg-neutral-200'
+            }`}
+          >
+            <tab.icon className="w-3.5 h-3.5" />
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab content */}
+      <div className={`p-4 rounded-xl border ${
+        currentTab.color === 'red' 
+          ? 'bg-red-50 border-red-200'
+          : currentTab.color === 'amber'
+          ? 'bg-amber-50 border-amber-200'
+          : 'bg-green-50 border-green-200'
+      }`}>
+        <ul className="space-y-2">
+          {currentTab.items.map((item, i) => (
+            <li key={i} className={`text-sm flex items-start gap-2 ${
+              currentTab.color === 'red' 
+                ? 'text-red-900'
+                : currentTab.color === 'amber'
+                ? 'text-amber-900'
+                : 'text-green-900'
+            }`}>
+              <span className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
+                currentTab.color === 'red' 
+                  ? 'bg-red-200 text-red-700'
+                  : currentTab.color === 'amber'
+                  ? 'bg-amber-200 text-amber-700'
+                  : 'bg-green-200 text-green-700'
+              }`}>
+                <span className="text-xs font-bold">{i + 1}</span>
+              </span>
+              <span className="leading-relaxed">{item}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }
@@ -239,6 +321,23 @@ interface AnalysisResult {
       longTerm: string[];
     };
   };
+  aiVisibility?: {
+    score: number;
+    level: 'high' | 'medium' | 'low' | 'none';
+    description: string;
+    details: {
+      queriesTested: number;
+      timesCited: number;
+      timesMentioned: number;
+      queries: Array<{
+        query: string;
+        cited: boolean;
+        mentioned: boolean;
+        aiResponse?: string;
+      }>;
+    };
+    recommendations: string[];
+  };
 }
 
 export default function DashboardPage() {
@@ -263,7 +362,7 @@ export default function DashboardPage() {
   const [analysisStep, setAnalysisStep] = useState(0);
   const [remainingAnalyses, setRemainingAnalyses] = useState(2);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'overview' | 'competitors' | 'keywords' | 'ai'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'competitors' | 'keywords' | 'ai' | 'ai-visibility'>('overview');
   
   // AI Suggestion states
   const [suggestionSheetOpen, setSuggestionSheetOpen] = useState(false);
@@ -285,6 +384,21 @@ export default function DashboardPage() {
 
   // Keyword sorting
   const [keywordSort, setKeywordSort] = useState<{ column: string; direction: 'asc' | 'desc' } | null>(null);
+
+  // AI Visibility state
+  const [aiVisibilityResult, setAiVisibilityResult] = useState<{
+    score: number;
+    level: 'high' | 'medium' | 'low' | 'none';
+    description: string;
+    details: {
+      queriesTested: number;
+      timesCited: number;
+      timesMentioned: number;
+      queries: Array<{ query: string; cited: boolean; mentioned: boolean; aiResponse?: string }>;
+    };
+    recommendations: string[];
+  } | null>(null);
+  const [checkingAiVisibility, setCheckingAiVisibility] = useState(false);
 
   const FREE_MONTHLY_LIMIT = 2;
   const FREE_KEYWORD_LIMIT = 10;
@@ -447,6 +561,7 @@ export default function DashboardPage() {
               competitors: analysis.competitor_results || undefined,
               aiSummary: analysis.ai_summary || null,
               keywordResearch: analysis.keyword_research || undefined,
+              aiVisibility: analysis.ai_visibility || undefined,
             });
           }
         }
@@ -1369,6 +1484,19 @@ export default function DashboardPage() {
                 AI-analyse
               </span>
             </button>
+            <button
+              onClick={() => setActiveTab('ai-visibility')}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === 'ai-visibility'
+                  ? 'bg-white text-neutral-900 shadow-sm'
+                  : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                <Eye className="h-4 w-4" />
+                AI-synlighet
+              </span>
+            </button>
           </div>
 
           {/* Tab Content */}
@@ -1429,87 +1557,121 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Priority Improvements */}
-              {(() => {
-                const issues = [];
-                if (result.seoResults.headings.h1.count !== 1) issues.push({ label: 'H1-overskrift', desc: result.seoResults.headings.h1.count === 0 ? 'Mangler hovedoverskrift' : 'Flere hovedoverskrifter', priority: 'high' });
-                if (!result.seoResults.meta.title.content) issues.push({ label: 'Sidetittel', desc: 'Mangler tittel i søkeresultater', priority: 'high' });
-                if (!result.seoResults.meta.description.content) issues.push({ label: 'Sidebeskrivelse', desc: 'Mangler beskrivelse i søkeresultater', priority: 'high' });
-                if (result.contentResults.wordCount < 300) issues.push({ label: 'Innhold', desc: 'For lite tekst på siden', priority: 'medium' });
-                if (result.securityResults.score < 60) issues.push({ label: 'Sikkerhet', desc: 'Sikkerhetsinnstillinger kan forbedres', priority: 'medium' });
-                if (result.seoResults.images.withoutAlt > 0) issues.push({ label: 'Bilder', desc: `${result.seoResults.images.withoutAlt} bilder mangler beskrivelse`, priority: 'low' });
-                
-                return issues.length > 0 ? (
-                  <div className="rounded-2xl border border-neutral-200 bg-white p-5">
-                    <h3 className="font-semibold text-neutral-900 mb-3 flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-amber-500" />
-                      Viktigste forbedringer
-                    </h3>
-                    <div className="space-y-2">
-                      {issues.slice(0, 4).map((issue, i) => (
-                        <div key={i} className="flex items-center gap-3 p-3 rounded-xl bg-neutral-50">
-                          <div className={`w-2 h-2 rounded-full shrink-0 ${
-                            issue.priority === 'high' ? 'bg-red-500' :
-                            issue.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
-                          }`} />
-                          <div className="flex-1 min-w-0">
-                            <span className="font-medium text-sm text-neutral-900">{issue.label}</span>
-                            <span className="text-neutral-400 mx-2">·</span>
-                            <span className="text-sm text-neutral-600">{issue.desc}</span>
-                          </div>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            issue.priority === 'high' ? 'bg-red-100 text-red-700' :
-                            issue.priority === 'medium' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'
-                          }`}>
-                            {issue.priority === 'high' ? 'Viktig' : issue.priority === 'medium' ? 'Anbefalt' : 'Valgfritt'}
-                          </span>
+              {/* Score Grid + Priority Improvements - Side by side */}
+              <div className="grid lg:grid-cols-3 gap-4">
+                {/* Score Grid Section - Takes 2 columns */}
+                <div className="lg:col-span-2 rounded-2xl border border-neutral-200 bg-white overflow-hidden">
+                  <div className="p-5 border-b border-neutral-100">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h3 className="font-semibold text-neutral-900 mb-1">Poengoversikt</h3>
+                        <p className="text-sm text-neutral-500">Høyere poeng = bedre synlighet i Google</p>
+                      </div>
+                      <div className="text-right">
+                        <div className="flex items-center gap-2 text-xs text-neutral-400">
+                          <Clock className="w-3.5 h-3.5" />
+                          <span>{new Date().toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
                         </div>
-                      ))}
+                      </div>
                     </div>
                   </div>
-                ) : null;
-              })()}
-
-              {/* Score Grid Section */}
-              <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-                <div className="p-6 border-b border-neutral-100">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-semibold text-neutral-900 mb-1">Poengoversikt</h3>
-                      <p className="text-sm text-neutral-500">Høyere poeng = bedre synlighet i Google</p>
-                    </div>
-                    <div className="text-right">
-                      <div className="flex items-center gap-2 text-xs text-neutral-400">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{new Date().toLocaleDateString('nb-NO', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                  <div className="p-5">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      <div className="text-center">
+                        <ScoreRing score={result.overallScore} label="Totalt" size="md" showStatus />
+                        <p className="text-xs text-neutral-500 mt-1">Samlet</p>
+                      </div>
+                      <div className="text-center">
+                        <ScoreRing score={result.seoResults.score} label="SEO" size="md" showStatus />
+                        <p className="text-xs text-neutral-500 mt-1">Søkemotor</p>
+                      </div>
+                      <div className="text-center">
+                        <ScoreRing score={result.contentResults.score} label="Innhold" size="md" showStatus />
+                        <p className="text-xs text-neutral-500 mt-1">Tekst</p>
+                      </div>
+                      <div className="text-center">
+                        <ScoreRing score={result.securityResults.score} label="Sikkerhet" size="md" showStatus />
+                        <p className="text-xs text-neutral-500 mt-1">Trygghet</p>
+                      </div>
+                      <div className="text-center">
+                        <ScoreRing score={result.aiVisibility?.score ?? 0} label="AI" size="md" showStatus />
+                        <p className="text-xs text-neutral-500 mt-1">AI-synlighet</p>
                       </div>
                     </div>
                   </div>
                 </div>
-                <div className="p-6">
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                    <div className="text-center">
-                      <ScoreRing score={result.overallScore} label="Totalt" size="lg" showStatus />
-                      <p className="text-xs text-neutral-500 mt-2">Samlet vurdering</p>
+
+                {/* Priority Improvements - Takes 1 column */}
+                {(() => {
+                  const issues: { label: string; desc: string; priority: 'high' | 'medium' | 'low'; category: string }[] = [];
+                  // SEO issues
+                  if (result.seoResults.headings.h1.count !== 1) issues.push({ label: 'H1-overskrift', desc: result.seoResults.headings.h1.count === 0 ? 'Mangler hovedoverskrift' : 'Flere hovedoverskrifter', priority: 'high', category: 'seo' });
+                  if (!result.seoResults.meta.title.content) issues.push({ label: 'Sidetittel', desc: 'Mangler tittel', priority: 'high', category: 'seo' });
+                  if (result.seoResults.meta.title.content && !result.seoResults.meta.title.isOptimal) issues.push({ label: 'Sidetittel', desc: 'Ikke optimal lengde', priority: 'medium', category: 'seo' });
+                  if (!result.seoResults.meta.description.content) issues.push({ label: 'Meta-beskrivelse', desc: 'Mangler beskrivelse', priority: 'high', category: 'seo' });
+                  if (result.seoResults.meta.description.content && !result.seoResults.meta.description.isOptimal) issues.push({ label: 'Meta-beskrivelse', desc: 'Ikke optimal lengde', priority: 'medium', category: 'seo' });
+                  if (!result.seoResults.meta.ogTags.title) issues.push({ label: 'Open Graph', desc: 'Mangler OG-tittel', priority: 'low', category: 'seo' });
+                  if (!result.seoResults.meta.ogTags.description) issues.push({ label: 'Open Graph', desc: 'Mangler OG-beskrivelse', priority: 'low', category: 'seo' });
+                  if (!result.seoResults.meta.canonical) issues.push({ label: 'Canonical URL', desc: 'Mangler canonical tag', priority: 'medium', category: 'seo' });
+                  // Content issues
+                  if (result.contentResults.wordCount < 300) issues.push({ label: 'Innhold', desc: 'For lite tekst', priority: 'medium', category: 'content' });
+                  if (result.seoResults.headings.h2.count === 0) issues.push({ label: 'H2-overskrifter', desc: 'Mangler underoverskrifter', priority: 'low', category: 'content' });
+                  if (result.seoResults.images.withoutAlt > 0) issues.push({ label: 'Bilder', desc: `${result.seoResults.images.withoutAlt} mangler alt-tekst`, priority: 'low', category: 'seo' });
+                  // Security issues
+                  if (result.securityResults.score < 60) issues.push({ label: 'Sikkerhet', desc: 'Lav sikkerhetsscore', priority: 'medium', category: 'security' });
+                  if (!result.securityResults.headers.strictTransportSecurity) issues.push({ label: 'HSTS', desc: 'Mangler HSTS-header', priority: 'medium', category: 'security' });
+                  if (!result.securityResults.headers.contentSecurityPolicy) issues.push({ label: 'CSP', desc: 'Mangler Content Security Policy', priority: 'low', category: 'security' });
+                  // AI visibility issues
+                  if (result.aiVisibility && result.aiVisibility.score < 50) issues.push({ label: 'AI-synlighet', desc: 'Lav AI-synlighet', priority: 'medium', category: 'ai' });
+                  
+                  return issues.length > 0 ? (
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-5 flex flex-col h-full">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold text-neutral-900 flex items-center gap-2 text-sm">
+                          <TrendingUp className="h-4 w-4 text-amber-500" />
+                          Forbedringer
+                        </h3>
+                        <span className="text-xs text-neutral-400">{issues.length} funn</span>
+                      </div>
+                      <div className="space-y-1.5 overflow-y-auto max-h-[220px] pr-1 flex-1 custom-scrollbar">
+                        {issues.map((issue, i) => (
+                          <button
+                            key={i}
+                            onClick={() => {
+                              // Scroll to detailed metrics section
+                              const element = document.querySelector('[data-section="detailed-metrics"]');
+                              element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }}
+                            className="w-full flex items-center gap-2 p-2 rounded-lg bg-neutral-50 hover:bg-neutral-100 transition-colors cursor-pointer text-left group"
+                          >
+                            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                              issue.priority === 'high' ? 'bg-red-500' :
+                              issue.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
+                            }`} />
+                            <div className="flex-1 min-w-0">
+                              <span className="font-medium text-xs text-neutral-900">{issue.label}</span>
+                              <span className="text-neutral-400 mx-1">·</span>
+                              <span className="text-xs text-neutral-500">{issue.desc}</span>
+                            </div>
+                            <ChevronRight className="w-3 h-3 text-neutral-400 group-hover:text-neutral-600 shrink-0 transition-colors" />
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <div className="text-center">
-                      <ScoreRing score={result.seoResults.score} label="Søkemotor" size="lg" showStatus />
-                      <p className="text-xs text-neutral-500 mt-2">Synlighet i Google</p>
+                  ) : (
+                    <div className="rounded-2xl border border-green-200 bg-green-50 p-5 h-full">
+                      <h3 className="font-semibold text-green-800 mb-2 flex items-center gap-2 text-sm">
+                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                        Alt ser bra ut!
+                      </h3>
+                      <p className="text-xs text-green-700">Ingen kritiske forbedringer funnet.</p>
                     </div>
-                    <div className="text-center">
-                      <ScoreRing score={result.contentResults.score} label="Innhold" size="lg" showStatus />
-                      <p className="text-xs text-neutral-500 mt-2">Tekst og struktur</p>
-                    </div>
-                    <div className="text-center">
-                      <ScoreRing score={result.securityResults.score} label="Sikkerhet" size="lg" showStatus />
-                      <p className="text-xs text-neutral-500 mt-2">Trygghet for besøkende</p>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()}
               </div>
 
               {/* Detailed Metrics */}
-              <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
+              <div data-section="detailed-metrics" className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
                 <div className="p-6 border-b border-neutral-100">
                   <div className="flex items-center justify-between">
                     <div>
@@ -2204,12 +2366,12 @@ export default function DashboardPage() {
             <>
               {/* Edit Competitors Panel */}
               {editingCompetitors && (
-                <div className="rounded-2xl border border-blue-200 bg-blue-50/30 overflow-hidden mb-6">
+                <div className="rounded-2xl border border-neutral-200 bg-neutral-50/50 overflow-hidden mb-6">
                   {/* Header */}
-                  <div className="flex items-center justify-between p-4 border-b border-blue-200 bg-blue-50/50">
+                  <div className="flex items-center justify-between p-4 border-b border-neutral-200 bg-neutral-50">
                     <div className="flex items-center gap-3">
-                      <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 text-neutral-900 text-sm font-medium">
-                        <BarChart3 className="h-4 w-4 text-blue-600" />
+                      <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium">
+                        <BarChart3 className="h-4 w-4 text-neutral-600" />
                         Rediger konkurrenter
                       </h3>
                       <span className="px-2 py-0.5 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">
@@ -2219,7 +2381,7 @@ export default function DashboardPage() {
                     <button
                       onClick={cancelEditingCompetitors}
                       disabled={updatingCompetitors}
-                      className="p-1.5 rounded-lg hover:bg-blue-100 text-neutral-500 hover:text-neutral-700 transition-colors disabled:opacity-50"
+                      className="p-1.5 rounded-lg hover:bg-neutral-200 text-neutral-500 hover:text-neutral-700 transition-colors disabled:opacity-50"
                     >
                       <X className="h-5 w-5" />
                     </button>
@@ -2254,7 +2416,7 @@ export default function DashboardPage() {
                         type="button"
                         onClick={addEditCompetitor}
                         disabled={editCompetitorUrls.length >= FREE_COMPETITOR_LIMIT || !editCompetitorInput.trim()}
-                        className="h-11 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white"
+                        className="h-11 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white"
                       >
                         <Plus className="h-4 w-4 mr-1.5" />
                         Legg til
@@ -2335,98 +2497,145 @@ export default function DashboardPage() {
                   </div>
                   
                   <div className="p-6 space-y-6">
-                    {/* Visual Score Comparison - Horizontal scrollable on mobile */}
-                    <div className="overflow-x-auto -mx-6 px-6">
-                      <div className="flex gap-4 min-w-max pb-2">
-                        {/* Your scores */}
-                        <div className="w-48 flex-shrink-0 p-4 rounded-xl border-2 border-green-200 bg-green-50/30">
-                          <div className="flex items-center gap-2 mb-3">
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-green-100 text-neutral-900 text-xs font-medium">
-                              <Globe className="h-3.5 w-3.5 text-green-600" />
-                              Du
-                            </span>
-                          </div>
-                          <p className="text-xs text-neutral-600 mb-3 truncate" title={companyName || new URL(companyUrl || url).hostname}>
-                            {companyName || new URL(companyUrl || url).hostname}
-                          </p>
-                          
-                          {/* Overall score */}
-                          <div className="flex justify-center mb-4">
-                            <ScoreRing score={result.overallScore} label="" size="md" />
-                          </div>
-                          
-                          {/* Category scores - vertical list */}
-                          {(() => {
-                            const avgSeo = result.competitors.reduce((sum, c) => sum + c.results.seoResults.score, 0) / result.competitors.length;
-                            const avgContent = result.competitors.reduce((sum, c) => sum + c.results.contentResults.score, 0) / result.competitors.length;
-                            const avgSecurity = result.competitors.reduce((sum, c) => sum + c.results.securityResults.score, 0) / result.competitors.length;
-                            return (
-                              <div className="space-y-2">
-                                <div className="flex items-center justify-between p-2 rounded-lg bg-white/60">
-                                  <span className="text-xs text-neutral-600">SEO</span>
-                                  <span className={`font-bold text-sm ${result.seoResults.score >= avgSeo ? 'text-green-600' : 'text-red-600'}`}>
-                                    {result.seoResults.score}
-                                  </span>
+                    {/* Score Comparison Table */}
+                    <div className="overflow-hidden rounded-xl border border-neutral-200">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="bg-neutral-50 border-b border-neutral-200">
+                            <th className="text-left py-3 px-4 font-medium text-neutral-600">Nettside</th>
+                            <th className="text-center py-3 px-3 font-medium text-neutral-600">Total</th>
+                            <th className="text-center py-3 px-3 font-medium text-neutral-600">SEO</th>
+                            <th className="text-center py-3 px-3 font-medium text-neutral-600">Innhold</th>
+                            <th className="text-center py-3 px-3 font-medium text-neutral-600">Sikkerhet</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {/* Your scores */}
+                          <tr className="border-b border-neutral-100 bg-green-50/50 hover:bg-green-50 transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
+                                  <Globe className="h-4 w-4 text-green-600" />
                                 </div>
-                                <div className="flex items-center justify-between p-2 rounded-lg bg-white/60">
-                                  <span className="text-xs text-neutral-600">Innhold</span>
-                                  <span className={`font-bold text-sm ${result.contentResults.score >= avgContent ? 'text-green-600' : 'text-red-600'}`}>
-                                    {result.contentResults.score}
-                                  </span>
-                                </div>
-                                <div className="flex items-center justify-between p-2 rounded-lg bg-white/60">
-                                  <span className="text-xs text-neutral-600">Sikkerhet</span>
-                                  <span className={`font-bold text-sm ${result.securityResults.score >= avgSecurity ? 'text-green-600' : 'text-red-600'}`}>
-                                    {result.securityResults.score}
-                                  </span>
+                                <div className="min-w-0">
+                                  <p className="font-medium text-neutral-900 truncate">Du</p>
+                                  <p className="text-xs text-neutral-500 truncate">{companyName || new URL(companyUrl || url).hostname}</p>
                                 </div>
                               </div>
-                            );
-                          })()}
-                        </div>
-                        
-                        {/* Competitor scores */}
-                        {result.competitors.map((competitor, index) => (
-                          <div key={competitor.url} className="w-48 flex-shrink-0 p-4 rounded-xl border border-neutral-200 bg-white">
-                            <div className="flex items-center gap-2 mb-3">
-                              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-900 text-xs font-medium">
-                                <Globe className="h-3.5 w-3.5 text-neutral-600" />
-                                #{index + 1}
+                            </td>
+                            <td className="text-center py-3 px-3">
+                              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold text-sm">
+                                {result.overallScore}
                               </span>
-                            </div>
-                            <p className="text-xs text-neutral-600 mb-3 truncate" title={new URL(competitor.url).hostname}>
-                              {new URL(competitor.url).hostname}
-                            </p>
-                            
-                            {/* Overall score */}
-                            <div className="flex justify-center mb-4">
-                              <ScoreRing score={competitor.results.overallScore} label="" size="md" neutral={true} />
-                            </div>
-                            
-                            {/* Category scores - vertical list */}
-                            <div className="space-y-2">
-                              <div className="flex items-center justify-between p-2 rounded-lg bg-neutral-50">
-                                <span className="text-xs text-neutral-600">SEO</span>
-                                <span className="font-bold text-sm text-neutral-700">
-                                  {competitor.results.seoResults.score}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between p-2 rounded-lg bg-neutral-50">
-                                <span className="text-xs text-neutral-600">Innhold</span>
-                                <span className="font-bold text-sm text-neutral-700">
-                                  {competitor.results.contentResults.score}
-                                </span>
-                              </div>
-                              <div className="flex items-center justify-between p-2 rounded-lg bg-neutral-50">
-                                <span className="text-xs text-neutral-600">Sikkerhet</span>
-                                <span className="font-bold text-sm text-neutral-700">
-                                  {competitor.results.securityResults.score}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                            </td>
+                            {(() => {
+                              const avgSeo = result.competitors.reduce((sum, c) => sum + c.results.seoResults.score, 0) / result.competitors.length;
+                              const avgContent = result.competitors.reduce((sum, c) => sum + c.results.contentResults.score, 0) / result.competitors.length;
+                              const avgSecurity = result.competitors.reduce((sum, c) => sum + c.results.securityResults.score, 0) / result.competitors.length;
+                              return (
+                                <>
+                                  <td className="text-center py-3 px-3">
+                                    <div className="flex flex-col items-center gap-1">
+                                      <span className={`font-semibold ${result.seoResults.score >= avgSeo ? 'text-green-600' : 'text-red-600'}`}>
+                                        {result.seoResults.score}
+                                      </span>
+                                      <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
+                                        <div className={`h-full rounded-full ${result.seoResults.score >= avgSeo ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${result.seoResults.score}%` }} />
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="text-center py-3 px-3">
+                                    <div className="flex flex-col items-center gap-1">
+                                      <span className={`font-semibold ${result.contentResults.score >= avgContent ? 'text-green-600' : 'text-red-600'}`}>
+                                        {result.contentResults.score}
+                                      </span>
+                                      <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
+                                        <div className={`h-full rounded-full ${result.contentResults.score >= avgContent ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${result.contentResults.score}%` }} />
+                                      </div>
+                                    </div>
+                                  </td>
+                                  <td className="text-center py-3 px-3">
+                                    <div className="flex flex-col items-center gap-1">
+                                      <span className={`font-semibold ${result.securityResults.score >= avgSecurity ? 'text-green-600' : 'text-red-600'}`}>
+                                        {result.securityResults.score}
+                                      </span>
+                                      <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
+                                        <div className={`h-full rounded-full ${result.securityResults.score >= avgSecurity ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${result.securityResults.score}%` }} />
+                                      </div>
+                                    </div>
+                                  </td>
+                                </>
+                              );
+                            })()}
+                          </tr>
+                          
+                          {/* Competitor scores */}
+                          {result.competitors.map((competitor, index) => {
+                            const isWinning = competitor.results.overallScore > result.overallScore;
+                            return (
+                              <tr key={competitor.url} className="border-b border-neutral-100 last:border-b-0 hover:bg-neutral-50 transition-colors group">
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0 group-hover:bg-neutral-200 transition-colors">
+                                      <span className="text-xs font-bold text-neutral-500">#{index + 1}</span>
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="font-medium text-neutral-700 truncate group-hover:text-neutral-900 transition-colors">
+                                        {new URL(competitor.url).hostname}
+                                      </p>
+                                      <a 
+                                        href={competitor.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-blue-500 hover:text-blue-600 hover:underline flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                      >
+                                        Besøk <ExternalLink className="w-3 h-3" />
+                                      </a>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="text-center py-3 px-3">
+                                  <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm ${
+                                    isWinning ? 'bg-red-100 text-red-700' : 'bg-neutral-100 text-neutral-600'
+                                  }`}>
+                                    {competitor.results.overallScore}
+                                  </span>
+                                </td>
+                                <td className="text-center py-3 px-3">
+                                  <div className="flex flex-col items-center gap-1">
+                                    <span className={`font-semibold ${competitor.results.seoResults.score > result.seoResults.score ? 'text-red-600' : 'text-neutral-600'}`}>
+                                      {competitor.results.seoResults.score}
+                                    </span>
+                                    <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
+                                      <div className="h-full rounded-full bg-neutral-400" style={{ width: `${competitor.results.seoResults.score}%` }} />
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="text-center py-3 px-3">
+                                  <div className="flex flex-col items-center gap-1">
+                                    <span className={`font-semibold ${competitor.results.contentResults.score > result.contentResults.score ? 'text-red-600' : 'text-neutral-600'}`}>
+                                      {competitor.results.contentResults.score}
+                                    </span>
+                                    <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
+                                      <div className="h-full rounded-full bg-neutral-400" style={{ width: `${competitor.results.contentResults.score}%` }} />
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="text-center py-3 px-3">
+                                  <div className="flex flex-col items-center gap-1">
+                                    <span className={`font-semibold ${competitor.results.securityResults.score > result.securityResults.score ? 'text-red-600' : 'text-neutral-600'}`}>
+                                      {competitor.results.securityResults.score}
+                                    </span>
+                                    <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
+                                      <div className="h-full rounded-full bg-neutral-400" style={{ width: `${competitor.results.securityResults.score}%` }} />
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     </div>
 
                     {/* AI Competitor Analysis */}
@@ -2678,18 +2887,14 @@ export default function DashboardPage() {
                   
                   <div className="p-6">
                     {/* Info boxes - at top */}
-                    <div className="mb-6 space-y-3">
-                      <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
-                        <p className="text-sm text-neutral-700">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-amber-200 text-amber-800 text-xs font-medium mr-2">Om dataene</span>
-                          Verdiene er AI-baserte estimater for det norske markedet. De gir en god indikasjon på relative forskjeller mellom nøkkelord.
-                        </p>
+                    <div className="mb-4 flex flex-wrap gap-2">
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-100 text-xs text-amber-700">
+                        <span className="font-medium">Om dataene:</span>
+                        <span className="text-amber-600">AI-estimater for norsk marked</span>
                       </div>
-                      <div className="p-4 rounded-xl bg-blue-50 border border-blue-200">
-                        <p className="text-sm text-neutral-700">
-                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-blue-200 text-blue-800 text-xs font-medium mr-2">Tips</span>
-                          Fokuser på nøkkelord med høyt søkevolum, lav konkurranse og kommersiell/transaksjonell intensjon for best ROI.
-                        </p>
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-700">
+                        <span className="font-medium">Tips:</span>
+                        <span className="text-blue-600">Høyt volum + lav konkurranse = best ROI</span>
                       </div>
                     </div>
 
@@ -3035,229 +3240,124 @@ export default function DashboardPage() {
           {activeTab === 'ai' && (
             <>
               {result.aiSummary ? (
-                <div className="space-y-6">
-                  {/* Overall Assessment Card */}
-                  <div className="rounded-2xl border border-neutral-200 bg-gradient-to-br from-white to-neutral-50 overflow-hidden">
-                    <div className="p-6">
-                      <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center shrink-0">
-                          <Sparkles className="h-6 w-6 text-amber-600" />
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-lg text-neutral-900 mb-2">AI-vurdering</h3>
-                          <p className="text-neutral-600 leading-relaxed">{result.aiSummary.overallAssessment}</p>
-                        </div>
+                <div className="grid md:grid-cols-2 gap-8">
+                  {/* Left Column - AI Summary & Key Findings */}
+                  <div>
+                    {/* AI Summary */}
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 text-white" />
                       </div>
+                      <h4 className="font-semibold text-neutral-900">AI-vurdering</h4>
                     </div>
-                  </div>
-
-                  {/* Key Findings - with colors */}
-                  <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-                    <div className="p-6 border-b border-neutral-100">
-                      <h4 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium">
-                        <Lightbulb className="h-4 w-4 text-neutral-600" />
-                        Viktige funn
-                      </h4>
-                    </div>
-                    <div className="p-6">
-                      <div className="grid gap-3">
-                        {result.aiSummary.keyFindings.map((finding, i) => {
-                          // Handle both old string format and new object format
-                          const isObject = typeof finding === 'object' && finding !== null;
-                          const text = isObject ? (finding as { text: string }).text : finding as string;
+                    <p className="text-sm text-neutral-600 leading-relaxed mb-6">
+                      {result.aiSummary.overallAssessment}
+                    </p>
+                    
+                    {/* Key Findings */}
+                    <h5 className="text-sm font-medium text-neutral-700 mb-3">Viktigste funn</h5>
+                    <div className="space-y-2">
+                      {result.aiSummary.keyFindings.slice(0, 5).map((finding, i) => {
+                        const isObject = typeof finding === 'object' && finding !== null;
+                        const text = isObject ? (finding as { text: string }).text : finding as string;
+                        
+                        let type = isObject ? (finding as { type: string }).type : 'neutral';
+                        if (!isObject && typeof text === 'string') {
+                          const lowerText = text.toLowerCase();
+                          const positiveWords = ['god', 'bra', 'utmerket', 'optimal', 'sterk', 'riktig', 'komplett', 'sikker', 'rask', 'fungerer', 'har', 'inneholder', 'oppfyller', 'tilfredsstillende', 'effektiv', 'ingen bilder uten'];
+                          const negativeWords = ['mangler', 'ikke godt', 'feil', 'svak', 'dårlig', 'treg', 'vanskelig', 'kort', 'for', 'bør', 'burde', 'anbefales', 'forbedres', 'problem', 'utfordring', 'kritisk', 'lav', 'ingen', 'uten', 'kan økes', 'kan hindre'];
                           
-                          // For old string format, use heuristics to detect type
-                          let type = isObject ? (finding as { type: string }).type : 'neutral';
-                          if (!isObject && typeof text === 'string') {
-                            const lowerText = text.toLowerCase();
-                            // Positive indicators
-                            const positiveWords = ['god', 'bra', 'utmerket', 'optimal', 'sterk', 'riktig', 'komplett', 'sikker', 'rask', 'fungerer', 'har', 'inneholder', 'oppfyller', 'tilfredsstillende', 'effektiv'];
-                            // Negative indicators  
-                            const negativeWords = ['mangler', 'ikke', 'feil', 'svak', 'dårlig', 'treg', 'lang', 'kort', 'for', 'bør', 'burde', 'anbefales', 'forbedres', 'problem', 'utfordring', 'kritisk', 'lav', 'ingen', 'uten'];
-                            
-                            const hasPositive = positiveWords.some(word => lowerText.includes(word));
-                            const hasNegative = negativeWords.some(word => lowerText.includes(word));
-                            
-                            if (hasNegative && !hasPositive) {
-                              type = 'negative';
-                            } else if (hasPositive && !hasNegative) {
-                              type = 'positive';
-                            } else if (hasPositive && hasNegative) {
-                              // If both, check context - "ikke" or "mangler" usually indicates negative
-                              type = (lowerText.includes('ikke') || lowerText.includes('mangler') || lowerText.includes('bør')) ? 'negative' : 'positive';
-                            }
+                          const hasPositive = positiveWords.some(word => lowerText.includes(word));
+                          const hasNegative = negativeWords.some(word => lowerText.includes(word));
+                          
+                          if (hasNegative && !hasPositive) {
+                            type = 'negative';
+                          } else if (hasPositive && !hasNegative) {
+                            type = 'positive';
+                          } else if (hasPositive && hasNegative) {
+                            type = (lowerText.includes('ikke') || lowerText.includes('mangler') || lowerText.includes('bør') || lowerText.includes('kan hindre') || lowerText.includes('vanskelig')) ? 'negative' : 'positive';
                           }
-                          
-                          const colorClasses = {
-                            positive: {
-                              bg: 'bg-green-50 border-green-200',
-                              icon: 'bg-green-500',
-                              iconColor: 'text-white',
-                              text: 'text-green-900'
-                            },
-                            negative: {
-                              bg: 'bg-red-50 border-red-200',
-                              icon: 'bg-red-500',
-                              iconColor: 'text-white',
-                              text: 'text-red-900'
-                            },
-                            neutral: {
-                              bg: 'bg-blue-50 border-blue-200',
-                              icon: 'bg-blue-500',
-                              iconColor: 'text-white',
-                              text: 'text-blue-900'
-                            }
-                          };
-                          
-                          const colors = colorClasses[type as keyof typeof colorClasses] || colorClasses.neutral;
-                          
-                          return (
-                            <div key={i} className={`flex items-start gap-3 p-4 rounded-xl border ${colors.bg}`}>
-                              <div className={`w-7 h-7 rounded-lg ${colors.icon} flex items-center justify-center shrink-0`}>
-                                {type === 'positive' ? (
-                                  <CheckCircle2 className={`w-4 h-4 ${colors.iconColor}`} />
-                                ) : type === 'negative' ? (
-                                  <AlertCircle className={`w-4 h-4 ${colors.iconColor}`} />
-                                ) : (
-                                  <Lightbulb className={`w-4 h-4 ${colors.iconColor}`} />
-                                )}
-                              </div>
-                              <p className={`text-sm ${colors.text} leading-relaxed font-medium`}>{text}</p>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Recommendations */}
-                  <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-                    <div className="p-6 border-b border-neutral-100">
-                      <div className="flex items-center justify-between">
-                        <h4 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium">
-                          <Zap className="h-4 w-4 text-neutral-600" />
-                          Anbefalinger
-                        </h4>
-                        <p className="text-xs text-neutral-400">Klikk for AI-eksempler</p>
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      <div className="space-y-3">
-                        {result.aiSummary.recommendations.slice(0, 5).map((rec, i) => (
+                        }
+                        
+                        return (
                           <div 
                             key={i} 
-                            onClick={() => {
-                              fetchAISuggestion(
-                                rec.title,
-                                rec.description,
-                                rec.priority === 'high' ? 'bad' : rec.priority === 'medium' ? 'warning' : 'good',
-                                `Anbefaling: ${rec.description}${rec.expectedImpact ? `. Forventet effekt: ${rec.expectedImpact}` : ''}`
-                              );
-                            }}
-                            className="p-4 rounded-xl border border-neutral-200 hover:border-neutral-300 hover:shadow-md transition-all bg-white cursor-pointer group"
+                            className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
+                              type === 'positive' ? 'bg-green-50 text-green-700' : 
+                              type === 'negative' ? 'bg-amber-50 text-amber-700' : 
+                              'bg-blue-50 text-blue-700'
+                            }`}
                           >
-                            <div className="flex items-start gap-3">
-                              <div className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${
-                                rec.priority === 'high'
-                                  ? 'bg-red-100 text-red-700'
-                                  : rec.priority === 'medium'
-                                  ? 'bg-amber-100 text-amber-700'
-                                  : 'bg-green-100 text-green-700'
-                              }`}>
-                                {rec.priority === 'high' ? 'Høy prioritet' : rec.priority === 'medium' ? 'Medium' : 'Lav prioritet'}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="font-medium text-sm text-neutral-900">{rec.title}</p>
-                                  <Sparkles className="w-4 h-4 text-neutral-300 group-hover:text-amber-500 transition-colors shrink-0" />
-                                </div>
-                                <p className="text-sm text-neutral-500 mt-1 leading-relaxed">{rec.description}</p>
-                                {rec.expectedImpact && (
-                                  <p className="text-xs text-neutral-400 mt-2 flex items-center gap-1">
-                                    <TrendingUp className="w-3 h-3" />
-                                    {rec.expectedImpact}
-                                  </p>
-                                )}
-                              </div>
-                            </div>
+                            {type === 'positive' ? (
+                              <CheckCircle2 className="w-4 h-4 shrink-0" />
+                            ) : type === 'negative' ? (
+                              <AlertCircle className="w-4 h-4 shrink-0" />
+                            ) : (
+                              <Lightbulb className="w-4 h-4 shrink-0" />
+                            )}
+                            <span>{text}</span>
                           </div>
-                        ))}
-                      </div>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  {/* Action Plan */}
-                  {result.aiSummary.actionPlan && (
-                    <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-                      <div className="p-6 border-b border-neutral-100">
-                        <h4 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium">
-                          <ArrowRight className="h-4 w-4 text-neutral-600" />
-                          Handlingsplan
-                        </h4>
-                      </div>
-                      <div className="p-6">
-                        <div className="grid md:grid-cols-3 gap-4">
-                          {result.aiSummary.actionPlan.immediate?.length > 0 && (
-                            <div className="p-4 rounded-xl bg-gradient-to-br from-yellow-50 to-amber-50 border border-yellow-200">
-                              <h5 className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-yellow-200 text-yellow-800 text-xs font-semibold mb-4">
-                                <Zap className="h-3.5 w-3.5" />
-                                Gjør nå
-                              </h5>
-                              <ul className="space-y-3">
-                                {result.aiSummary.actionPlan.immediate.map((item, i) => (
-                                  <li key={i} className="text-sm text-yellow-900 flex items-start gap-2">
-                                    <span className="w-5 h-5 rounded-full bg-yellow-200 flex items-center justify-center shrink-0 mt-0.5">
-                                      <span className="text-xs font-bold text-yellow-800">{i + 1}</span>
-                                    </span>
-                                    <span className="leading-relaxed">{item}</span>
-                                  </li>
-                                ))}
-                              </ul>
+                  {/* Right Column - Recommendations & Action Plan */}
+                  <div>
+                    {/* Recommendations */}
+                    <div className="flex items-center justify-between mb-3">
+                      <h5 className="text-sm font-medium text-neutral-700">Anbefalinger</h5>
+                      <span className="text-xs text-neutral-400 flex items-center gap-1">
+                        <Sparkles className="w-3 h-3" />
+                        Klikk for AI-forslag
+                      </span>
+                    </div>
+                    <div className="space-y-2 mb-6">
+                      {result.aiSummary.recommendations.slice(0, 4).map((rec, i) => (
+                        <div 
+                          key={i}
+                          onClick={() => {
+                            fetchAISuggestion(
+                              rec.title,
+                              rec.description,
+                              rec.priority === 'high' ? 'bad' : rec.priority === 'medium' ? 'warning' : 'good',
+                              `Anbefaling: ${rec.description}${rec.expectedImpact ? `. Forventet effekt: ${rec.expectedImpact}` : ''}`
+                            );
+                          }}
+                          className="p-3 bg-white rounded-xl border-2 border-neutral-200 hover:border-neutral-400 hover:shadow-md transition-all cursor-pointer group"
+                        >
+                          <div className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                                rec.priority === 'high' ? 'bg-red-100 text-red-700' : 
+                                rec.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
+                                'bg-green-100 text-green-700'
+                              }`}>
+                                {rec.priority === 'high' ? 'høy' : rec.priority === 'medium' ? 'medium' : 'lav'}
+                              </span>
+                              <span className="text-sm font-medium text-neutral-800">{rec.title}</span>
                             </div>
-                          )}
-                          {result.aiSummary.actionPlan.shortTerm?.length > 0 && (
-                            <div className="p-4 rounded-xl bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200">
-                              <h5 className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-blue-200 text-blue-800 text-xs font-semibold mb-4">
-                                <Clock className="h-3.5 w-3.5" />
-                                Innen 1-2 uker
-                              </h5>
-                              <ul className="space-y-3">
-                                {result.aiSummary.actionPlan.shortTerm.map((item, i) => (
-                                  <li key={i} className="text-sm text-blue-900 flex items-start gap-2">
-                                    <span className="w-5 h-5 rounded-full bg-blue-200 flex items-center justify-center shrink-0 mt-0.5">
-                                      <span className="text-xs font-bold text-blue-800">{i + 1}</span>
-                                    </span>
-                                    <span className="leading-relaxed">{item}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                          {result.aiSummary.actionPlan.longTerm?.length > 0 && (
-                            <div className="p-4 rounded-xl bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200">
-                              <h5 className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-green-200 text-green-800 text-xs font-semibold mb-4">
-                                <TrendingUp className="h-3.5 w-3.5" />
-                                Langsiktig
-                              </h5>
-                              <ul className="space-y-3">
-                                {result.aiSummary.actionPlan.longTerm.map((item, i) => (
-                                  <li key={i} className="text-sm text-green-900 flex items-start gap-2">
-                                    <span className="w-5 h-5 rounded-full bg-green-200 flex items-center justify-center shrink-0 mt-0.5">
-                                      <span className="text-xs font-bold text-green-800">{i + 1}</span>
-                                    </span>
-                                    <span className="leading-relaxed">{item}</span>
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
+                            <Sparkles className="w-4 h-4 text-neutral-300 group-hover:text-amber-500 transition-colors" />
+                          </div>
+                          <p className="text-xs text-neutral-500">{rec.description}</p>
+                          {rec.expectedImpact && (
+                            <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                              <TrendingUp className="w-3 h-3" />
+                              {rec.expectedImpact}
+                            </p>
                           )}
                         </div>
-                      </div>
+                      ))}
                     </div>
-                  )}
+
+                    {/* Action Plan with Tabs */}
+                    {result.aiSummary.actionPlan && (
+                      <ActionPlanTabs actionPlan={result.aiSummary.actionPlan} />
+                    )}
+                  </div>
                 </div>
               ) : (
-                <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
+                <div className="text-center py-12">
                   <div className="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                     <Sparkles className="w-8 h-8 text-neutral-400" />
                   </div>
@@ -3268,6 +3368,286 @@ export default function DashboardPage() {
                 </div>
               )}
             </>
+          )}
+
+          {activeTab === 'ai-visibility' && (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-blue-100 flex items-center justify-center">
+                    <Eye className="w-5 h-5 text-violet-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-neutral-900">AI-synlighet</h3>
+                    <p className="text-sm text-neutral-500">Hvor godt AI-modeller kjenner til bedriften din</p>
+                  </div>
+                </div>
+              </div>
+
+              {(() => {
+                // Use stored AI visibility data if available, otherwise use live check result
+                const visData = result.aiVisibility || aiVisibilityResult;
+                
+                if (visData) {
+                  return (
+                    <div className="space-y-6">
+                      {/* Score Card */}
+                      <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+                        <div className="grid md:grid-cols-2 gap-6">
+                          {/* Score visualization */}
+                          <div className="flex items-center gap-6">
+                            <div className="relative">
+                              <div className={`w-28 h-28 rounded-full flex items-center justify-center ${
+                                visData.level === 'high' ? 'bg-green-100' :
+                                visData.level === 'medium' ? 'bg-amber-100' :
+                                'bg-red-100'
+                              }`}>
+                                <span className={`text-4xl font-bold ${
+                                  visData.level === 'high' ? 'text-green-600' :
+                                  visData.level === 'medium' ? 'text-amber-600' :
+                                  'text-red-600'
+                                }`}>{visData.score}</span>
+                              </div>
+                            </div>
+                            <div className="flex-1">
+                              <p className={`text-lg font-semibold mb-1 ${
+                                visData.level === 'high' ? 'text-green-700' :
+                                visData.level === 'medium' ? 'text-amber-700' :
+                                'text-red-700'
+                              }`}>
+                                {visData.level === 'high' ? 'God AI-synlighet' :
+                                 visData.level === 'medium' ? 'Moderat AI-synlighet' :
+                                 visData.level === 'low' ? 'Lav AI-synlighet' :
+                                 'Ikke synlig i AI-søk'}
+                              </p>
+                              <p className="text-sm text-neutral-600">{visData.description}</p>
+                            </div>
+                          </div>
+                          
+                          {/* Stats */}
+                          <div className="grid grid-cols-3 gap-4">
+                            <div className="p-4 rounded-xl bg-neutral-50 text-center">
+                              <p className="text-3xl font-bold text-neutral-900">{visData.details.queriesTested}</p>
+                              <p className="text-xs text-neutral-500 mt-1">Spørsmål testet</p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-green-50 text-center">
+                              <p className="text-3xl font-bold text-green-600">{visData.details.timesCited}</p>
+                              <p className="text-xs text-neutral-500 mt-1">Kjenner til</p>
+                            </div>
+                            <div className="p-4 rounded-xl bg-blue-50 text-center">
+                              <p className="text-3xl font-bold text-blue-600">{visData.details.timesMentioned}</p>
+                              <p className="text-xs text-neutral-500 mt-1">Delvis kjent</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Search queries tested */}
+                      <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
+                        <div className="p-5 border-b border-neutral-100">
+                          <h4 className="font-semibold text-neutral-900">Hva AI svarte</h4>
+                          <p className="text-sm text-neutral-500 mt-0.5">Svar fra GPT på spørsmål om bedriften din</p>
+                        </div>
+                        <div className="p-5 space-y-4">
+                          {visData.details.queries.map((q, i) => (
+                            <div key={i} className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                                  q.cited ? 'bg-green-100' : q.mentioned ? 'bg-blue-100' : 'bg-neutral-200'
+                                }`}>
+                                  {q.cited ? (
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                                  ) : q.mentioned ? (
+                                    <Search className="w-3 h-3 text-blue-600" />
+                                  ) : (
+                                    <X className="w-3 h-3 text-neutral-400" />
+                                  )}
+                                </div>
+                                <p className="text-sm font-medium text-neutral-700 flex-1">&quot;{q.query}&quot;</p>
+                                <span className={`text-xs px-2.5 py-1 rounded-full shrink-0 font-medium ${
+                                  q.cited ? 'bg-green-100 text-green-700' : 
+                                  q.mentioned ? 'bg-blue-100 text-blue-700' : 
+                                  'bg-neutral-200 text-neutral-600'
+                                }`}>
+                                  {q.cited ? 'Kjenner til' : q.mentioned ? 'Delvis kjent' : 'Ukjent'}
+                                </span>
+                              </div>
+                              {q.aiResponse && (
+                                <div className="pl-9">
+                                  <p className="text-sm text-neutral-600 italic bg-white p-3 rounded-lg border border-neutral-100">
+                                    &quot;{q.aiResponse}&quot;
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Recommendations */}
+                      {visData.recommendations.length > 0 && (
+                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
+                          <h4 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
+                            <Lightbulb className="w-5 h-5" />
+                            Anbefalinger for bedre AI-synlighet
+                          </h4>
+                          <ul className="space-y-2">
+                            {visData.recommendations.map((rec, i) => (
+                              <li key={i} className="text-sm text-amber-700 flex items-start gap-3">
+                                <span className="w-5 h-5 rounded-full bg-amber-200 flex items-center justify-center shrink-0 text-xs font-medium text-amber-800">
+                                  {i + 1}
+                                </span>
+                                {rec}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                
+                // Fallback: Show estimated score if no AI visibility data
+                const hasStructuredData = result.seoResults.meta.ogTags.title || result.seoResults.meta.ogTags.description;
+                const hasGoodContent = result.contentResults.wordCount >= 300;
+                const hasMetaDescription = !!result.seoResults.meta.description.content;
+                const hasProperHeadings = result.seoResults.headings.h1.count === 1 && result.seoResults.headings.h2.count > 0;
+                const hasAltTexts = result.seoResults.images.total === 0 || result.seoResults.images.withoutAlt === 0;
+                
+                const factors = [
+                  { name: 'Strukturert innhold', pass: hasProperHeadings, tip: 'Bruk tydelige overskrifter (H1, H2)' },
+                  { name: 'Meta-beskrivelse', pass: hasMetaDescription, tip: 'Legg til beskrivende meta-tekst' },
+                  { name: 'Innholdsmengde', pass: hasGoodContent, tip: 'Minimum 300 ord anbefales' },
+                  { name: 'Open Graph data', pass: hasStructuredData, tip: 'Legg til OG-tags for deling' },
+                  { name: 'Bildetekster', pass: hasAltTexts, tip: 'Alt-tekst hjelper AI å forstå bilder' },
+                ];
+                
+                const passCount = factors.filter(f => f.pass).length;
+                const aiScore = Math.round((passCount / factors.length) * 100);
+                
+                return (
+                  <div className="space-y-6">
+                    {/* Estimated Score Card */}
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+                      <div className="grid md:grid-cols-2 gap-6">
+                        {/* Score visualization */}
+                        <div className="flex items-center gap-6">
+                          <div className="relative">
+                            <div className={`w-28 h-28 rounded-full flex items-center justify-center ${
+                              aiScore >= 80 ? 'bg-green-100' :
+                              aiScore >= 60 ? 'bg-amber-100' :
+                              'bg-red-100'
+                            }`}>
+                              <span className={`text-4xl font-bold ${
+                                aiScore >= 80 ? 'text-green-600' :
+                                aiScore >= 60 ? 'text-amber-600' :
+                                'text-red-600'
+                              }`}>{aiScore}</span>
+                            </div>
+                            <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-neutral-200 text-[10px] text-neutral-600 font-medium">
+                              Estimert
+                            </div>
+                          </div>
+                          <div className="flex-1">
+                            <p className={`text-lg font-semibold mb-1 ${
+                              aiScore >= 80 ? 'text-green-700' :
+                              aiScore >= 60 ? 'text-amber-700' :
+                              'text-red-700'
+                            }`}>
+                              {aiScore >= 80 ? 'God AI-beredskap' :
+                               aiScore >= 60 ? 'Moderat AI-beredskap' :
+                               'Lav AI-beredskap'}
+                            </p>
+                            <p className="text-sm text-neutral-600">
+                              Estimat basert på nettsideinnhold. Kjør live-sjekk for å se faktisk AI-synlighet.
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Factors checklist */}
+                        <div className="space-y-2">
+                          {factors.map((factor, i) => (
+                            <div key={i} className={`flex items-center gap-3 p-3 rounded-lg ${factor.pass ? 'bg-green-50' : 'bg-neutral-50'}`}>
+                              <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
+                                factor.pass ? 'bg-green-100' : 'bg-neutral-200'
+                              }`}>
+                                {factor.pass ? (
+                                  <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                                ) : (
+                                  <X className="w-3 h-3 text-neutral-400" />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <span className={`text-sm font-medium ${factor.pass ? 'text-green-700' : 'text-neutral-600'}`}>
+                                  {factor.name}
+                                </span>
+                                {!factor.pass && (
+                                  <p className="text-xs text-neutral-500">{factor.tip}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Check live visibility button */}
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-100 to-blue-100 flex items-center justify-center">
+                          <Search className="w-6 h-6 text-violet-600" />
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-neutral-900">Sjekk faktisk AI-synlighet</h4>
+                          <p className="text-sm text-neutral-500">Spør AI om den kjenner til bedriften og kan anbefale den</p>
+                        </div>
+                        <Button
+                          onClick={async () => {
+                            setCheckingAiVisibility(true);
+                            try {
+                              const response = await fetch('/api/analyze/ai-visibility', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                  url: companyUrl || url,
+                                  companyName: companyName,
+                                  keywords: result.keywordResearch?.slice(0, 3).map(k => k.keyword) || [],
+                                }),
+                              });
+                              const data = await response.json();
+                              if (data.estimatedOnly) {
+                                toast.error(data.message || 'Kunne ikke sjekke AI-synlighet');
+                              } else if (data.score !== undefined) {
+                                setAiVisibilityResult(data);
+                              }
+                            } catch {
+                              toast.error('En feil oppstod under sjekk av AI-synlighet');
+                            } finally {
+                              setCheckingAiVisibility(false);
+                            }
+                          }}
+                          disabled={checkingAiVisibility}
+                          className="bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white"
+                        >
+                          {checkingAiVisibility ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Sjekker...
+                            </>
+                          ) : (
+                            <>
+                              <Search className="mr-2 h-4 w-4" />
+                              Kjør sjekk
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
           )}
         </>
       ) : (
@@ -3307,7 +3687,7 @@ export default function DashboardPage() {
 
       {/* AI Suggestion Modal */}
       <Dialog open={suggestionSheetOpen} onOpenChange={setSuggestionSheetOpen}>
-        <DialogContent className="sm:max-w-xl max-h-[85vh] overflow-hidden flex flex-col p-0">
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-hidden flex flex-col p-0">
           {/* Header */}
           <div className="px-6 pt-6 pb-4 border-b border-neutral-100">
             <div className="flex items-center gap-3">
@@ -3337,86 +3717,85 @@ export default function DashboardPage() {
                 <Skeleton className="h-24 w-full rounded-xl" />
               </div>
             ) : aiSuggestion ? (
-              <div className="space-y-5">
-                {/* Current status badge */}
-                {selectedElement && (
-                  <div className={`p-4 rounded-xl ${
-                    selectedElement.status === 'good' ? 'bg-green-50 border border-green-200' :
-                    selectedElement.status === 'warning' ? 'bg-amber-50 border border-amber-200' :
-                    'bg-red-50 border border-red-200'
-                  }`}>
-                    <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-                        selectedElement.status === 'good' ? 'bg-green-100' :
-                        selectedElement.status === 'warning' ? 'bg-amber-100' :
-                        'bg-red-100'
-                      }`}>
-                        {selectedElement.status === 'good' ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        ) : selectedElement.status === 'warning' ? (
-                          <AlertCircle className="h-5 w-5 text-amber-600" />
-                        ) : (
-                          <AlertCircle className="h-5 w-5 text-red-600" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium text-neutral-900">{selectedElement.name}</p>
-                        <p className="text-sm text-neutral-600 truncate">{selectedElement.value}</p>
+              <div className="grid md:grid-cols-2 gap-5">
+                {/* Left column - Status & Context */}
+                <div className="space-y-4">
+                  {/* Current status badge */}
+                  {selectedElement && (
+                    <div className={`p-4 rounded-xl ${
+                      selectedElement.status === 'good' ? 'bg-green-50 border border-green-200' :
+                      selectedElement.status === 'warning' ? 'bg-amber-50 border border-amber-200' :
+                      'bg-red-50 border border-red-200'
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                          selectedElement.status === 'good' ? 'bg-green-100' :
+                          selectedElement.status === 'warning' ? 'bg-amber-100' :
+                          'bg-red-100'
+                        }`}>
+                          {selectedElement.status === 'good' ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          ) : selectedElement.status === 'warning' ? (
+                            <AlertCircle className="h-4 w-4 text-amber-600" />
+                          ) : (
+                            <AlertCircle className="h-4 w-4 text-red-600" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm text-neutral-900">{selectedElement.name}</p>
+                          <p className="text-xs text-neutral-600 line-clamp-2">{selectedElement.value}</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Problem identification */}
-                {aiSuggestion.problem && (
-                  <div className="p-4 rounded-xl bg-red-50 border border-red-200">
-                    <div className="flex gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-red-100 flex items-center justify-center shrink-0">
-                        <AlertCircle className="h-4 w-4 text-red-600" />
+                  {/* Problem identification */}
+                  {aiSuggestion.problem && (
+                    <div className="p-3 rounded-xl bg-red-50 border border-red-200">
+                      <div className="flex gap-2">
+                        <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-xs text-red-900 mb-1">Problem</p>
+                          <p className="text-sm text-red-700 leading-relaxed">{aiSuggestion.problem}</p>
+                        </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Summary */}
+                  <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200">
+                    <p className="text-sm text-neutral-700 leading-relaxed">{aiSuggestion.summary}</p>
+                  </div>
+
+                  {/* Quick win */}
+                  <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+                    <div className="flex gap-2">
+                      <Zap className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                       <div>
-                        <p className="font-medium text-sm text-red-900 mb-1">Identifisert problem</p>
-                        <p className="text-sm text-red-700 leading-relaxed">{aiSuggestion.problem}</p>
+                        <p className="font-medium text-xs text-amber-900 mb-1">Rask forbedring</p>
+                        <p className="text-sm text-amber-800 leading-relaxed">{aiSuggestion.quickWin}</p>
                       </div>
                     </div>
                   </div>
-                )}
-
-                {/* Summary */}
-                <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200">
-                  <p className="text-sm text-neutral-700 leading-relaxed">{aiSuggestion.summary}</p>
                 </div>
 
-                {/* Quick win */}
-                <div className="p-4 rounded-xl bg-amber-50 border border-amber-200">
-                  <div className="flex gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
-                      <Zap className="h-4 w-4 text-amber-600" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm text-amber-900 mb-1">Rask forbedring</p>
-                      <p className="text-sm text-amber-800 leading-relaxed">{aiSuggestion.quickWin}</p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Suggestions */}
+                {/* Right column - Suggestions */}
                 <div className="space-y-3">
-                  <h4 className="font-medium text-neutral-900 flex items-center gap-2">
+                  <h4 className="font-medium text-sm text-neutral-900 flex items-center gap-2">
                     <Sparkles className="h-4 w-4 text-neutral-400" />
-                    Anbefalinger
+                    Anbefalinger ({aiSuggestion.suggestions.length})
                   </h4>
-                  <div className="space-y-3">
+                  <div className="space-y-2">
                     {aiSuggestion.suggestions.map((suggestion, i) => (
-                      <div key={i} className="p-4 rounded-xl bg-white border border-neutral-200 hover:border-neutral-300 transition-colors">
-                        <div className="flex items-start gap-3">
-                          <div className="w-6 h-6 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 text-xs font-medium text-neutral-600">
+                      <div key={i} className="p-3 rounded-xl bg-white border border-neutral-200 hover:border-neutral-300 transition-colors">
+                        <div className="flex items-start gap-2">
+                          <div className="w-5 h-5 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 text-xs font-medium text-neutral-600">
                             {i + 1}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="font-medium text-neutral-900">{suggestion.title}</span>
-                              <Badge variant="outline" className={`text-xs ${
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-medium text-sm text-neutral-900">{suggestion.title}</span>
+                              <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
                                 suggestion.priority === 'høy' ? 'border-red-200 text-red-700 bg-red-50' :
                                 suggestion.priority === 'medium' ? 'border-amber-200 text-amber-700 bg-amber-50' :
                                 'border-green-200 text-green-700 bg-green-50'
@@ -3424,11 +3803,11 @@ export default function DashboardPage() {
                                 {suggestion.priority}
                               </Badge>
                             </div>
-                            <p className="text-sm text-neutral-600 leading-relaxed">{suggestion.description}</p>
+                            <p className="text-xs text-neutral-600 leading-relaxed">{suggestion.description}</p>
                             {suggestion.example && (
-                              <div className="mt-3 p-3 rounded-lg bg-neutral-50 border border-neutral-100">
-                                <p className="text-xs text-neutral-500 mb-1">Eksempel:</p>
-                                <p className="text-sm text-neutral-800 font-mono break-all">{suggestion.example}</p>
+                              <div className="mt-2 p-2 rounded-lg bg-neutral-50 border border-neutral-100">
+                                <p className="text-[10px] text-neutral-500 mb-0.5">Eksempel:</p>
+                                <p className="text-xs text-neutral-800 font-mono break-all">{suggestion.example}</p>
                               </div>
                             )}
                           </div>

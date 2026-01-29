@@ -3,6 +3,28 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+
+// Animation variants for staggered children
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.1,
+    },
+  },
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.5 },
+  },
+};
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -16,6 +38,7 @@ import {
   FileText,
   TrendingUp,
   CheckCircle2,
+  AlertCircle,
   ArrowRight,
   Star,
   Globe,
@@ -24,6 +47,8 @@ import {
   BarChart3,
   Link2,
   LayoutDashboard,
+  ChevronRight,
+  ChevronDown,
 } from 'lucide-react';
 
 
@@ -311,6 +336,9 @@ function FloatingAICard() {
 export default function LandingPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [demoTab, setDemoTab] = useState<'oversikt' | 'konkurrenter' | 'nokkelord' | 'ai'>('oversikt');
+  const [selectedIssue, setSelectedIssue] = useState<string | null>('meta');
+  const [selectedStep, setSelectedStep] = useState<number>(1);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -327,13 +355,13 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-100">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex flex-col gap-1">
             <img
               src="/mediabooster-logo-darkgrey.avif"
               alt="Mediabooster"
-              className="h-6 w-auto"
+              className="h-5 w-auto"
             />
-            <span className="text-neutral-500 text-sm hidden sm:inline">Din digitale CMO - og AI-kollega!</span>
+            <span className="text-neutral-500 text-xs hidden sm:inline">Din digitale CMO - og AI-kollega!</span>
           </Link>
           <div className="flex items-center gap-4">
             {loading ? (
@@ -359,26 +387,34 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero Section - Creative floating UI */}
-      <section className="pt-28 pb-8 md:pt-36 md:pb-12 relative">
+      {/* Hero Section - Centered with Dashboard Demo */}
+      <section className="pt-24 pb-8 md:pt-32 md:pb-12 relative overflow-hidden">
+        {/* Background elements */}
+        <div className="absolute inset-0 -z-10">
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-purple-100/40 via-transparent to-transparent blur-[100px]" />
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-cyan-100/30 via-transparent to-transparent blur-[80px]" />
+        </div>
+
         <div className="max-w-6xl mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Hero Text - Centered */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
+            className="text-center max-w-3xl mx-auto mb-12"
             >
               <Badge variant="outline" className="mb-6 text-neutral-600 border-neutral-300">
-                Gratis for norske bedrifter
+              AI-drevet nettside-analyse
               </Badge>
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-6">
-                Din digitale CMO - og AI-kollega.
+              Din digitale CMO<br />
+              <span className="text-neutral-400">- og AI-kollega.</span>
               </h1>
-              <p className="text-lg text-neutral-500 mb-10 max-w-lg">
+            <p className="text-lg text-neutral-500 mb-8 max-w-xl mx-auto">
                 Få en fullstendig helsesjekk av nettsiden med SEO, sikkerhet, innhold og 
                 AI-anbefalinger - alt i én rapport.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 {user ? (
                   <Button size="lg" className="h-12 px-8 bg-neutral-900 hover:bg-neutral-800" asChild>
                     <Link href="/dashboard">
@@ -402,32 +438,367 @@ export default function LandingPage() {
               </div>
             </motion.div>
 
-            {/* Floating UI composition */}
-            <div className="relative h-[500px] hidden lg:block">
-              <div className="absolute top-0 left-0">
-                <FloatingScoresCard />
+          {/* Dashboard Demo */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="relative"
+          >
+            {/* Top part with border and shadow */}
+            <div className="rounded-t-3xl border border-b-0 border-neutral-200 shadow-2xl shadow-neutral-200/50 overflow-hidden bg-white">
+              {/* Dashboard Header */}
+              <div className="border-b border-neutral-100 p-4 flex items-center justify-between bg-neutral-50">
+                <div className="flex items-center gap-3">
+                  <div className="flex gap-1.5">
+                    <div className="w-3 h-3 rounded-full bg-red-400" />
+                    <div className="w-3 h-3 rounded-full bg-yellow-400" />
+                    <div className="w-3 h-3 rounded-full bg-green-400" />
               </div>
-              <div className="absolute top-4 right-0">
-                <FloatingSEOCard />
+                  <span className="text-sm text-neutral-500 font-medium">eksempel.no - Analyse</span>
               </div>
-              <div className="absolute bottom-0 left-8">
-                <FloatingSecurityCard />
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-xs text-neutral-400">Oppdatert i dag</span>
               </div>
             </div>
+
+              {/* Tabs */}
+              <div className="border-b border-neutral-100 px-6 pt-3 bg-white">
+                <div className="flex items-center gap-1.5 text-xs text-neutral-400 mb-2">
+                  <span>Klikk for å utforske</span>
+                  <ChevronDown className="w-3 h-3" />
+                </div>
+                <div className="flex gap-1">
+                  {[
+                    { id: 'oversikt', label: 'Oversikt', icon: BarChart3 },
+                    { id: 'konkurrenter', label: 'Konkurrenter', icon: Globe },
+                    { id: 'nokkelord', label: 'Nøkkelord', icon: Tag },
+                    { id: 'ai', label: 'AI-analyse', icon: Sparkles },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setDemoTab(tab.id as typeof demoTab)}
+                      className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all cursor-pointer ${
+                        demoTab === tab.id
+                          ? 'bg-white text-neutral-900 border-t border-l border-r border-neutral-200 -mb-px'
+                          : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
+                      }`}
+                    >
+                      <tab.icon className="w-4 h-4" />
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
           </div>
         </div>
         
-        {/* Background gradient */}
-        <div className="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-neutral-50 to-transparent -z-10" />
+            {/* Tab Content - fades out at bottom */}
+            <div 
+              className="p-6 max-h-[440px] overflow-hidden relative border-l border-r border-neutral-200 bg-white" 
+              style={{ 
+                maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)', 
+                WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)' 
+              }}
+            >
+              
+              {/* Oversikt Tab */}
+              {demoTab === 'oversikt' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-5"
+                >
+                  {/* Score Grid - Show first */}
+                  <div className="grid grid-cols-4 gap-4">
+                    <div className="text-center p-4 bg-neutral-50 rounded-xl">
+                      <ScoreRing score={78} label="Totalt" size="md" />
+                    </div>
+                    <div className="text-center p-4 bg-neutral-50 rounded-xl">
+                      <ScoreRing score={72} label="SEO" size="md" />
+                    </div>
+                    <div className="text-center p-4 bg-neutral-50 rounded-xl">
+                      <ScoreRing score={58} label="Innhold" size="md" />
+                    </div>
+                    <div className="text-center p-4 bg-neutral-50 rounded-xl">
+                      <ScoreRing score={95} label="Sikkerhet" size="md" />
+                    </div>
+                  </div>
+
+                  {/* Summary Card */}
+                  <div className="rounded-2xl p-5 bg-amber-50 border border-amber-200">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-amber-100">
+                        <AlertCircle className="h-6 w-6 text-amber-600" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-base font-semibold text-amber-900">
+                          Nettsiden har forbedringspotensial
+                        </h3>
+                        <p className="text-sm text-amber-700">
+                          Vi fant områder som kan forbedres for bedre synlighet i Google.
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div className="text-3xl font-bold text-amber-600">78</div>
+                        <p className="text-xs text-neutral-500">av 100</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Quick Stats */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="p-3 bg-green-50 rounded-xl border border-green-100">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        <span className="text-xs font-medium text-green-700">Bra</span>
+                      </div>
+                      <p className="text-sm text-neutral-600">SSL A+ sikkerhet</p>
+                    </div>
+                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertCircle className="w-4 h-4 text-amber-600" />
+                        <span className="text-xs font-medium text-amber-700">Forbedre</span>
+                      </div>
+                      <p className="text-sm text-neutral-600">Meta description</p>
+                    </div>
+                    <div className="p-3 bg-red-50 rounded-xl border border-red-100">
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertCircle className="w-4 h-4 text-red-600" />
+                        <span className="text-xs font-medium text-red-700">Viktig</span>
+                      </div>
+                      <p className="text-sm text-neutral-600">For lite innhold</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Konkurrenter Tab */}
+              {demoTab === 'konkurrenter' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
+                  <div className="flex gap-4">
+                    <div className="flex-1 p-4 rounded-xl border-2 border-green-200 bg-green-50/30">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="px-2.5 py-1 rounded-full bg-green-100 text-xs font-medium">Du</span>
+                        <span className="text-xs text-neutral-500">eksempel.no</span>
+                      </div>
+                      <div className="flex justify-center mb-3">
+                        <ScoreRing score={78} label="" size="md" />
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between"><span className="text-neutral-500">SEO</span><span className="font-medium text-green-600">72</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">Innhold</span><span className="font-medium text-red-600">58</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">Sikkerhet</span><span className="font-medium text-green-600">95</span></div>
+                      </div>
+                    </div>
+                    <div className="flex-1 p-4 rounded-xl border border-neutral-200 bg-white">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="px-2.5 py-1 rounded-full bg-neutral-100 text-xs font-medium">#1</span>
+                        <span className="text-xs text-neutral-500">konkurrent.no</span>
+                      </div>
+                      <div className="flex justify-center mb-3">
+                        <ScoreRing score={65} label="" size="md" />
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between"><span className="text-neutral-500">SEO</span><span className="font-medium">68</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">Innhold</span><span className="font-medium">62</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">Sikkerhet</span><span className="font-medium">72</span></div>
+                      </div>
+                    </div>
+                    <div className="flex-1 p-4 rounded-xl border border-neutral-200 bg-white">
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="px-2.5 py-1 rounded-full bg-neutral-100 text-xs font-medium">#2</span>
+                        <span className="text-xs text-neutral-500">annen.no</span>
+                      </div>
+                      <div className="flex justify-center mb-3">
+                        <ScoreRing score={71} label="" size="md" />
+                      </div>
+                      <div className="space-y-1.5 text-xs">
+                        <div className="flex justify-between"><span className="text-neutral-500">SEO</span><span className="font-medium">74</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">Innhold</span><span className="font-medium">68</span></div>
+                        <div className="flex justify-between"><span className="text-neutral-500">Sikkerhet</span><span className="font-medium">70</span></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 rounded-xl bg-green-50 border border-green-100">
+                    <p className="text-sm text-green-700 flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" />
+                      Du ligger foran begge konkurrentene - spesielt på sikkerhet (95 vs 71 snitt)
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3 bg-green-50 rounded-xl border border-green-100">
+                      <div className="flex items-center gap-2 mb-1">
+                        <CheckCircle2 className="w-4 h-4 text-green-600" />
+                        <span className="text-xs font-medium text-green-700">Dine styrker</span>
+                      </div>
+                      <p className="text-xs text-neutral-600">Sikkerhet, Total score</p>
+                    </div>
+                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
+                      <div className="flex items-center gap-2 mb-1">
+                        <AlertCircle className="w-4 h-4 text-amber-600" />
+                        <span className="text-xs font-medium text-amber-700">Forbedringspotensial</span>
+                      </div>
+                      <p className="text-xs text-neutral-600">Innhold, SEO</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Nøkkelord Tab */}
+              {demoTab === 'nokkelord' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
+                  <div className="overflow-x-auto rounded-xl border border-neutral-200">
+                    <table className="w-full">
+                      <thead className="bg-neutral-50">
+                        <tr>
+                          <th className="text-left py-3 px-4 text-xs font-semibold text-neutral-500">Nøkkelord</th>
+                          <th className="text-right py-3 px-4 text-xs font-semibold text-neutral-500">Volum</th>
+                          <th className="text-right py-3 px-4 text-xs font-semibold text-neutral-500">CPC</th>
+                          <th className="text-center py-3 px-4 text-xs font-semibold text-neutral-500">Konkurranse</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[
+                          { kw: 'digital markedsføring', vol: '2.4K', cpc: '45 kr', comp: 'høy' },
+                          { kw: 'seo tjenester oslo', vol: '1.8K', cpc: '62 kr', comp: 'medium' },
+                          { kw: 'nettside analyse', vol: '890', cpc: '28 kr', comp: 'lav' },
+                          { kw: 'webdesign byrå', vol: '720', cpc: '38 kr', comp: 'medium' },
+                        ].map((item, i) => (
+                          <tr key={i} className="border-t border-neutral-100">
+                            <td className="py-3 px-4 text-sm font-medium text-neutral-900">{item.kw}</td>
+                            <td className="py-3 px-4 text-sm text-right">{item.vol}</td>
+                            <td className="py-3 px-4 text-sm text-right text-green-600 font-medium">{item.cpc}</td>
+                            <td className="py-3 px-4 text-center">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                                item.comp === 'høy' ? 'bg-red-100 text-red-700' :
+                                item.comp === 'medium' ? 'bg-amber-100 text-amber-700' :
+                                'bg-green-100 text-green-700'
+                              }`}>{item.comp}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="grid grid-cols-4 gap-3">
+                    <div className="p-3 rounded-xl bg-neutral-50">
+                      <p className="text-xs text-neutral-500 font-medium">Total volum</p>
+                      <p className="text-lg font-bold text-neutral-900">~5.8K</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-neutral-50">
+                      <p className="text-xs text-neutral-500 font-medium">Snitt CPC</p>
+                      <p className="text-lg font-bold text-green-600">43 kr</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-neutral-50">
+                      <p className="text-xs text-neutral-500 font-medium">Vanskelighet</p>
+                      <p className="text-lg font-bold text-amber-600">52</p>
+                    </div>
+                    <div className="p-3 rounded-xl bg-neutral-50">
+                      <p className="text-xs text-neutral-500 font-medium">Trend</p>
+                      <p className="text-lg font-bold text-green-600 flex items-center gap-1">
+                        <TrendingUp className="h-4 w-4" /> Opp
+                      </p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* AI-analyse Tab */}
+              {demoTab === 'ai' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="grid md:grid-cols-2 gap-6"
+                >
+                  <div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
+                        <Sparkles className="w-4 h-4 text-white" />
+                      </div>
+                      <h4 className="font-semibold text-neutral-900">AI-vurdering</h4>
+                    </div>
+                    <p className="text-sm text-neutral-600 leading-relaxed mb-4">
+                      Nettsiden har solid sikkerhet (SSL A+), men mangler viktige SEO-elementer som meta description.
+                    </p>
+                    <h5 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Viktigste funn</h5>
+                    <div className="space-y-2">
+                      {[
+                        { text: 'SSL A+ - utmerket sikkerhet', type: 'success' },
+                        { text: 'Meta description mangler', type: 'warning' },
+                        { text: 'For lite innhold (847 ord)', type: 'warning' },
+                        { text: 'God sidetittel (58 tegn)', type: 'success' },
+                      ].map((item, i) => (
+                        <div key={i} className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
+                          item.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                        }`}>
+                          {item.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                          {item.text}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h5 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Anbefalinger</h5>
+                    <div className="space-y-2 mb-4">
+                      {[
+                        { priority: 'høy', title: 'Legg til meta description', desc: 'Viktig for CTR' },
+                        { priority: 'høy', title: 'Øk innholdsmengden', desc: 'Minst 1500 ord' },
+                        { priority: 'medium', title: 'Legg til alt-tekst', desc: '3 bilder mangler' },
+                      ].map((rec, i) => (
+                        <div key={i} className="p-3 bg-neutral-50 rounded-xl border border-neutral-100">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                              rec.priority === 'høy' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                            }`}>{rec.priority}</span>
+                            <span className="text-sm font-medium text-neutral-800">{rec.title}</span>
+                          </div>
+                          <p className="text-xs text-neutral-500 ml-12">{rec.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <h5 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Handlingsplan</h5>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="p-2 rounded-lg bg-red-50 border border-red-100">
+                        <div className="text-xs font-medium text-red-700 mb-1">Nå</div>
+                        <p className="text-xs text-neutral-600">Meta desc</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-amber-50 border border-amber-100">
+                        <div className="text-xs font-medium text-amber-700 mb-1">Kort sikt</div>
+                        <p className="text-xs text-neutral-600">Innhold</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-green-50 border border-green-100">
+                        <div className="text-xs font-medium text-green-700 mb-1">Lang sikt</div>
+                        <p className="text-xs text-neutral-600">Schema</p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </div>
+          </motion.div>
+        </div>
       </section>
 
       {/* Trusted by - Scrolling Logo Carousel */}
-      <section className="py-8 overflow-hidden relative">
+      <section className="py-12 overflow-hidden relative">
         <motion.p 
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="text-center text-xs uppercase tracking-widest text-neutral-400 mb-6"
+          className="text-center text-xs uppercase tracking-widest text-neutral-400 mb-8"
         >
           Brukes av innovative bedrifter
         </motion.p>
@@ -437,13 +808,21 @@ export default function LandingPage() {
         <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
         
         {/* Row 1 - scrolling left */}
-        <div className="relative mb-3">
+        <div className="relative mb-4">
           <div className="flex animate-scroll-left">
             {[...Array(3)].map((_, setIndex) => (
-              <div key={setIndex} className="flex shrink-0 gap-3">
-                {['TechStart', 'Grønn Handel', 'Digital Vekst', 'Nordic Solutions', 'Smartbedrift', 'WebExperts'].map((name, i) => (
-                  <div key={`${setIndex}-${i}`} className="px-5 py-2.5 bg-neutral-50 rounded-lg text-sm text-neutral-400 whitespace-nowrap hover:text-neutral-600 hover:bg-neutral-100 transition-colors">
-                    {name}
+              <div key={setIndex} className="flex shrink-0 items-center gap-16 px-8">
+                {[
+                  { name: 'Acme Corp', icon: '◆' },
+                  { name: 'TechFlow', icon: '●' },
+                  { name: 'Quantum', icon: '◈' },
+                  { name: 'Synapse', icon: '◎' },
+                  { name: 'Vertex', icon: '▲' },
+                  { name: 'Nebula', icon: '★' },
+                ].map((logo, i) => (
+                  <div key={`${setIndex}-${i}`} className="flex items-center gap-2 opacity-40 hover:opacity-70 transition-opacity">
+                    <span className="text-2xl text-neutral-600">{logo.icon}</span>
+                    <span className="text-lg font-semibold text-neutral-600 tracking-tight">{logo.name}</span>
                   </div>
                 ))}
               </div>
@@ -455,10 +834,18 @@ export default function LandingPage() {
         <div className="relative">
           <div className="flex animate-scroll-right">
             {[...Array(3)].map((_, setIndex) => (
-              <div key={setIndex} className="flex shrink-0 gap-3">
-                {['StartupHub', 'NordicTech', 'DigiMarketing', 'Konsulent AS', 'EcomNorge', 'SaaS Norge'].map((name, i) => (
-                  <div key={`${setIndex}-${i}`} className="px-5 py-2.5 bg-neutral-50 rounded-lg text-sm text-neutral-400 whitespace-nowrap hover:text-neutral-600 hover:bg-neutral-100 transition-colors">
-                    {name}
+              <div key={setIndex} className="flex shrink-0 items-center gap-16 px-8">
+                {[
+                  { name: 'Horizon', icon: '◐' },
+                  { name: 'Pulse', icon: '◉' },
+                  { name: 'Atlas', icon: '⬡' },
+                  { name: 'Spark', icon: '✦' },
+                  { name: 'Nova', icon: '✧' },
+                  { name: 'Prism', icon: '◇' },
+                ].map((logo, i) => (
+                  <div key={`${setIndex}-${i}`} className="flex items-center gap-2 opacity-40 hover:opacity-70 transition-opacity">
+                    <span className="text-2xl text-neutral-600">{logo.icon}</span>
+                    <span className="text-lg font-semibold text-neutral-600 tracking-tight">{logo.name}</span>
                   </div>
                 ))}
               </div>
@@ -476,10 +863,10 @@ export default function LandingPage() {
             100% { transform: translateX(0); }
           }
           .animate-scroll-left {
-            animation: scroll-left 25s linear infinite;
+            animation: scroll-left 30s linear infinite;
           }
           .animate-scroll-right {
-            animation: scroll-right 25s linear infinite;
+            animation: scroll-right 30s linear infinite;
           }
         `}</style>
       </section>
@@ -493,24 +880,37 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl md:text-4xl font-medium mb-4">
-              Alt du trenger for å forbedre nettsiden
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-4">
+              Komplett analyse<br />
+              <span className="text-neutral-400">av hele nettsiden.</span>
             </h2>
-            <p className="text-lg text-neutral-500 max-w-2xl mx-auto">
-              Vi analyserer over 50 faktorer og gir deg konkrete anbefalinger
+            <p className="text-lg text-neutral-500 max-w-xl mx-auto">
+              SEO, sikkerhet, innhold, nøkkelord og konkurrenter - med AI-anbefalinger.
             </p>
           </motion.div>
 
           {/* Bento Grid */}
-          <div className="grid md:grid-cols-3 gap-4">
+          <motion.div 
+            className="grid md:grid-cols-3 gap-4"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+          >
             {/* SEO - Large card with hover reveal */}
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="md:col-span-2 bg-neutral-50 rounded-3xl p-8 relative overflow-hidden group hover:bg-neutral-100 transition-all duration-300"
+              variants={itemVariants}
+              whileHover={{ y: -8, transition: { duration: 0.3 } }}
+              className="md:col-span-2 relative rounded-3xl p-8 overflow-hidden group"
             >
+              {/* Animated background */}
+              <motion.div 
+                className="absolute inset-0 bg-neutral-50 group-hover:bg-neutral-100 transition-colors duration-300"
+                initial={{ opacity: 0, scale: 1.1 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 1.8, ease: "easeOut" }}
+              />
               <div className="relative z-10">
                 <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
                   <Search className="w-6 h-6 text-neutral-700" />
@@ -531,33 +931,38 @@ export default function LandingPage() {
                   ))}
                 </div>
               </div>
-              <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0">
+              <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0 z-10">
                 <ScoreRing score={92} label="SEO" size="lg" />
               </div>
             </motion.div>
 
             {/* Security - Small card with hover animation */}
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="bg-neutral-900 rounded-3xl p-8 text-white group hover:bg-neutral-800 transition-all duration-300 relative overflow-hidden"
+              variants={itemVariants}
+              whileHover={{ y: -8, transition: { duration: 0.3 } }}
+              className="relative rounded-3xl p-8 group overflow-hidden"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              {/* Animated gradient background */}
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 group-hover:from-green-100 group-hover:to-emerald-100 transition-colors duration-300"
+                initial={{ opacity: 0, scale: 1.1 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 1.8, ease: "easeOut" }}
+              />
               <div className="relative z-10">
-                <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center mb-6 group-hover:bg-white/20 transition-colors">
-                  <Shield className="w-6 h-6 text-white group-hover:scale-110 transition-transform" />
+                <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-6 group-hover:shadow-md group-hover:scale-110 transition-all">
+                  <Shield className="w-6 h-6 text-green-600" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">Sikkerhet</h3>
-                <p className="text-neutral-400 mb-6">
+                <h3 className="text-xl font-semibold text-neutral-900 mb-2">Sikkerhet</h3>
+                <p className="text-neutral-500 mb-6">
                   SSL-sertifikat og sikkerhetsheaders
                 </p>
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-green-500/20 flex items-center justify-center group-hover:scale-110 group-hover:bg-green-500/30 transition-all">
-                    <span className="text-xl font-bold text-green-400">A+</span>
+                  <div className="w-14 h-14 rounded-xl bg-green-100 flex items-center justify-center group-hover:scale-110 group-hover:bg-green-200 transition-all">
+                    <span className="text-xl font-bold text-green-600">A+</span>
                   </div>
-                  <div className="text-sm text-neutral-400 group-hover:text-neutral-300 transition-colors">
+                  <div className="text-sm text-neutral-500 group-hover:text-neutral-600 transition-colors">
                     SSL Grade
                   </div>
                 </div>
@@ -566,12 +971,19 @@ export default function LandingPage() {
 
             {/* Content - Small card with animated counters */}
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.3 }}
-              className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-3xl p-8 group hover:from-purple-100 hover:to-pink-100 transition-all duration-300"
+              variants={itemVariants}
+              whileHover={{ y: -8, transition: { duration: 0.3 } }}
+              className="relative rounded-3xl p-8 group overflow-hidden"
             >
+              {/* Animated gradient background */}
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-br from-purple-50 to-pink-50 group-hover:from-purple-100 group-hover:to-pink-100 transition-colors duration-300"
+                initial={{ opacity: 0, scale: 1.1 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 1.8, ease: "easeOut", delay: 0.1 }}
+              />
+              <div className="relative z-10">
               <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-6 group-hover:shadow-md group-hover:scale-110 transition-all">
                 <FileText className="w-6 h-6 text-purple-600" />
               </div>
@@ -587,18 +999,26 @@ export default function LandingPage() {
                 <div className="bg-white rounded-xl p-3 text-center group-hover:shadow-md transition-all">
                   <div className="text-2xl font-bold group-hover:text-purple-600 transition-colors">38</div>
                   <div className="text-xs text-neutral-500">LIX</div>
+                  </div>
                 </div>
               </div>
             </motion.div>
 
             {/* Keywords - Medium card with hover table highlight */}
             <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.4 }}
-              className="md:col-span-2 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-3xl p-8 group hover:from-blue-100 hover:to-cyan-100 transition-all duration-300"
+              variants={itemVariants}
+              whileHover={{ y: -8, transition: { duration: 0.3 } }}
+              className="md:col-span-2 relative rounded-3xl p-8 group overflow-hidden"
             >
+              {/* Animated gradient background */}
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-br from-blue-50 to-cyan-50 group-hover:from-blue-100 group-hover:to-cyan-100 transition-colors duration-300"
+                initial={{ opacity: 0, scale: 1.1 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 1.8, ease: "easeOut", delay: 0.2 }}
+              />
+              <div className="relative z-10">
               <div className="flex items-start justify-between mb-6">
                 <div>
                   <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4 group-hover:shadow-md group-hover:scale-110 transition-all">
@@ -612,458 +1032,553 @@ export default function LandingPage() {
                 <Badge className="bg-amber-100 text-amber-700 group-hover:bg-amber-200 transition-colors">AI-drevet</Badge>
               </div>
               <div className="bg-white rounded-2xl p-4 overflow-hidden group-hover:shadow-md transition-all">
-                <div className="flex items-center justify-between py-2 border-b border-neutral-100 text-sm">
-                  <span className="text-neutral-500 font-medium">Nøkkelord</span>
-                  <div className="flex gap-8">
-                    <span className="text-neutral-500 font-medium w-16 text-right">Volum</span>
-                    <span className="text-neutral-500 font-medium w-16 text-right">CPC</span>
-                  </div>
-                </div>
-                {[
-                  { word: 'digital markedsføring oslo', vol: '2.4K', cpc: '45 kr' },
-                  { word: 'seo tjenester', vol: '1.8K', cpc: '62 kr' },
-                  { word: 'nettside analyse', vol: '890', cpc: '28 kr' },
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-neutral-100">
+                        <th className="text-left py-2 px-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Nøkkelord</th>
+                        <th className="text-right py-2 px-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Volum</th>
+                        <th className="text-right py-2 px-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">CPC</th>
+                        <th className="text-center py-2 px-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Konkurranse</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[
+                        { word: 'digital markedsføring', vol: '2.4K', cpc: '45 kr', comp: 'høy' },
+                        { word: 'seo tjenester oslo', vol: '1.8K', cpc: '62 kr', comp: 'medium' },
+                        { word: 'nettside analyse', vol: '890', cpc: '28 kr', comp: 'lav' },
                 ].map((kw, i) => (
-                  <div 
-                    key={i} 
-                    className="flex items-center justify-between py-3 text-sm hover:bg-blue-50 -mx-4 px-4 transition-colors rounded-lg"
-                  >
-                    <span className="text-neutral-700">{kw.word}</span>
-                    <div className="flex gap-8">
-                      <span className="text-neutral-600 w-16 text-right">{kw.vol}</span>
-                      <span className="text-green-600 font-medium w-16 text-right">{kw.cpc}</span>
-                    </div>
+                        <tr key={i} className="border-t border-neutral-50 hover:bg-blue-50 transition-colors">
+                          <td className="py-2.5 px-2 text-neutral-700">{kw.word}</td>
+                          <td className="py-2.5 px-2 text-right text-neutral-600">{kw.vol}</td>
+                          <td className="py-2.5 px-2 text-right text-green-600 font-medium">{kw.cpc}</td>
+                          <td className="py-2.5 px-2 text-center">
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                              kw.comp === 'høy' ? 'bg-red-100 text-red-700' :
+                              kw.comp === 'medium' ? 'bg-amber-100 text-amber-700' :
+                              'bg-green-100 text-green-700'
+                            }`}>{kw.comp}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </motion.div>
+            </motion.div>
+        </div>
+      </section>
+
+      {/* AI Suggestions Interactive Section */}
+      <section className="py-20">
+        <div className="max-w-5xl mx-auto px-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-3">
+              Fra problem<br />
+              <span className="text-neutral-400">til løsning.</span>
+              </h2>
+            <p className="text-lg text-neutral-500 max-w-xl mx-auto">
+              AI analyserer funnene og gir deg konkrete forslag du kan implementere med én gang.
+            </p>
+            </motion.div>
+
+          <div className="grid lg:grid-cols-5 gap-6">
+            {/* Problem cards - narrower */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="lg:col-span-2 space-y-2"
+            >
+              {[
+                { 
+                  id: 'meta', 
+                  title: 'Meta description', 
+                  severity: 'høy',
+                  icon: FileText,
+                },
+                { 
+                  id: 'h1', 
+                  title: 'H1-struktur', 
+                  severity: 'medium',
+                  icon: AlertCircle,
+                },
+                { 
+                  id: 'images', 
+                  title: 'Alt-tekst på bilder', 
+                  severity: 'medium',
+                  icon: FileText,
+                },
+                { 
+                  id: 'content', 
+                  title: 'Innholdsmengde', 
+                  severity: 'lav',
+                  icon: FileText,
+                },
+              ].map((issue) => (
+                <button
+                  key={issue.id}
+                  onClick={() => setSelectedIssue(issue.id)}
+                  className={`w-full text-left p-4 rounded-2xl border transition-all duration-200 cursor-pointer ${
+                    selectedIssue === issue.id
+                      ? 'border-neutral-300 bg-neutral-50'
+                      : 'border-transparent bg-neutral-50/50 hover:bg-neutral-50 hover:border-neutral-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                      selectedIssue === issue.id ? 'bg-neutral-200' : 'bg-neutral-100'
+                    }`}>
+                      <issue.icon className={`w-4 h-4 ${
+                        selectedIssue === issue.id ? 'text-neutral-700' : 'text-neutral-500'
+                      }`} />
                   </div>
-                ))}
+                    <div className="flex-1 min-w-0">
+                      <h4 className={`text-sm font-medium ${
+                        selectedIssue === issue.id ? 'text-neutral-900' : 'text-neutral-600'
+                      }`}>{issue.title}</h4>
+                </div>
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                      issue.severity === 'høy' 
+                        ? 'bg-red-100 text-red-600'
+                        : issue.severity === 'medium'
+                        ? 'bg-amber-100 text-amber-600'
+                        : 'bg-green-100 text-green-600'
+                    }`}>
+                      {issue.severity}
+                        </span>
+                        </div>
+                </button>
+                  ))}
+              </motion.div>
+
+            {/* AI Suggestion panel - wider */}
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="lg:col-span-3"
+            >
+              <div className="bg-neutral-50 rounded-2xl p-6 min-h-[320px]">
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-4 h-4 text-neutral-500" />
+                  <span className="text-sm font-medium text-neutral-600">AI-forslag</span>
+                </div>
+                
+                {selectedIssue === 'meta' && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-4"
+                  >
+                    <div className="p-4 bg-white rounded-xl border border-neutral-200">
+                      <p className="text-xs font-medium text-neutral-500 mb-2">Foreslått meta description:</p>
+                      <p className="text-sm text-neutral-700">
+                        "Spesialist på rørleggerarbeid i Bergen. Over 15 års erfaring med bad, 
+                        kjøkken og VVS. Rask respons og konkurransedyktige priser. Ring for tilbud."
+                      </p>
+                      <p className="text-xs text-neutral-400 mt-2">152 tegn · Optimal lengde</p>
+                    </div>
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Hvorfor dette fungerer</p>
+                      <ul className="space-y-2 text-sm text-neutral-600">
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                          Lokal relevans (Bergen)
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                          Bygger tillit (erfaring)
+                        </li>
+                        <li className="flex items-start gap-2">
+                          <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />
+                          Klar handling (ring for tilbud)
+                        </li>
+                      </ul>
+                    </div>
+                  </motion.div>
+                )}
+
+                {selectedIssue === 'h1' && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-4"
+                  >
+                    <div className="p-4 bg-red-50 rounded-xl border border-red-100">
+                      <p className="text-xs font-medium text-red-600 mb-2">Nåværende (2 H1-tags)</p>
+                      <div className="space-y-1 text-sm text-neutral-500 line-through">
+                        <p>"Hjem"</p>
+                        <p>"Vi fikser alt av rør"</p>
+                </div>
+                      </div>
+                    <div className="p-4 bg-green-50 rounded-xl border border-green-100">
+                      <p className="text-xs font-medium text-green-600 mb-2">Foreslått H1:</p>
+                      <p className="text-sm text-neutral-700 font-medium">
+                        "Rørlegger i Bergen - Rask hjelp til bad og VVS"
+                      </p>
+                </div>
+                    <p className="text-xs text-neutral-500">
+                      Én H1 per side. Inkluder tjeneste + lokasjon.
+                    </p>
+              </motion.div>
+                )}
+
+                {selectedIssue === 'images' && (
+            <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-3"
+                  >
+                    <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-3">
+                      Foreslåtte alt-tekster
+                    </p>
+                    {[
+                      { file: 'hero-image.jpg', alt: 'Team som jobber med digital markedsføring' },
+                      { file: 'services.png', alt: 'Illustrasjon av SEO og annonsering' },
+                      { file: 'logo.svg', alt: 'Firmanavn logo' },
+                    ].map((img, i) => (
+                      <div key={i} className="p-3 bg-white rounded-lg border border-neutral-200">
+                        <p className="text-xs text-neutral-500 mb-1">{img.file}</p>
+                        <p className="text-sm text-neutral-700">"{img.alt}"</p>
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+
+                {selectedIssue === 'content' && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="space-y-4"
+                  >
+                    <div className="p-4 bg-white rounded-xl border border-neutral-200">
+                      <p className="text-xs font-medium text-neutral-500 mb-2">Forslag til nytt innhold</p>
+                      <ul className="space-y-1.5 text-sm text-neutral-700">
+                        <li>• FAQ-seksjon (ca. 300 ord)</li>
+                        <li>• Prosessbeskrivelse (ca. 200 ord)</li>
+                        <li>• Kundecase (ca. 150 ord)</li>
+              </ul>
+                    </div>
+                    <div className="flex items-center gap-3 p-3 bg-white rounded-lg border border-neutral-200">
+                      <div className="flex-1">
+                        <div className="flex justify-between text-xs text-neutral-500 mb-1">
+                          <span>Nå</span>
+                          <span>847</span>
+                        </div>
+                        <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-amber-400 rounded-full" style={{ width: '56%' }} />
+                        </div>
+                      </div>
+                      <ArrowRight className="w-3 h-3 text-neutral-400" />
+                      <div className="flex-1">
+                        <div className="flex justify-between text-xs text-neutral-500 mb-1">
+                          <span>Mål</span>
+                          <span>1500+</span>
+                        </div>
+                        <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-green-400 rounded-full" style={{ width: '100%' }} />
+                        </div>
+                      </div>
+                    </div>
+            </motion.div>
+                )}
               </div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* AI Section - Full width with floating cards */}
-      <section className="py-24 bg-neutral-900 relative overflow-hidden">
-        {/* Animated background elements */}
-        <div className="absolute inset-0 overflow-hidden">
-          <motion.div 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 0.05 }}
-            viewport={{ once: true }}
-            className="absolute -top-20 -right-20 w-96 h-96 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 blur-3xl"
-          />
-          <motion.div 
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 0.03 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.3 }}
-            className="absolute -bottom-20 -left-20 w-80 h-80 rounded-full bg-gradient-to-br from-green-500 to-cyan-500 blur-3xl"
-          />
-        </div>
-
-        <div className="max-w-6xl mx-auto px-6 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-            >
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                className="inline-block"
-              >
-                <Badge className="mb-6 bg-white/10 text-white border-0">
-                  AI-drevet
-                </Badge>
-              </motion.div>
-              <h2 className="text-3xl md:text-4xl font-medium text-white mb-6">
-                Prioriterte anbefalinger fra AI
-              </h2>
-              <p className="text-lg text-neutral-400 mb-8">
-                Vår AI analyserer alle resultater og gir deg en prioritert liste med konkrete tiltak 
-                som vil ha størst effekt på nettsiden din.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  'Prioritert etter forventet effekt',
-                  'Konkrete handlingsanbefalinger',
-                  'Tilpasset din bransje',
-                  'Handlingsplan: nå, kort sikt, lang sikt',
-                ].map((item, i) => (
-                  <motion.li 
-                    key={i} 
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    whileHover={{ x: 8 }}
-                    className="flex items-center gap-3 text-neutral-300"
-                  >
-                    <CheckCircle2 className="w-5 h-5 text-green-400" />
-                    <span>{item}</span>
-                  </motion.li>
-                ))}
-              </ul>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="relative"
-            >
-              <motion.div 
-                whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(0,0,0,0.3)' }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                className="bg-white rounded-2xl p-6"
-              >
-                <div className="flex items-center gap-2 mb-6">
-                  <motion.div 
-                    whileHover={{ rotate: 180 }}
-                    transition={{ duration: 0.5 }}
-                    className="w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center"
-                  >
-                    <Sparkles className="w-5 h-5 text-neutral-600" />
-                  </motion.div>
-                  <div>
-                    <div className="font-medium">AI-analyse</div>
-                    <div className="text-xs text-neutral-500">3 prioriterte tiltak</div>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    { priority: 'høy', title: 'Legg til meta description', desc: 'Viktig for klikk i søkeresultater' },
-                    { priority: 'høy', title: 'Fiks 2 H1-overskrifter', desc: 'Kun én H1 per side anbefalt' },
-                    { priority: 'medium', title: 'Optimaliser bilder', desc: '3 bilder mangler alt-tekst' },
-                  ].map((rec, i) => (
-                    <motion.div 
-                      key={i} 
-                      initial={{ opacity: 0, y: 10 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: 0.3 + i * 0.1 }}
-                      whileHover={{ scale: 1.02, x: 4 }}
-                      className="p-4 rounded-xl bg-neutral-50 border border-neutral-100 hover:border-neutral-200 hover:bg-white transition-colors"
-                    >
-                      <div className="flex items-start gap-3">
-                        <span className={`px-2 py-1 rounded-md text-xs font-medium ${
-                          rec.priority === 'høy' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700'
-                        }`}>
-                          {rec.priority}
-                        </span>
-                        <div>
-                          <div className="font-medium text-sm">{rec.title}</div>
-                          <div className="text-xs text-neutral-500 mt-0.5">{rec.desc}</div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Competitor Analysis */}
-      <section className="py-24">
+      {/* How it works - Two column layout */}
+      <section className="py-20 bg-neutral-50 overflow-hidden">
         <div className="max-w-6xl mx-auto px-6">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <motion.div
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-12"
+          >
+            <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-3">
+              Tre enkle steg<br />
+              <span className="text-neutral-400">til bedre resultater.</span>
+            </h2>
+            <p className="text-lg text-neutral-500 max-w-xl">Ingen installasjon, ingen ventetid. Bare resultater.</p>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-2 gap-8 items-start">
+            {/* Left - Steps */}
+            <motion.div 
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="order-2 lg:order-1"
+              className="space-y-3"
             >
-              <motion.div 
-                whileHover={{ scale: 1.02 }}
-                transition={{ type: 'spring', stiffness: 300 }}
-                className="bg-neutral-50 rounded-3xl p-8"
-              >
-                <div className="flex items-center justify-between mb-6">
-                  <span className="text-sm text-neutral-500">Sammenligning</span>
-                  <motion.span 
-                    initial={{ opacity: 0 }}
-                    whileInView={{ opacity: 1 }}
-                    viewport={{ once: true }}
-                    className="text-xs text-neutral-400"
-                  >
-                    vs. konkurrent.no
-                  </motion.span>
-                </div>
-                <div className="grid grid-cols-2 gap-6 mb-6">
-                  <motion.div 
-                    whileHover={{ y: -4, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
-                    className="bg-white rounded-2xl p-5 text-center transition-shadow"
-                  >
-                    <div className="text-xs text-neutral-500 mb-2">Din nettside</div>
-                    <ScoreRing score={78} label="" size="lg" />
-                  </motion.div>
-                  <motion.div 
-                    whileHover={{ y: -4, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' }}
-                    className="bg-white rounded-2xl p-5 text-center transition-shadow"
-                  >
-                    <div className="text-xs text-neutral-500 mb-2">Konkurrent</div>
-                    <ScoreRing score={65} label="" size="lg" />
-                  </motion.div>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    { label: 'SEO', you: 92, them: 78, youWins: true },
-                    { label: 'Innhold', you: 50, them: 62, youWins: false },
-                    { label: 'Sikkerhet', you: 85, them: 72, youWins: true },
-                  ].map((item, i) => (
-                    <motion.div 
-                      key={i}
-                      initial={{ opacity: 0, x: -10 }}
-                      whileInView={{ opacity: 1, x: 0 }}
-                      viewport={{ once: true }}
-                      transition={{ delay: i * 0.1 }}
-                      whileHover={{ x: 4, backgroundColor: '#fff' }}
-                      className="flex items-center justify-between p-3 bg-white rounded-xl transition-all"
-                    >
-                      <span className="text-sm">{item.label}</span>
-                      <div className="flex items-center gap-4">
-                        <motion.span 
-                          whileHover={{ scale: 1.1 }}
-                          className={`text-sm font-medium ${item.youWins ? 'text-green-600' : 'text-red-600'}`}
-                        >
-                          {item.you}
-                        </motion.span>
-                        <span className="text-sm text-neutral-400">vs</span>
-                        <motion.span 
-                          whileHover={{ scale: 1.1 }}
-                          className={`text-sm font-medium ${!item.youWins ? 'text-green-600' : 'text-red-600'}`}
-                        >
-                          {item.them}
-                        </motion.span>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="order-1 lg:order-2"
-            >
-              <motion.div whileHover={{ scale: 1.05 }} className="inline-block">
-                <Badge variant="outline" className="mb-4 text-neutral-600 border-neutral-300">
-                  Inkludert gratis
-                </Badge>
-              </motion.div>
-              <h2 className="text-3xl md:text-4xl font-medium mb-6">
-                Sammenlign med konkurrenten
-              </h2>
-              <p className="text-lg text-neutral-500 mb-8">
-                Se hvordan nettsiden din presterer sammenlignet med en konkurrent. 
-                Finn dine styrker og muligheter for forbedring.
-              </p>
-              <ul className="space-y-4">
-                {[
-                  'Side-ved-side sammenligning',
-                  'Dine styrker vs konkurrentens',
-                  'Identifiser muligheter',
-                  'AI-genererte forbedringspunkter',
-                ].map((item, i) => (
-                  <motion.li 
-                    key={i} 
-                    initial={{ opacity: 0, x: -10 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    whileHover={{ x: 8 }}
-                    className="flex items-center gap-3"
-                  >
-                    <CheckCircle2 className="w-5 h-5 text-neutral-400" />
-                    <span>{item}</span>
-                  </motion.li>
-                ))}
-              </ul>
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* How it works - Creative timeline layout */}
-      <section className="py-16 overflow-hidden relative">
-        <div className="max-w-5xl mx-auto px-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-3xl md:text-4xl font-medium mb-3">Slik fungerer det</h2>
-            <p className="text-neutral-500">Tre enkle steg til en bedre nettside</p>
-          </motion.div>
-
-          {/* Timeline container */}
-          <div className="relative">
-            {/* Connecting line */}
-            <div className="absolute left-1/2 top-0 bottom-0 w-px bg-gradient-to-b from-neutral-200 via-neutral-300 to-neutral-200 hidden md:block" />
-
-            {[
-              {
-                step: '01',
-                title: 'Registrer bedriften',
-                description: 'Opprett en gratis konto med bedriftsinformasjon og nettadressen din.',
-                icon: Globe,
-                color: 'bg-blue-500',
-              },
-              {
-                step: '02',
+              {[
+                { 
+                  step: 1, 
+                  title: 'Opprett konto', 
+                  desc: 'Registrer deg gratis med e-post. Ingen kredittkort, ingen forpliktelser.',
+                },
+                { 
+                  step: 2, 
                 title: 'Start analysen',
-                description: 'Klikk på "Ny analyse" og vent mens vi sjekker over 50 faktorer.',
-                icon: BarChart3,
-                color: 'bg-purple-500',
-              },
-              {
-                step: '03',
-                title: 'Få rapporten',
-                description: 'Motta en komplett rapport med scores og prioriterte anbefalinger.',
-                icon: Sparkles,
-                color: 'bg-amber-500',
-              },
-            ].map((item, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, x: i % 2 === 0 ? -30 : 30 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.2 }}
-                className={`relative flex items-center gap-8 mb-8 last:mb-0 ${i % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'}`}
-              >
-                {/* Content card */}
-                <motion.div 
-                  whileHover={{ scale: 1.02 }}
-                  className={`flex-1 ${i % 2 === 0 ? 'md:text-right' : 'md:text-left'}`}
-                >
-                  <div className="inline-block bg-white rounded-2xl p-6 shadow-sm hover:shadow-lg transition-shadow group">
-                    <div className={`flex items-center gap-3 mb-3 ${i % 2 === 0 ? 'md:flex-row-reverse' : ''}`}>
-                      <motion.div 
-                        whileHover={{ rotate: 360 }}
-                        transition={{ duration: 0.5 }}
-                        className={`w-10 h-10 rounded-xl ${item.color} flex items-center justify-center`}
-                      >
-                        <item.icon className="w-5 h-5 text-white" />
-                      </motion.div>
-                      <h3 className="font-semibold text-lg">{item.title}</h3>
-                    </div>
-                    <p className="text-neutral-500 text-sm">{item.description}</p>
-                  </div>
-                </motion.div>
-
-                {/* Center circle */}
-                <motion.div 
-                  whileHover={{ scale: 1.2 }}
-                  className="hidden md:flex w-12 h-12 rounded-full bg-white border-4 border-neutral-100 items-center justify-center font-bold text-neutral-400 z-10 shrink-0"
-                >
-                  {item.step}
-                </motion.div>
-
-                {/* Spacer for alternating layout */}
-                <div className="flex-1 hidden md:block" />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials - Stacked cards */}
-      <section className="py-16 bg-neutral-50 overflow-hidden">
-        <div className="max-w-4xl mx-auto px-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="flex items-center justify-between mb-10"
-          >
-            <div>
-              <h2 className="text-2xl md:text-3xl font-medium">Hva bedrifter sier</h2>
-              <p className="text-neutral-500 text-sm mt-1">Over 500+ fornøyde brukere</p>
-            </div>
-            <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star key={star} className="w-5 h-5 fill-amber-400 text-amber-400" />
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Stacked testimonials */}
-          <div className="space-y-4">
-            {[
-              {
-                quote: 'Fantastisk verktøy! Vi fant flere tekniske feil vi aldri hadde oppdaget selv. Anbefalingene var konkrete og enkle å følge.',
-                name: 'Kari Hansen',
-                title: 'Daglig leder',
-                company: 'TechStart AS',
-                avatar: 'KH',
-                highlight: true,
-              },
-              {
-                quote: 'Rapporten var så detaljert og enkel å forstå. Anbefalingene sparte oss for timer med feilsøking.',
-                name: 'Ole Berg',
-                title: 'Markedssjef',
-                company: 'Grønn Handel',
-                avatar: 'OB',
-                highlight: false,
-              },
-              {
-                quote: 'Sikkerhetssjekken avslørte sårbarheter vi ikke visste om. Viktig for enhver bedrift!',
-                name: 'Lisa Nordli',
-                title: 'CEO',
-                company: 'Digital Vekst',
-                avatar: 'LN',
-                highlight: false,
-              },
-            ].map((testimonial, i) => (
-              <motion.div 
-                key={i} 
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-              >
-                <motion.div
-                  whileHover={{ scale: 1.01, x: 8 }}
-                  className={`flex gap-4 p-5 rounded-2xl transition-all ${
-                    testimonial.highlight 
-                      ? 'bg-white shadow-lg border border-neutral-100' 
-                      : 'bg-white/50 hover:bg-white hover:shadow-md'
+                  desc: 'Legg inn nettadressen din og klikk "Analyser". Vi sjekker SEO, sikkerhet, innhold og mer.',
+                },
+                { 
+                  step: 3, 
+                  title: 'Se resultater', 
+                  desc: 'Få en komplett rapport med scores, konkrete funn og AI-genererte anbefalinger.',
+                },
+              ].map((item) => (
+                <button
+                  key={item.step}
+                  onClick={() => setSelectedStep(item.step)}
+                  className={`w-full text-left p-5 rounded-2xl border transition-all duration-200 cursor-pointer ${
+                    selectedStep === item.step
+                      ? 'border-neutral-300 bg-white'
+                      : 'border-transparent bg-white/50 hover:bg-white hover:border-neutral-200'
                   }`}
                 >
-                  <motion.div 
-                    whileHover={{ scale: 1.1 }}
-                    className={`w-12 h-12 rounded-full flex items-center justify-center text-sm font-semibold shrink-0 ${
-                      testimonial.highlight ? 'bg-neutral-900 text-white' : 'bg-neutral-100 text-neutral-600'
-                    }`}
+                  <div className="flex items-start gap-4">
+                    <span className={`text-3xl font-light transition-colors ${
+                      selectedStep === item.step ? 'text-neutral-900' : 'text-neutral-300'
+                    }`}>{item.step}</span>
+                    <div className="pt-1">
+                      <h3 className={`font-semibold text-lg mb-1 transition-colors ${
+                        selectedStep === item.step ? 'text-neutral-900' : 'text-neutral-600'
+                      }`}>{item.title}</h3>
+                      <p className={`text-sm transition-colors ${
+                        selectedStep === item.step ? 'text-neutral-600' : 'text-neutral-400'
+                      }`}>{item.desc}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+              
+              <div className="pt-4">
+                <Button className="bg-neutral-900 hover:bg-neutral-800" asChild>
+                  <Link href="/register">
+                    Kom i gang gratis
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Link>
+                </Button>
+              </div>
+            </motion.div>
+
+            {/* Right - Visual */}
+              <motion.div 
+              initial={{ opacity: 0, x: 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+              className="relative"
+            >
+              {/* Top header bar */}
+              <div className="bg-neutral-50 rounded-t-2xl border border-b-0 border-neutral-200 shadow-xl p-3 flex items-center gap-2">
+                <div className="flex gap-1.5">
+                  <div className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-yellow-400" />
+                  <div className="w-2.5 h-2.5 rounded-full bg-green-400" />
+                </div>
+                <span className="text-xs text-neutral-400 ml-1">
+                  {selectedStep === 1 ? 'Registrering' : selectedStep === 2 ? 'Dashboard' : 'Resultater'}
+                </span>
+              </div>
+              
+              {/* Content with fade effect */}
+              <div 
+                className="bg-white border-l border-r border-neutral-200 max-h-[380px] overflow-hidden"
+                style={{ 
+                  maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)', 
+                  WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)' 
+                }}
+              >
+                {/* Step 1 Visual - Registration (matching actual register page) */}
+                {selectedStep === 1 && (
+                      <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-6"
                   >
-                    {testimonial.avatar}
-                  </motion.div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`mb-3 ${testimonial.highlight ? 'text-neutral-700' : 'text-neutral-600 text-sm'}`}>
-                      "{testimonial.quote}"
-                    </p>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="font-medium text-neutral-900">{testimonial.name}</span>
-                      <span className="text-neutral-300">·</span>
-                      <span className="text-neutral-500">{testimonial.title}, {testimonial.company}</span>
+                    <div className="text-center mb-5">
+                      <h4 className="font-semibold text-xl">Opprett konto</h4>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-neutral-700">E-post *</label>
+                        <div className="p-2.5 rounded-md border border-neutral-200 bg-white">
+                          <span className="text-sm text-neutral-400">din@epost.no</span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <label className="text-sm font-medium text-neutral-700">Passord *</label>
+                          <div className="p-2.5 rounded-md border border-neutral-200 bg-white">
+                            <span className="text-sm text-neutral-400">••••••••</span>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-sm font-medium text-neutral-700">Bekreft *</label>
+                          <div className="p-2.5 rounded-md border border-neutral-200 bg-white">
+                            <span className="text-sm text-neutral-400">••••••••</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="pt-2 border-t border-neutral-100">
+                        <p className="text-xs text-neutral-500 mb-3">Bedriftsinformasjon</p>
+                        <div className="space-y-3">
+                          <div className="space-y-1.5">
+                            <label className="text-sm font-medium text-neutral-700">Søk etter bedrift</label>
+                            <div className="p-2.5 rounded-md border border-neutral-200 bg-white flex items-center gap-2">
+                              <Search className="w-4 h-4 text-neutral-400" />
+                              <span className="text-sm text-neutral-400">Søk på navn eller org.nr...</span>
+                            </div>
+                          </div>
+                          <div className="space-y-1.5">
+                            <label className="text-sm font-medium text-neutral-700">Nettside URL *</label>
+                            <div className="p-2.5 rounded-md border border-neutral-200 bg-white">
+                              <span className="text-sm text-neutral-400">https://dinbedrift.no</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-2.5 rounded-md bg-neutral-900 text-white text-sm font-medium text-center">
+                        Opprett konto
+                      </div>
+                  </div>
+                </motion.div>
+                )}
+
+                {/* Step 2 Visual - Analysis (matching actual dashboard) */}
+                {selectedStep === 2 && (
+                <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-6"
+                  >
+                    <div className="flex items-center justify-between mb-5">
+                      <div>
+                        <h4 className="font-semibold text-lg">Dashboard</h4>
+                        <p className="text-sm text-neutral-500">Start en ny analyse</p>
+          </div>
+                      <Badge variant="outline" className="text-xs">Gratis</Badge>
+        </div>
+                    <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-neutral-700">Nettside URL</label>
+                        <div className="flex gap-2">
+                          <div className="flex-1 p-2.5 rounded-md border border-neutral-200 bg-white flex items-center gap-2">
+                            <Globe className="w-4 h-4 text-neutral-400" />
+                            <span className="text-sm text-neutral-600">https://eksempel.no</span>
+                          </div>
+                          <div className="px-4 py-2.5 rounded-md bg-neutral-900 text-white text-sm font-medium flex items-center gap-2">
+                            <Search className="w-4 h-4" />
+                            Analyser
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
+                            <div className="w-5 h-5 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
+                          </div>
+            <div>
+                            <p className="text-sm font-semibold">Analyserer eksempel.no</p>
+                            <p className="text-xs text-neutral-500">Dette tar vanligvis under ett minutt</p>
+            </div>
+                        </div>
+                        <div className="space-y-2">
+                          {[
+                            { label: 'SEO-analyse', done: true },
+                            { label: 'Sikkerhetssjekk', done: true },
+                            { label: 'Innholdsanalyse', done: true },
+                            { label: 'AI-anbefalinger', done: false },
+                          ].map((item, i) => (
+                            <div key={i} className="flex items-center gap-2 text-sm">
+                              {item.done ? (
+                                <CheckCircle2 className="w-4 h-4 text-green-500" />
+                              ) : (
+                                <div className="w-4 h-4 border-2 border-neutral-300 border-t-transparent rounded-full animate-spin" />
+                              )}
+                              <span className={item.done ? 'text-neutral-600' : 'text-neutral-400'}>{item.label}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+            </div>
+          </motion.div>
+                )}
+
+                {/* Step 3 Visual - Results (matching actual dashboard) */}
+                {selectedStep === 3 && (
+              <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-6"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <div>
+                        <h4 className="font-semibold text-lg">eksempel.no</h4>
+                        <p className="text-xs text-neutral-500">Analyse fullført</p>
+                      </div>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-2 h-2 rounded-full bg-green-500" />
+                        <span className="text-xs text-neutral-500">Oppdatert i dag</span>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-4 gap-3 mb-4">
+                      {[
+                        { score: 78, label: 'Totalt' },
+                        { score: 72, label: 'SEO' },
+                        { score: 58, label: 'Innhold' },
+                        { score: 95, label: 'Sikkerhet' },
+                      ].map((item, i) => (
+                        <div key={i} className="text-center p-3 bg-neutral-50 rounded-xl">
+                          <ScoreRing score={item.score} label={item.label} size="sm" />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="space-y-2">
+                      <div className="p-3 rounded-xl bg-green-50 border border-green-100">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <CheckCircle2 className="w-4 h-4 text-green-600" />
+                          <span className="text-sm font-medium text-green-800">Bra</span>
+                        </div>
+                        <p className="text-xs text-green-700 ml-6">SSL A+ - utmerket sikkerhet</p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-amber-50 border border-amber-100">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <AlertCircle className="w-4 h-4 text-amber-600" />
+                          <span className="text-sm font-medium text-amber-800">Forbedre</span>
+                        </div>
+                        <p className="text-xs text-amber-700 ml-6">Meta description mangler</p>
+                      </div>
+                      <div className="p-3 rounded-xl bg-red-50 border border-red-100">
+                        <div className="flex items-center gap-2 mb-0.5">
+                          <AlertCircle className="w-4 h-4 text-red-600" />
+                          <span className="text-sm font-medium text-red-800">Viktig</span>
+                        </div>
+                        <p className="text-xs text-red-700 ml-6">For lite innhold (847 ord)</p>
                     </div>
                   </div>
                 </motion.div>
+                )}
+              </div>
               </motion.div>
-            ))}
           </div>
         </div>
       </section>
+
+      {/* Testimonials - Hidden for now */}
+      {/* TODO: Add real testimonials when available */}
 
       {/* FAQ - Two column layout */}
       <section className="py-16">
-        <div className="max-w-5xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-5 gap-8 items-start">
             {/* Left side - Title */}
             <motion.div 
@@ -1072,8 +1587,11 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="md:col-span-2 md:sticky md:top-24"
             >
-              <h2 className="text-2xl md:text-3xl font-medium mb-3">Ofte stilte spørsmål</h2>
-              <p className="text-neutral-500 text-sm mb-6">Alt du trenger å vite før du starter.</p>
+              <h2 className="text-4xl md:text-5xl font-medium tracking-tight mb-3">
+                Spørsmål<br />
+                <span className="text-neutral-400">og svar.</span>
+              </h2>
+              <p className="text-neutral-500 mb-6">Alt du lurer på før du kommer i gang.</p>
               <motion.div whileHover={{ x: 4 }}>
                 <Link 
                   href="https://mediabooster.no/kontakt" 
@@ -1087,31 +1605,39 @@ export default function LandingPage() {
             </motion.div>
 
             {/* Right side - Questions */}
-            <div className="md:col-span-3 space-y-3">
+            <motion.div 
+              className="md:col-span-3 space-y-3"
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
+            >
               {[
                 {
                   q: 'Er dette virkelig gratis?',
-                  a: 'Ja! Du får 2 gratis analyser per måned. Ønsker du flere analyser eller oppfølging, kan du kontakte Mediabooster.',
+                  a: 'Ja, verktøyet er helt gratis å bruke. Du kan kjøre analyser, se resultater og få AI-anbefalinger uten å betale noe.',
                 },
                 {
-                  q: 'Hva analyseres i rapporten?',
-                  a: 'Vi analyserer SEO (meta tags, struktur, bilder), sikkerhet (SSL, sikkerhetsheaders), innholdskvalitet, nøkkelord, og genererer AI-anbefalinger.',
+                  q: 'Hva analyserer dere?',
+                  a: 'Vi sjekker SEO (tittel, meta description, H1-struktur, bilder), sikkerhet (SSL-sertifikat, sikkerhetsheaders), innhold (ordantall, lesbarhet) og gir deg AI-genererte forbedringsforslag.',
                 },
                 {
-                  q: 'Hvor lang tid tar en analyse?',
-                  a: 'En full analyse tar vanligvis 30-60 sekunder, avhengig av nettsidens størrelse og kompleksitet.',
+                  q: 'Hva er nøkkelordanalysen?',
+                  a: 'Vi bruker AI til å estimere søkevolum, CPC og konkurranse for relevante nøkkelord. Dette hjelper deg å forstå hvilke søkeord du bør satse på.',
                 },
                 {
                   q: 'Kan jeg sammenligne med konkurrenter?',
-                  a: 'Ja! I gratis-versjonen kan du sammenligne med én konkurrent. Premium gir deg mulighet til å legge til flere.',
+                  a: 'Ja! Du kan legge til konkurrenters nettsider og se hvordan du ligger an på SEO, sikkerhet og innhold sammenlignet med dem.',
+                },
+                {
+                  q: 'Hvor lang tid tar en analyse?',
+                  a: 'En analyse tar vanligvis under ett minutt. Du får resultater med én gang analysen er ferdig.',
                 },
               ].map((faq, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
+                  variants={itemVariants}
+                  whileHover={{ x: 4 }}
                 >
                   <Accordion type="single" collapsible>
                     <AccordionItem value={`item-${i}`} className="border-0">
@@ -1127,7 +1653,7 @@ export default function LandingPage() {
                   </Accordion>
                 </motion.div>
               ))}
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
@@ -1136,9 +1662,11 @@ export default function LandingPage() {
       <section className="py-12">
         <div className="max-w-5xl mx-auto px-6">
           <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            whileHover={{ scale: 1.02 }}
             className="bg-neutral-900 rounded-2xl p-8 md:p-10 relative overflow-hidden"
           >
             {/* Subtle gradient */}
@@ -1146,11 +1674,11 @@ export default function LandingPage() {
             
             <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
               <div className="text-center md:text-left">
-                <h2 className="text-xl md:text-2xl font-medium text-white mb-2">
-                  Klar for en helsesjekk av nettsiden?
+                <h2 className="text-3xl md:text-4xl font-medium tracking-tight text-white mb-2">
+                  Prøv det selv <span className="text-neutral-400">- helt gratis.</span>
                 </h2>
                 <p className="text-neutral-400 text-sm">
-                  Gratis analyse på under ett minutt
+                  Full analyse av nettsiden din på under ett minutt.
                 </p>
               </div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
@@ -1174,17 +1702,16 @@ export default function LandingPage() {
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
-              className="flex items-center gap-6"
             >
-              <Link href="/" className="flex items-center gap-2 group">
+              <Link href="/" className="flex flex-col gap-0.5 group">
                 <motion.img
                   whileHover={{ rotate: 5 }}
                   src="/mediabooster-logo-darkgrey.avif"
                   alt="Mediabooster"
                   className="h-5 w-auto"
                 />
+                <span className="text-neutral-500 text-xs">Din digitale CMO - og AI-kollega!</span>
               </Link>
-              <span className="text-neutral-400 text-xs">Din digitale CMO</span>
             </motion.div>
             
             <motion.div 

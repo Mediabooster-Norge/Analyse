@@ -287,6 +287,24 @@ export interface AISummary {
   };
 }
 
+export interface AIVisibilityResult {
+  score: number;
+  level: 'high' | 'medium' | 'low' | 'none';
+  description: string;
+  details: {
+    queriesTested: number;
+    timesCited: number;
+    timesMentioned: number;
+    queries: Array<{
+      query: string;
+      cited: boolean;
+      mentioned: boolean;
+      aiResponse?: string;
+    }>;
+  };
+  recommendations: string[];
+}
+
 // ============================================================================
 // Form Types
 // ============================================================================

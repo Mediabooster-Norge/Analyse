@@ -12,12 +12,13 @@ interface AnalyzeRequest {
   includeAI?: boolean;
   usePremiumAI?: boolean;
   industry?: string;
+  companyName?: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as AnalyzeRequest;
-    const { url, competitorUrls = [], companyId, keywords = [], includeAI = true, usePremiumAI = false, industry } = body;
+    const { url, competitorUrls = [], companyId, keywords = [], includeAI = true, usePremiumAI = false, industry, companyName } = body;
 
     // Validate URL
     if (!url) {
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
         usePremiumAI,
         industry,
         targetKeywords: keywords,
+        companyName,
       });
       result = competitorAnalysis.mainResults;
       competitors = competitorAnalysis.competitorResults;
@@ -92,6 +94,7 @@ export async function POST(request: NextRequest) {
         usePremiumAI,
         industry,
         targetKeywords: keywords,
+        companyName,
       });
     }
 
@@ -111,6 +114,7 @@ export async function POST(request: NextRequest) {
           competitor_results: competitors.length > 0 ? competitors : null,
           ai_summary: result.aiSummary,
           keyword_research: result.keywordResearch || null,
+          ai_visibility: result.aiVisibility || null,
           overall_score: result.overallScore,
           ai_model: result.aiModel,
           tokens_used: result.tokensUsed,
