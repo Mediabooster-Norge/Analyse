@@ -28,6 +28,7 @@ export async function runFullAnalysis(
     targetKeywords?: string[];
     companyName?: string;
     checkAiVisibility?: boolean;
+    isPremium?: boolean;
   } = {}
 ): Promise<FullAnalysisResult> {
   const {
@@ -38,6 +39,7 @@ export async function runFullAnalysis(
     targetKeywords = [],
     companyName,
     checkAiVisibility: shouldCheckVisibility = true,
+    isPremium = false,
   } = options;
 
   // Step 1: Scrape the URL
@@ -122,6 +124,25 @@ export async function runFullAnalysis(
       tokensUsed += visibilityResult.tokensUsed;
       costUsd += visibilityResult.costUsd;
     }
+
+    // Premium: hvis bruker ikke oppga nøkkelord, hent CPC/søkevolum for AI-forslåtte nøkkelord
+    if (isPremium && !keywordResearch && aiSummary?.keywordAnalysis) {
+      const primary = aiSummary.keywordAnalysis.primaryKeywords || [];
+      const missing = aiSummary.keywordAnalysis.missingKeywords || [];
+      const aiKeywords = [...primary, ...missing].slice(0, 20);
+      if (aiKeywords.length > 0) {
+        try {
+          const fallbackKeywordResult = await generateKeywordResearch(aiKeywords, industry);
+          if (fallbackKeywordResult?.keywords?.length) {
+            keywordResearch = fallbackKeywordResult.keywords;
+            tokensUsed += fallbackKeywordResult.tokensUsed;
+            costUsd += fallbackKeywordResult.costUsd;
+          }
+        } catch (err) {
+          console.error('Premium fallback keyword research failed:', err);
+        }
+      }
+    }
   }
 
   return {
@@ -146,12 +167,13 @@ export async function runCompetitorAnalysis(
     industry?: string;
     targetKeywords?: string[];
     companyName?: string;
+    isPremium?: boolean;
   } = {}
 ): Promise<{
   mainResults: FullAnalysisResult;
   competitorResults: Array<{ url: string; results: FullAnalysisResult }>;
 }> {
-  const { usePremiumAI = false, industry, targetKeywords = [], companyName } = options;
+  const { usePremiumAI = false, industry, targetKeywords = [], companyName, isPremium = false } = options;
   
   // Step 1: Scrape main URL
   console.log(`Scraping main URL ${mainUrl}...`);
@@ -226,8 +248,17 @@ export async function runCompetitorAnalysis(
   // Extract domain for AI visibility check
   const domain = new URL(mainUrl).hostname.replace('www.', '');
 
-  // Run AI analysis, keyword research, and visibility check in parallel
-  const [aiResult, keywordResult, visibilityResult] = await Promise.all([
+  // AI-synlighet for hver konkurrent (kjøres parallelt med resten)
+  const competitorVisibilityPromises = competitorResults.map((c) => {
+    const compDomain = new URL(c.url).hostname.replace('www.', '');
+    return checkAIVisibility(compDomain, undefined, targetKeywords).catch((err) => {
+      console.error(`AI visibility check failed for ${c.url}:`, err);
+      return null;
+    });
+  });
+
+  // Run AI analysis, keyword research, main visibility + alle konkurrenters AI-synlighet i parallell
+  const allPromiseResults = await Promise.all([
     generateAIAnalysis(
       {
         url: mainUrl,
@@ -261,7 +292,13 @@ export async function runCompetitorAnalysis(
       console.error('AI visibility check failed:', error);
       return null;
     }),
+    ...competitorVisibilityPromises,
   ]);
+
+  const aiResult = allPromiseResults[0];
+  const keywordResult = allPromiseResults[1];
+  const visibilityResult = allPromiseResults[2];
+  const competitorVisibilityResults = allPromiseResults.slice(3) as Array<{ visibility: AIVisibilityData; tokensUsed: number; costUsd: number } | null>;
 
   let aiVisibility: AIVisibilityData | undefined;
 
@@ -284,6 +321,41 @@ export async function runCompetitorAnalysis(
     costUsd += visibilityResult.costUsd;
   }
 
+  // Slå inn AI-synlighet i hver konkurrent og summer tokens/kostnad
+  const competitorResultsWithVisibility = competitorResults.map((c, i) => {
+    const vis = competitorVisibilityResults[i];
+    if (vis) {
+      tokensUsed += vis.tokensUsed;
+      costUsd += vis.costUsd;
+    }
+    return {
+      ...c,
+      results: {
+        ...c.results,
+        aiVisibility: vis?.visibility,
+      },
+    };
+  });
+
+  // Premium: hvis bruker ikke oppga nøkkelord, hent CPC/søkevolum for AI-forslåtte nøkkelord
+  if (isPremium && !keywordResearch && aiSummary?.keywordAnalysis) {
+    const primary = aiSummary.keywordAnalysis.primaryKeywords || [];
+    const missing = aiSummary.keywordAnalysis.missingKeywords || [];
+    const aiKeywords = [...primary, ...missing].slice(0, 20);
+    if (aiKeywords.length > 0) {
+      try {
+        const fallbackKeywordResult = await generateKeywordResearch(aiKeywords, industry);
+        if (fallbackKeywordResult?.keywords?.length) {
+          keywordResearch = fallbackKeywordResult.keywords;
+          tokensUsed += fallbackKeywordResult.tokensUsed;
+          costUsd += fallbackKeywordResult.costUsd;
+        }
+      } catch (err) {
+        console.error('Premium fallback keyword research failed:', err);
+      }
+    }
+  }
+
   return {
     mainResults: {
       seoResults: mainSeoResults,
@@ -297,7 +369,7 @@ export async function runCompetitorAnalysis(
       aiModel,
       costUsd,
     },
-    competitorResults,
+    competitorResults: competitorResultsWithVisibility,
   };
 }
 

@@ -1,24 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { runFullAnalysis, runCompetitorAnalysis } from '@/lib/analyzers';
 import { createClient } from '@/lib/supabase/server';
+import { getPremiumStatusServer } from '@/lib/premium-server';
 
 export const maxDuration = 60; // Allow up to 60 seconds for analysis
 
 interface AnalyzeRequest {
   url: string;
   competitorUrls?: string[];
-  companyId?: string;
   keywords?: string[];
   includeAI?: boolean;
   usePremiumAI?: boolean;
   industry?: string;
   companyName?: string;
+  websiteName?: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as AnalyzeRequest;
-    const { url, competitorUrls = [], companyId, keywords = [], includeAI = true, usePremiumAI = false, industry, companyName } = body;
+    const { url, competitorUrls = [], keywords = [], includeAI = true, usePremiumAI = false, industry, companyName, websiteName } = body;
 
     // Validate URL
     if (!url) {
@@ -34,45 +35,45 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 });
     }
 
-    // Check authentication and rate limits if companyId is provided
-    let userId: string | null = null;
-    if (companyId) {
-      const supabase = await createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+    // Check authentication
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-      if (!user) {
-        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-      }
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
-      userId = user.id;
+    const userId = user.id;
 
-      // Check monthly analysis limit (2 per month for free users)
-      const FREE_MONTHLY_LIMIT = 2;
-      const now = new Date();
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      
-      const { data: monthlyAnalyses, error: countError } = await supabase
-        .from('analyses')
-        .select('id, created_at')
-        .eq('company_id', companyId)
-        .gte('created_at', firstDayOfMonth);
+    // Check premium status for limits (server-side)
+    const premiumStatus = await getPremiumStatusServer(user);
+    const { isPremium } = premiumStatus;
+    const FREE_MONTHLY_LIMIT = premiumStatus.monthlyAnalysisLimit;
+    
+    // Check monthly analysis limit
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+    
+    const { data: monthlyAnalyses } = await supabase
+      .from('analyses')
+      .select('id, created_at')
+      .eq('user_id', userId)
+      .gte('created_at', firstDayOfMonth);
 
-      const analysisCount = monthlyAnalyses?.length || 0;
-      const remainingAnalyses = FREE_MONTHLY_LIMIT - analysisCount;
+    const analysisCount = monthlyAnalyses?.length || 0;
 
-      if (analysisCount >= FREE_MONTHLY_LIMIT) {
-        return NextResponse.json(
-          { 
-            error: `Du har brukt opp dine ${FREE_MONTHLY_LIMIT} gratis analyser denne måneden. Oppgrader til Premium for ubegrensede analyser!`,
-            limitReached: true,
-            analysisCount,
-            monthlyLimit: FREE_MONTHLY_LIMIT,
-            remainingAnalyses: 0,
-            contactUrl: 'https://mediabooster.no/kontakt/'
-          },
-          { status: 429 }
-        );
-      }
+    if (analysisCount >= FREE_MONTHLY_LIMIT && FREE_MONTHLY_LIMIT < 999) {
+      return NextResponse.json(
+        { 
+          error: `Du har brukt opp dine ${FREE_MONTHLY_LIMIT} gratis analyser denne måneden. Oppgrader til Premium for ubegrensede analyser!`,
+          limitReached: true,
+          analysisCount,
+          monthlyLimit: FREE_MONTHLY_LIMIT,
+          remainingAnalyses: 0,
+          contactUrl: 'https://mediabooster.no/kontakt/'
+        },
+        { status: 429 }
+      );
     }
 
     // Run the analysis
@@ -84,7 +85,8 @@ export async function POST(request: NextRequest) {
         usePremiumAI,
         industry,
         targetKeywords: keywords,
-        companyName,
+        companyName: companyName || websiteName,
+        isPremium,
       });
       result = competitorAnalysis.mainResults;
       competitors = competitorAnalysis.competitorResults;
@@ -94,58 +96,50 @@ export async function POST(request: NextRequest) {
         usePremiumAI,
         industry,
         targetKeywords: keywords,
-        companyName,
+        companyName: companyName || websiteName,
+        isPremium,
       });
     }
 
-    // Save to database if authenticated
-    if (userId && companyId) {
-      const supabase = await createClient();
+    // Save analysis with user_id
+    const { data: analysis, error: analysisError } = await supabase
+      .from('analyses')
+      .insert({
+        user_id: userId,
+        website_url: normalizedUrl,
+        website_name: websiteName || new URL(normalizedUrl).hostname,
+        status: 'completed',
+        seo_results: result.seoResults,
+        content_results: result.contentResults,
+        security_results: result.securityResults,
+        competitor_results: competitors.length > 0 ? competitors : null,
+        ai_summary: result.aiSummary,
+        keyword_research: result.keywordResearch || null,
+        ai_visibility: result.aiVisibility || null,
+        overall_score: result.overallScore,
+        ai_model: result.aiModel,
+        tokens_used: result.tokensUsed,
+        cost_usd: result.costUsd,
+      })
+      .select()
+      .single();
 
-      // Save analysis
-      const { data: analysis, error: analysisError } = await supabase
-        .from('analyses')
-        .insert({
-          company_id: companyId,
-          status: 'completed',
-          seo_results: result.seoResults,
-          content_results: result.contentResults,
-          security_results: result.securityResults,
-          competitor_results: competitors.length > 0 ? competitors : null,
-          ai_summary: result.aiSummary,
-          keyword_research: result.keywordResearch || null,
-          ai_visibility: result.aiVisibility || null,
-          overall_score: result.overallScore,
-          ai_model: result.aiModel,
-          tokens_used: result.tokensUsed,
-          cost_usd: result.costUsd,
-        })
-        .select()
-        .single();
-
-      if (analysisError) {
-        console.error('Failed to save analysis:', analysisError);
-      }
-
-      // Update API usage
-      const today = new Date().toISOString().split('T')[0];
-      await supabase.rpc('increment_api_usage', {
-        p_user_id: userId,
-        p_date: today,
-        p_tokens: result.tokensUsed,
-        p_cost: result.costUsd,
-      });
-
-      return NextResponse.json({
-        success: true,
-        analysisId: analysis?.id,
-        ...result,
-        competitors,
-      });
+    if (analysisError) {
+      console.error('Failed to save analysis:', analysisError);
     }
+
+    // Update API usage
+    const today = new Date().toISOString().split('T')[0];
+    await supabase.rpc('increment_api_usage', {
+      p_user_id: userId,
+      p_date: today,
+      p_tokens: result.tokensUsed,
+      p_cost: result.costUsd,
+    });
 
     return NextResponse.json({
       success: true,
+      analysisId: analysis?.id,
       ...result,
       competitors,
     });

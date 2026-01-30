@@ -5,47 +5,40 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Separator } from '@/components/ui/separator';
 import { createClient } from '@/lib/supabase/client';
 import { toast } from 'sonner';
 import {
   User,
-  Building2,
   Globe,
   Mail,
-  MapPin,
-  CheckCircle2,
-  Loader2,
-  Save,
-  LogOut,
-  AlertCircle,
+  Phone,
   Crown,
   ArrowRight,
-  Lock,
   BarChart3,
   FileText,
   Layers,
+  Sparkles,
+  LogOut,
+  Eye,
+  Save,
+  Loader2,
+  CheckCircle2,
+  Zap,
+  RefreshCw,
+  Users,
+  TrendingUp,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { usePremium, getPremiumLimits } from '@/hooks/usePremium';
 
 interface UserData {
   id: string;
   email: string;
-}
-
-interface CompanyData {
-  id: string;
-  name: string;
-  website_url: string;
-  org_number: string | null;
-  address: string | null;
-  postal_code: string | null;
-  city: string | null;
-  phone: string | null;
-  contact_person: string | null;
-  industry: string | null;
+  fullName?: string;
+  phone?: string;
 }
 
 export default function SettingsPage() {
@@ -53,11 +46,15 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState<UserData | null>(null);
-  const [company, setCompany] = useState<CompanyData | null>(null);
+  const [analysisCount, setAnalysisCount] = useState(0);
   const [formData, setFormData] = useState({
-    contactPerson: '',
+    fullName: '',
     phone: '',
   });
+  
+  // Premium status
+  const { isPremium, loading: premiumLoading } = usePremium();
+  const limits = getPremiumLimits(isPremium);
 
   useEffect(() => {
     async function fetchData() {
@@ -70,51 +67,32 @@ export default function SettingsPage() {
         return;
       }
       
+      const fullName = authUser.user_metadata?.full_name || authUser.user_metadata?.name || '';
+      const phone = authUser.user_metadata?.phone || '';
+      
       setUser({
         id: authUser.id,
         email: authUser.email || '',
+        fullName,
+        phone,
+      });
+      
+      setFormData({
+        fullName,
+        phone,
       });
 
-      // Get company - try direct query first, then RPC as fallback
-      let companyData = null;
+      // Get analysis count for this month
+      const now = new Date();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       
-      console.log('Fetching company for user:', authUser.id);
-      
-      // Try direct query first
-      const { data: directData, error: directError } = await supabase
-        .from('companies')
-        .select('*')
+      const { data: analyses } = await supabase
+        .from('analyses')
+        .select('id')
         .eq('user_id', authUser.id)
-        .maybeSingle();
+        .gte('created_at', firstDayOfMonth);
       
-      console.log('Direct query result:', directData, 'Error:', directError);
-      
-      if (directError && directError.code !== 'PGRST116') {
-        console.log('Direct query failed, trying RPC:', directError.message);
-        
-        // Try RPC function as fallback
-        const { data: rpcData, error: rpcError } = await supabase
-          .rpc('get_user_company', { p_user_id: authUser.id });
-        
-        console.log('RPC result:', rpcData, 'Error:', rpcError);
-        
-        if (!rpcError && rpcData) {
-          companyData = Array.isArray(rpcData) ? rpcData[0] : rpcData;
-        }
-      } else {
-        companyData = directData;
-      }
-
-      console.log('Final company data:', companyData);
-
-      if (companyData) {
-        setCompany(companyData);
-        setFormData({
-          contactPerson: companyData.contact_person || '',
-          phone: companyData.phone || '',
-        });
-      }
-      
+      setAnalysisCount(analyses?.length || 0);
       setLoading(false);
     }
 
@@ -129,28 +107,34 @@ export default function SettingsPage() {
   };
 
   const handleSave = async () => {
-    if (!company) return;
-    
     setSaving(true);
     const supabase = createClient();
 
-    const { error } = await supabase
-      .from('companies')
-      .update({
-        contact_person: formData.contactPerson || null,
-        phone: formData.phone || null,
-      })
-      .eq('id', company.id);
+    // Update both auth.users metadata AND user_profiles table
+    const [authResult, profileResult] = await Promise.all([
+      // Update auth metadata (for session)
+      supabase.auth.updateUser({
+        data: {
+          full_name: formData.fullName || null,
+          phone: formData.phone || null,
+        },
+      }),
+      // Update user_profiles table (for lead generation)
+      supabase.rpc('update_user_profile', {
+        p_full_name: formData.fullName || null,
+        p_phone: formData.phone || null,
+      }),
+    ]);
 
-    if (error) {
+    if (authResult.error || profileResult.error) {
       toast.error('Kunne ikke lagre endringene');
-      console.error('Error updating company:', error);
+      console.error('Error updating user:', authResult.error || profileResult.error);
     } else {
       toast.success('Endringene er lagret');
-      setCompany(prev => prev ? {
+      setUser(prev => prev ? {
         ...prev,
-        contact_person: formData.contactPerson || null,
-        phone: formData.phone || null,
+        fullName: formData.fullName || undefined,
+        phone: formData.phone || undefined,
       } : null);
     }
     
@@ -159,6 +143,8 @@ export default function SettingsPage() {
 
   const handleSignOut = async () => {
     const supabase = createClient();
+    // Clear session storage cache
+    sessionStorage.clear();
     await supabase.auth.signOut();
     router.push('/');
     router.refresh();
@@ -169,7 +155,7 @@ export default function SettingsPage() {
       <div className="space-y-8">
         <div>
           <h1 className="text-2xl font-semibold text-neutral-900">Innstillinger</h1>
-          <p className="text-neutral-500">Administrer kontoen din og bedriftsinformasjon</p>
+          <p className="text-neutral-500">Administrer kontoen din</p>
         </div>
         <div className="space-y-4">
           <div className="rounded-2xl border border-neutral-200 bg-white p-6">
@@ -187,7 +173,7 @@ export default function SettingsPage() {
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-neutral-900">Innstillinger</h1>
-        <p className="text-neutral-500">Administrer kontoen din og bedriftsinformasjon</p>
+        <p className="text-neutral-500">Administrer kontoen din</p>
       </div>
 
       {/* Account Info */}
@@ -203,7 +189,8 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
-        <div className="p-6">
+        <div className="p-6 space-y-6">
+          {/* Email - Read only */}
           <div className="flex items-center gap-4 p-4 rounded-xl bg-neutral-50">
             <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center border border-neutral-200">
               <Mail className="h-5 w-5 text-neutral-600" />
@@ -213,164 +200,236 @@ export default function SettingsPage() {
               <p className="font-medium text-neutral-900">{user?.email}</p>
             </div>
           </div>
+
+          <Separator className="bg-neutral-100" />
+
+          {/* Editable fields */}
+          <div className="space-y-4">
+            <h4 className="font-medium text-neutral-900">Profilinformasjon</h4>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="fullName" className="text-neutral-700">Navn</Label>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  placeholder="Ola Nordmann"
+                  value={formData.fullName}
+                  onChange={handleChange}
+                  className="border-neutral-200 focus:border-neutral-400"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="phone" className="text-neutral-700">Telefon</Label>
+                <Input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  placeholder="+47 123 45 678"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  className="border-neutral-200 focus:border-neutral-400"
+                />
+              </div>
+            </div>
+
+            <Button onClick={handleSave} disabled={saving} className="bg-neutral-900 hover:bg-neutral-800 text-white">
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Lagrer...
+                </>
+              ) : (
+                <>
+                  <Save className="mr-2 h-4 w-4" />
+                  Lagre endringer
+                </>
+              )}
+            </Button>
+          </div>
         </div>
       </div>
 
-      {/* Company Info - Missing Company Notice */}
-      {!company && !loading && (
-        <Card className="border-neutral-200">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-neutral-500" />
-              <CardTitle className="text-neutral-900">Bedriftsinformasjon mangler</CardTitle>
-            </div>
-            <CardDescription className="text-neutral-500">
-              Det oppstod en feil under registreringen
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center py-8 text-center">
-              <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mb-4">
-                <Building2 className="w-8 h-8 text-neutral-400" />
+      {/* Premium Status */}
+      <div className={`rounded-2xl border overflow-hidden ${isPremium ? 'border-neutral-200 bg-neutral-50/50' : 'border-neutral-200 bg-white'}`}>
+        <div className={`p-6 border-b ${isPremium ? 'border-neutral-100' : 'border-neutral-100'}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isPremium ? 'bg-neutral-900 text-white' : 'bg-neutral-100'}`}>
+                <Crown className={`h-6 w-6 ${isPremium ? 'text-white' : 'text-neutral-700'}`} />
               </div>
-              <h3 className="font-semibold text-neutral-900 mb-2">Ingen bedrift tilknyttet</h3>
-              <p className="text-neutral-500 max-w-md mb-6">
-                Det ser ut som bedriften din ikke ble opprettet under registreringen. 
-                Kontakt oss så hjelper vi deg.
-              </p>
-              <Button className="bg-neutral-900 hover:bg-neutral-800 text-white" asChild>
-                <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
-                  Kontakt Mediabooster
-                </a>
-              </Button>
+              <div>
+                <h3 className="font-semibold text-neutral-900">{isPremium ? 'Premium-abonnement' : 'Gratis-plan'}</h3>
+                <p className="text-sm text-neutral-500">
+                  {isPremium ? 'Full tilgang til alle funksjoner' : 'Begrenset tilgang'}
+                </p>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {company && (
-        <Card className="border-neutral-200">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Building2 className="h-5 w-5 text-neutral-500" />
-              <CardTitle className="text-neutral-900">Bedriftsinformasjon</CardTitle>
-            </div>
-            <CardDescription className="text-neutral-500">Informasjon om din bedrift</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Company Details - Read Only */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="text-neutral-500">Bedriftsnavn</Label>
-                <div className="flex items-center gap-2 p-3 bg-neutral-50 rounded-lg border border-neutral-100">
-                  <Building2 className="h-4 w-4 text-neutral-400" />
-                  <span className="font-medium text-neutral-900">{company.name}</span>
-                  {company.org_number && (
-                    <Badge variant="outline" className="ml-auto border-green-200 bg-green-50 text-green-700">
-                      <CheckCircle2 className="h-3 w-3 mr-1" />
-                      Verifisert
-                    </Badge>
-                  )}
+            {isPremium && (
+              <Badge className="bg-neutral-800 text-white border-0 px-3 py-1">
+                <Sparkles className="h-3 w-3 mr-1" />
+                Aktiv
+              </Badge>
+            )}
+          </div>
+        </div>
+        <div className="p-6">
+          {premiumLoading ? (
+            <Skeleton className="h-24 w-full rounded-xl" />
+          ) : isPremium ? (
+            // Premium user view
+            <div className="space-y-6">
+              {/* Usage stats */}
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="p-4 rounded-xl bg-white border border-neutral-200">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center">
+                      <BarChart3 className="h-5 w-5 text-neutral-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-neutral-500">Analyser denne måneden</p>
+                      <p className="text-2xl font-bold text-neutral-900">{analysisCount}</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-neutral-600 font-medium">Ubegrenset tilgang</p>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-neutral-500">Nettside</Label>
-                <div className="flex items-center gap-2 p-3 bg-neutral-50 rounded-lg border border-neutral-100">
-                  <Globe className="h-4 w-4 text-neutral-400" />
-                  <a 
-                    href={company.website_url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="font-medium text-neutral-900 hover:underline"
-                  >
-                    {company.website_url}
-                  </a>
+                <div className="p-4 rounded-xl bg-white border border-neutral-200">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center">
+                      <TrendingUp className="h-5 w-5 text-neutral-600" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-neutral-500">Plan</p>
+                      <p className="text-2xl font-bold text-neutral-900">Premium</p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-neutral-600 font-medium">Alle funksjoner inkludert</p>
                 </div>
               </div>
 
-              {company.org_number && (
-                <div className="space-y-2">
-                  <Label className="text-neutral-500">Org.nummer</Label>
-                  <div className="flex items-center gap-2 p-3 bg-neutral-50 rounded-lg border border-neutral-100">
-                    <span className="font-medium text-neutral-900">{company.org_number}</span>
+              {/* All premium benefits – kun det som er eksklusivt for Premium (AI-synlighet og AI-anbefalinger er inkludert i gratis) */}
+              <div>
+                <h4 className="text-sm font-semibold text-neutral-700 mb-3">Dine Premium-fordeler</h4>
+                <div className="grid md:grid-cols-2 gap-2">
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <span className="text-sm text-neutral-700">Ubegrenset analyser</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <span className="text-sm text-neutral-700">Opptil 10 konkurrenter</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <span className="text-sm text-neutral-700">Opptil 50 nøkkelord</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <span className="text-sm text-neutral-700">Ubegrenset oppdateringer</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <span className="text-sm text-neutral-700">Analyser flere nettsider</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <span className="text-sm text-neutral-700">Prioritert support</span>
                   </div>
                 </div>
-              )}
+              </div>
 
-              {company.industry && (
-                <div className="space-y-2">
-                  <Label className="text-neutral-500">Bransje</Label>
-                  <div className="flex items-center gap-2 p-3 bg-neutral-50 rounded-lg border border-neutral-100">
-                    <span className="font-medium text-neutral-900">{company.industry}</span>
+              {/* Contact for support */}
+              <div className="p-4 rounded-xl bg-white border border-neutral-200">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center">
+                      <Mail className="h-5 w-5 text-neutral-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-neutral-900">Trenger du hjelp?</p>
+                      <p className="text-sm text-neutral-500">Vi er her for deg som Premium-kunde</p>
+                    </div>
                   </div>
+                  <Button variant="outline" size="sm" asChild className="border-neutral-200">
+                    <a href="mailto:support@mediabooster.no">
+                      Kontakt oss
+                    </a>
+                  </Button>
                 </div>
-              )}
-
-              {(company.address || company.city) && (
-                <div className="space-y-2 md:col-span-2">
-                  <Label className="text-neutral-500">Adresse</Label>
-                  <div className="flex items-center gap-2 p-3 bg-neutral-50 rounded-lg border border-neutral-100">
-                    <MapPin className="h-4 w-4 text-neutral-400" />
-                    <span className="font-medium text-neutral-900">
-                      {[company.address, company.postal_code, company.city].filter(Boolean).join(', ')}
-                    </span>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
-
-            <Separator className="bg-neutral-200" />
-
-            {/* Editable Fields */}
+          ) : (
+            // Free user view
             <div className="space-y-4">
-              <h4 className="font-medium text-neutral-900">Kontaktinformasjon</h4>
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="contactPerson" className="text-neutral-700">Kontaktperson</Label>
-                  <Input
-                    id="contactPerson"
-                    name="contactPerson"
-                    placeholder="Ola Nordmann"
-                    value={formData.contactPerson}
-                    onChange={handleChange}
-                    className="border-neutral-200 focus:border-neutral-400"
-                  />
+              {/* Usage This Month */}
+              <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-neutral-600">Analyser brukt denne måneden</span>
+                  <span className="text-sm font-bold text-neutral-900">
+                    {analysisCount} / {limits.monthlyAnalyses}
+                  </span>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone" className="text-neutral-700">Telefon</Label>
-                  <Input
-                    id="phone"
-                    name="phone"
-                    type="tel"
-                    placeholder="+47 123 45 678"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="border-neutral-200 focus:border-neutral-400"
+                <div className="w-full bg-neutral-200 rounded-full h-2">
+                  <div 
+                    className={`h-2 rounded-full ${analysisCount >= limits.monthlyAnalyses ? 'bg-red-500' : 'bg-neutral-900'}`}
+                    style={{ width: `${Math.min((analysisCount / limits.monthlyAnalyses) * 100, 100)}%` }}
                   />
                 </div>
               </div>
 
-              <Button onClick={handleSave} disabled={saving} className="bg-neutral-900 hover:bg-neutral-800 text-white">
-                {saving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Lagrer...
-                  </>
-                ) : (
-                  <>
-                    <Save className="mr-2 h-4 w-4" />
-                    Lagre endringer
-                  </>
-                )}
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+              {/* Limits */}
+              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-100">
+                  <div className="flex items-center gap-2 mb-1">
+                    <BarChart3 className="h-4 w-4 text-neutral-500" />
+                    <span className="text-xs font-medium text-neutral-600">Analyser/mnd</span>
+                  </div>
+                  <p className="text-lg font-bold text-neutral-900">{limits.monthlyAnalyses}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-100">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Layers className="h-4 w-4 text-neutral-500" />
+                    <span className="text-xs font-medium text-neutral-600">Konkurrenter</span>
+                  </div>
+                  <p className="text-lg font-bold text-neutral-900">{limits.competitors}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-100">
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className="h-4 w-4 text-neutral-500" />
+                    <span className="text-xs font-medium text-neutral-600">Nøkkelord</span>
+                  </div>
+                  <p className="text-lg font-bold text-neutral-900">{limits.keywords}</p>
+                </div>
+                <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-100">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Eye className="h-4 w-4 text-neutral-500" />
+                    <span className="text-xs font-medium text-neutral-600">AI-synlighet</span>
+                  </div>
+                  <p className="text-lg font-bold text-neutral-900">{limits.aiVisibilityChecks}</p>
+                </div>
+              </div>
 
-      {/* Premium Features */}
-      {company && (
+              {/* Upgrade CTA */}
+              <div className="p-4 rounded-xl bg-gradient-to-r from-neutral-900 to-neutral-800 text-white">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-semibold mb-1">Oppgrader til Premium</h4>
+                    <p className="text-sm text-neutral-300">Ubegrenset analyser, konkurrenter og mer</p>
+                  </div>
+                  <Button variant="secondary" className="bg-white text-neutral-900 hover:bg-neutral-100" asChild>
+                    <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
+                      Kom i gang
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Premium Features - Only show for free users */}
+      {!isPremium && (
         <Card className="border-neutral-200">
           <CardHeader>
             <div className="flex items-center gap-2">
@@ -390,16 +449,16 @@ export default function SettingsPage() {
                   <h4 className="font-medium text-neutral-900">Flere konkurrenter</h4>
                 </div>
                 <p className="text-sm text-neutral-500">
-                  Sammenlign din nettside med opptil 10 konkurrenter samtidig (3 inkludert gratis).
+                  Sammenlign din nettside med opptil 10 konkurrenter samtidig.
                 </p>
               </div>
               <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-100">
                 <div className="flex items-center gap-2 mb-2">
                   <Globe className="h-5 w-5 text-neutral-700" />
-                  <h4 className="font-medium text-neutral-900">Flere nettsider</h4>
+                  <h4 className="font-medium text-neutral-900">Analyser flere nettsider</h4>
                 </div>
                 <p className="text-sm text-neutral-500">
-                  Legg til og analyser ubegrenset antall nettsider fra én konto.
+                  Analyser så mange nettsider du vil fra én konto.
                 </p>
               </div>
               <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-100">
@@ -427,7 +486,7 @@ export default function SettingsPage() {
               <div>
                 <h3 className="font-semibold">Interessert i Premium?</h3>
                 <p className="text-sm text-neutral-300">
-                  Kontakt oss for en skreddersydd løsning for din bedrift
+                  Kontakt oss for en skreddersydd løsning
                 </p>
               </div>
               <Button className="bg-white text-neutral-900 hover:bg-neutral-100" asChild>
@@ -441,7 +500,7 @@ export default function SettingsPage() {
         </Card>
       )}
 
-      {/* Danger Zone */}
+      {/* Logout */}
       <Card className="border-neutral-200">
         <CardHeader>
           <div className="flex items-center gap-2">

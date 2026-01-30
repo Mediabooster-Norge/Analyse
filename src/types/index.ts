@@ -10,6 +10,17 @@ export interface User {
   created_at: string;
 }
 
+export interface UserProfile {
+  id: string;
+  email: string;
+  is_premium: boolean;
+  premium_since: string | null;
+  premium_expires_at: string | null;
+  monthly_analysis_limit: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Company {
   id: string;
   user_id: string;

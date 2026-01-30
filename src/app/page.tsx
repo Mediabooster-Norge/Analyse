@@ -49,6 +49,8 @@ import {
   LayoutDashboard,
   ChevronRight,
   ChevronDown,
+  Eye,
+  Lightbulb,
 } from 'lucide-react';
 
 
@@ -336,7 +338,7 @@ function FloatingAICard() {
 export default function LandingPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [demoTab, setDemoTab] = useState<'oversikt' | 'konkurrenter' | 'nokkelord' | 'ai'>('oversikt');
+  const [demoTab, setDemoTab] = useState<'oversikt' | 'konkurrenter' | 'nokkelord' | 'ai' | 'ai-sok'>('oversikt');
   const [selectedIssue, setSelectedIssue] = useState<string | null>('meta');
   const [selectedStep, setSelectedStep] = useState<number>(1);
 
@@ -411,8 +413,8 @@ export default function LandingPage() {
               <span className="text-neutral-400">- og AI-kollega.</span>
               </h1>
             <p className="text-lg text-neutral-500 mb-8 max-w-xl mx-auto">
-                Få en fullstendig helsesjekk av nettsiden med SEO, sikkerhet, innhold og 
-                AI-anbefalinger - alt i én rapport.
+                Få en fullstendig helsesjekk av nettsiden med SEO, sikkerhet, innhold, 
+                AI-søk synlighet og AI-anbefalinger - alt i én rapport.
               </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 {user ? (
@@ -465,9 +467,9 @@ export default function LandingPage() {
 
               {/* Tabs */}
               <div className="border-b border-neutral-100 px-6 pt-3 bg-white">
-                <div className="flex items-center gap-1.5 text-xs text-neutral-400 mb-2">
+                <div className="flex items-center gap-1.5 text-xs text-green-600 mb-2">
                   <span>Klikk for å utforske</span>
-                  <ChevronDown className="w-3 h-3" />
+                  <ChevronDown className="w-3 h-3 animate-bounce" />
                 </div>
                 <div className="flex gap-1">
                   {[
@@ -475,6 +477,7 @@ export default function LandingPage() {
                     { id: 'konkurrenter', label: 'Konkurrenter', icon: Globe },
                     { id: 'nokkelord', label: 'Nøkkelord', icon: Tag },
                     { id: 'ai', label: 'AI-analyse', icon: Sparkles },
+                    { id: 'ai-sok', label: 'AI-synlighet', icon: Eye },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -508,27 +511,11 @@ export default function LandingPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-5"
+                  className="space-y-4"
                 >
-                  {/* Score Grid - Show first */}
-                  <div className="grid grid-cols-4 gap-4">
-                    <div className="text-center p-4 bg-neutral-50 rounded-xl">
-                      <ScoreRing score={78} label="Totalt" size="md" />
-                    </div>
-                    <div className="text-center p-4 bg-neutral-50 rounded-xl">
-                      <ScoreRing score={72} label="SEO" size="md" />
-                    </div>
-                    <div className="text-center p-4 bg-neutral-50 rounded-xl">
-                      <ScoreRing score={58} label="Innhold" size="md" />
-                    </div>
-                    <div className="text-center p-4 bg-neutral-50 rounded-xl">
-                      <ScoreRing score={95} label="Sikkerhet" size="md" />
-                    </div>
-                  </div>
-
                   {/* Summary Card */}
                   <div className="rounded-2xl p-5 bg-amber-50 border border-amber-200">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-start gap-4">
                       <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-amber-100">
                         <AlertCircle className="h-6 w-6 text-amber-600" />
                       </div>
@@ -536,39 +523,81 @@ export default function LandingPage() {
                         <h3 className="text-base font-semibold text-amber-900">
                           Nettsiden har forbedringspotensial
                         </h3>
-                        <p className="text-sm text-amber-700">
-                          Vi fant områder som kan forbedres for bedre synlighet i Google.
+                        <p className="text-sm text-amber-700 mt-0.5">
+                          Vi har funnet noen områder som kan forbedres for bedre synlighet i Google.
                         </p>
                       </div>
                       <div className="text-right shrink-0">
                         <div className="text-3xl font-bold text-amber-600">78</div>
-                        <p className="text-xs text-neutral-500">av 100</p>
+                        <p className="text-xs text-neutral-500">av 100 poeng</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Quick Stats */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="p-3 bg-green-50 rounded-xl border border-green-100">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CheckCircle2 className="w-4 h-4 text-green-600" />
-                        <span className="text-xs font-medium text-green-700">Bra</span>
+                  {/* Score Grid + Improvements Side by Side */}
+                  <div className="grid lg:grid-cols-3 gap-4">
+                    {/* Score Grid Section */}
+                    <div className="lg:col-span-2 rounded-2xl border border-neutral-200 bg-white overflow-hidden">
+                      <div className="p-4 border-b border-neutral-100">
+                        <h3 className="font-semibold text-neutral-900 text-sm">Poengoversikt</h3>
+                        <p className="text-xs text-neutral-500">Høyere poeng = bedre synlighet i Google</p>
                       </div>
-                      <p className="text-sm text-neutral-600">SSL A+ sikkerhet</p>
+                      <div className="p-4">
+                        <div className="grid grid-cols-5 gap-3">
+                          <div className="text-center">
+                            <ScoreRing score={78} label="Totalt" size="sm" />
+                            <p className="text-[10px] text-neutral-500 mt-1">Samlet</p>
+                          </div>
+                          <div className="text-center">
+                            <ScoreRing score={72} label="SEO" size="sm" />
+                            <p className="text-[10px] text-neutral-500 mt-1">Søkemotor</p>
+                          </div>
+                          <div className="text-center">
+                            <ScoreRing score={58} label="Innhold" size="sm" />
+                            <p className="text-[10px] text-neutral-500 mt-1">Tekst</p>
+                          </div>
+                          <div className="text-center">
+                            <ScoreRing score={95} label="Sikkerhet" size="sm" />
+                            <p className="text-[10px] text-neutral-500 mt-1">Trygghet</p>
+                          </div>
+                          <div className="text-center">
+                            <ScoreRing score={72} label="AI" size="sm" />
+                            <p className="text-[10px] text-neutral-500 mt-1">AI-synlighet</p>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
-                      <div className="flex items-center gap-2 mb-1">
-                        <AlertCircle className="w-4 h-4 text-amber-600" />
-                        <span className="text-xs font-medium text-amber-700">Forbedre</span>
+
+                    {/* Priority Improvements */}
+                    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-semibold text-neutral-900 flex items-center gap-2 text-sm">
+                          <TrendingUp className="h-4 w-4 text-amber-500" />
+                          Forbedringer
+                        </h3>
+                        <span className="text-xs text-neutral-400">4 funn</span>
                       </div>
-                      <p className="text-sm text-neutral-600">Meta description</p>
-                    </div>
-                    <div className="p-3 bg-red-50 rounded-xl border border-red-100">
-                      <div className="flex items-center gap-2 mb-1">
-                        <AlertCircle className="w-4 h-4 text-red-600" />
-                        <span className="text-xs font-medium text-red-700">Viktig</span>
+                      <div className="space-y-1.5">
+                        {[
+                          { label: 'Meta-beskrivelse', desc: 'Mangler beskrivelse', priority: 'high' },
+                          { label: 'Innhold', desc: 'For lite tekst', priority: 'medium' },
+                          { label: 'H2-overskrifter', desc: 'Mangler underoverskrifter', priority: 'low' },
+                          { label: 'Open Graph', desc: 'Mangler OG-tags', priority: 'low' },
+                        ].map((issue, i) => (
+                          <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-neutral-50 hover:bg-neutral-100 transition-colors cursor-pointer group">
+                            <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                              issue.priority === 'high' ? 'bg-red-500' :
+                              issue.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'
+                            }`} />
+                            <div className="flex-1 min-w-0">
+                              <span className="font-medium text-xs text-neutral-900">{issue.label}</span>
+                              <span className="text-neutral-400 mx-1">·</span>
+                              <span className="text-xs text-neutral-500">{issue.desc}</span>
+                            </div>
+                            <ChevronRight className="w-3 h-3 text-neutral-400 group-hover:text-neutral-600 shrink-0" />
+                          </div>
+                        ))}
                       </div>
-                      <p className="text-sm text-neutral-600">For lite innhold</p>
                     </div>
                   </div>
                 </motion.div>
@@ -582,70 +611,123 @@ export default function LandingPage() {
                   transition={{ duration: 0.3 }}
                   className="space-y-4"
                 >
-                  <div className="flex gap-4">
-                    <div className="flex-1 p-4 rounded-xl border-2 border-green-200 bg-green-50/30">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="px-2.5 py-1 rounded-full bg-green-100 text-xs font-medium">Du</span>
-                        <span className="text-xs text-neutral-500">eksempel.no</span>
-                      </div>
-                      <div className="flex justify-center mb-3">
-                        <ScoreRing score={78} label="" size="md" />
-                      </div>
-                      <div className="space-y-1.5 text-xs">
-                        <div className="flex justify-between"><span className="text-neutral-500">SEO</span><span className="font-medium text-green-600">72</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">Innhold</span><span className="font-medium text-red-600">58</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">Sikkerhet</span><span className="font-medium text-green-600">95</span></div>
-                      </div>
-                    </div>
-                    <div className="flex-1 p-4 rounded-xl border border-neutral-200 bg-white">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="px-2.5 py-1 rounded-full bg-neutral-100 text-xs font-medium">#1</span>
-                        <span className="text-xs text-neutral-500">konkurrent.no</span>
-                      </div>
-                      <div className="flex justify-center mb-3">
-                        <ScoreRing score={65} label="" size="md" />
-                      </div>
-                      <div className="space-y-1.5 text-xs">
-                        <div className="flex justify-between"><span className="text-neutral-500">SEO</span><span className="font-medium">68</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">Innhold</span><span className="font-medium">62</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">Sikkerhet</span><span className="font-medium">72</span></div>
-                      </div>
-                    </div>
-                    <div className="flex-1 p-4 rounded-xl border border-neutral-200 bg-white">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="px-2.5 py-1 rounded-full bg-neutral-100 text-xs font-medium">#2</span>
-                        <span className="text-xs text-neutral-500">annen.no</span>
-                      </div>
-                      <div className="flex justify-center mb-3">
-                        <ScoreRing score={71} label="" size="md" />
-                      </div>
-                      <div className="space-y-1.5 text-xs">
-                        <div className="flex justify-between"><span className="text-neutral-500">SEO</span><span className="font-medium">74</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">Innhold</span><span className="font-medium">68</span></div>
-                        <div className="flex justify-between"><span className="text-neutral-500">Sikkerhet</span><span className="font-medium">70</span></div>
-                      </div>
-                    </div>
+                  {/* Header */}
+                  <div>
+                    <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-2">
+                      <BarChart3 className="h-4 w-4 text-neutral-600" />
+                      Konkurrentsammenligning (2 konkurrenter)
+                    </h3>
+                    <p className="text-sm text-neutral-600">Sammenlign din nettside med konkurrentene dine</p>
                   </div>
-                  <div className="p-4 rounded-xl bg-green-50 border border-green-100">
-                    <p className="text-sm text-green-700 flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4" />
-                      Du ligger foran begge konkurrentene - spesielt på sikkerhet (95 vs 71 snitt)
-                    </p>
+
+                  {/* Score Comparison Table */}
+                  <div className="overflow-hidden rounded-xl border border-neutral-200">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="bg-neutral-50 border-b border-neutral-200">
+                          <th className="text-left py-2.5 px-3 font-medium text-neutral-600 text-xs">Nettside</th>
+                          <th className="text-center py-2.5 px-2 font-medium text-neutral-600 text-xs">Total</th>
+                          <th className="text-center py-2.5 px-2 font-medium text-neutral-600 text-xs">SEO</th>
+                          <th className="text-center py-2.5 px-2 font-medium text-neutral-600 text-xs">Innhold</th>
+                          <th className="text-center py-2.5 px-2 font-medium text-neutral-600 text-xs">Sikkerhet</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {/* User row */}
+                        <tr className="border-b border-neutral-100 bg-green-50/50">
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
+                                <Globe className="h-3.5 w-3.5 text-green-600" />
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium text-neutral-900 text-xs">Du</p>
+                                <p className="text-[10px] text-neutral-500">eksempel.no</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-700 font-bold text-xs">78</span>
+                          </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="font-semibold text-green-600 text-xs">72</span>
+                          </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="font-semibold text-red-600 text-xs">58</span>
+                          </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="font-semibold text-green-600 text-xs">95</span>
+                          </td>
+                        </tr>
+                        {/* Competitor 1 */}
+                        <tr className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
+                                <span className="text-[10px] font-bold text-neutral-500">#1</span>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium text-neutral-700 text-xs">konkurrent.no</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-neutral-100 text-neutral-600 font-bold text-xs">65</span>
+                          </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="font-semibold text-neutral-600 text-xs">68</span>
+                          </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="font-semibold text-neutral-600 text-xs">62</span>
+                          </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="font-semibold text-neutral-600 text-xs">72</span>
+                          </td>
+                        </tr>
+                        {/* Competitor 2 */}
+                        <tr className="hover:bg-neutral-50 transition-colors">
+                          <td className="py-2.5 px-3">
+                            <div className="flex items-center gap-2">
+                              <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
+                                <span className="text-[10px] font-bold text-neutral-500">#2</span>
+                              </div>
+                              <div className="min-w-0">
+                                <p className="font-medium text-neutral-700 text-xs">annen.no</p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-700 font-bold text-xs">71</span>
+                          </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="font-semibold text-red-600 text-xs">74</span>
+                          </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="font-semibold text-red-600 text-xs">68</span>
+                          </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="font-semibold text-neutral-600 text-xs">70</span>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
                   </div>
+
+                  {/* AI Summary */}
                   <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 bg-green-50 rounded-xl border border-green-100">
-                      <div className="flex items-center gap-2 mb-1">
-                        <CheckCircle2 className="w-4 h-4 text-green-600" />
-                        <span className="text-xs font-medium text-green-700">Dine styrker</span>
-                      </div>
+                    <div className="p-3 rounded-xl bg-white border border-neutral-200">
+                      <h5 className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-100 text-neutral-900 text-[10px] font-medium mb-2">
+                        <CheckCircle2 className="h-3 w-3 text-green-600" />
+                        Dine styrker
+                      </h5>
                       <p className="text-xs text-neutral-600">Sikkerhet, Total score</p>
                     </div>
-                    <div className="p-3 bg-amber-50 rounded-xl border border-amber-100">
-                      <div className="flex items-center gap-2 mb-1">
-                        <AlertCircle className="w-4 h-4 text-amber-600" />
-                        <span className="text-xs font-medium text-amber-700">Forbedringspotensial</span>
-                      </div>
-                      <p className="text-xs text-neutral-600">Innhold, SEO</p>
+                    <div className="p-3 rounded-xl bg-white border border-neutral-200">
+                      <h5 className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-100 text-neutral-900 text-[10px] font-medium mb-2">
+                        <AlertCircle className="h-3 w-3 text-red-600" />
+                        Konkurrentens styrker
+                      </h5>
+                      <p className="text-xs text-neutral-600">SEO, Innhold</p>
                     </div>
                   </div>
                 </motion.div>
@@ -721,68 +803,180 @@ export default function LandingPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="grid md:grid-cols-2 gap-6"
+                  className="space-y-4"
                 >
+                  {/* Header */}
                   <div>
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
-                        <Sparkles className="w-4 h-4 text-white" />
+                    <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-2">
+                      <Sparkles className="h-4 w-4 text-neutral-600" />
+                      AI-analyse
+                    </h3>
+                    <p className="text-sm text-neutral-600">AI-genererte innsikter og anbefalinger basert på analysen</p>
+                  </div>
+
+                  {/* Content Grid */}
+                  <div className="grid md:grid-cols-2 gap-5">
+                    {/* Left - AI Summary & Findings */}
+                    <div>
+                      <h4 className="text-sm font-semibold text-neutral-700 mb-2">AI-vurdering</h4>
+                      <p className="text-sm text-neutral-600 leading-relaxed mb-4">
+                        Nettsiden har solid sikkerhet (SSL A+), men mangler viktige SEO-elementer som meta description.
+                      </p>
+                      <h5 className="text-xs font-medium text-neutral-500 mb-2">Viktigste funn</h5>
+                      <div className="space-y-1.5">
+                        {[
+                          { text: 'SSL A+ - utmerket sikkerhet', type: 'success' },
+                          { text: 'Meta description mangler', type: 'warning' },
+                          { text: 'For lite innhold (847 ord)', type: 'warning' },
+                          { text: 'God sidetittel (58 tegn)', type: 'success' },
+                        ].map((item, i) => (
+                          <div key={i} className={`flex items-center gap-2 p-2 rounded-lg text-xs ${
+                            item.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                          }`}>
+                            {item.type === 'success' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                            {item.text}
+                          </div>
+                        ))}
                       </div>
-                      <h4 className="font-semibold text-neutral-900">AI-vurdering</h4>
                     </div>
-                    <p className="text-sm text-neutral-600 leading-relaxed mb-4">
-                      Nettsiden har solid sikkerhet (SSL A+), men mangler viktige SEO-elementer som meta description.
-                    </p>
-                    <h5 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Viktigste funn</h5>
-                    <div className="space-y-2">
-                      {[
-                        { text: 'SSL A+ - utmerket sikkerhet', type: 'success' },
-                        { text: 'Meta description mangler', type: 'warning' },
-                        { text: 'For lite innhold (847 ord)', type: 'warning' },
-                        { text: 'God sidetittel (58 tegn)', type: 'success' },
-                      ].map((item, i) => (
-                        <div key={i} className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
-                          item.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                        }`}>
-                          {item.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                          {item.text}
+
+                    {/* Right - Recommendations & Action Plan */}
+                    <div>
+                      <h5 className="text-xs font-medium text-neutral-500 mb-2">Anbefalinger</h5>
+                      <div className="space-y-1.5 mb-4">
+                        {[
+                          { priority: 'høy', title: 'Legg til meta description', desc: 'Viktig for CTR' },
+                          { priority: 'høy', title: 'Øk innholdsmengden', desc: 'Minst 1500 ord' },
+                          { priority: 'medium', title: 'Legg til alt-tekst', desc: '3 bilder mangler' },
+                        ].map((rec, i) => (
+                          <div key={i} className="p-2.5 bg-neutral-50 rounded-xl border border-neutral-100">
+                            <div className="flex items-center gap-2 mb-0.5">
+                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                                rec.priority === 'høy' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                              }`}>{rec.priority}</span>
+                              <span className="text-xs font-medium text-neutral-800">{rec.title}</span>
+                            </div>
+                            <p className="text-[11px] text-neutral-500 ml-10">{rec.desc}</p>
+                          </div>
+                        ))}
+                      </div>
+                      <h5 className="text-xs font-medium text-neutral-500 mb-2">Handlingsplan</h5>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        <div className="p-2 rounded-lg bg-red-50 border border-red-100">
+                          <div className="text-[10px] font-medium text-red-700 mb-0.5">Nå</div>
+                          <p className="text-[11px] text-neutral-600">Meta desc</p>
                         </div>
-                      ))}
+                        <div className="p-2 rounded-lg bg-amber-50 border border-amber-100">
+                          <div className="text-[10px] font-medium text-amber-700 mb-0.5">Kort sikt</div>
+                          <p className="text-[11px] text-neutral-600">Innhold</p>
+                        </div>
+                        <div className="p-2 rounded-lg bg-green-50 border border-green-100">
+                          <div className="text-[10px] font-medium text-green-700 mb-0.5">Lang sikt</div>
+                          <p className="text-[11px] text-neutral-600">Schema</p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <h5 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Anbefalinger</h5>
-                    <div className="space-y-2 mb-4">
+                </motion.div>
+              )}
+
+              {/* AI-søk Tab */}
+              {demoTab === 'ai-sok' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="grid grid-cols-3 gap-5"
+                >
+                  {/* Left Column - Score & Stats */}
+                  <div className="col-span-1 space-y-4">
+                    {/* Score Card */}
+                    <div className="text-center">
+                      <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center mb-3">
+                        <div className="text-center">
+                          <span className="text-3xl font-bold text-amber-600">72</span>
+                          <p className="text-[10px] text-neutral-500">av 100</p>
+                        </div>
+                      </div>
+                      <h4 className="font-semibold text-amber-700 text-sm">Moderat AI-synlighet</h4>
+                      <p className="text-xs text-neutral-500 mt-1">AI kjenner delvis til bedriften</p>
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <div className="p-2 rounded-lg bg-neutral-50 text-center">
+                        <p className="text-lg font-bold text-neutral-900">4</p>
+                        <p className="text-[9px] text-neutral-500 uppercase">Testet</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-green-50 text-center">
+                        <p className="text-lg font-bold text-green-600">3</p>
+                        <p className="text-[9px] text-neutral-500 uppercase">Kjent</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-amber-50 text-center">
+                        <p className="text-lg font-bold text-amber-600">1</p>
+                        <p className="text-[9px] text-neutral-500 uppercase">Delvis</p>
+                      </div>
+                    </div>
+
+                    {/* Recommendations */}
+                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-100">
+                      <h5 className="font-medium text-amber-800 text-xs mb-2 flex items-center gap-1.5">
+                        <Lightbulb className="w-3.5 h-3.5" />
+                        Forbedringer
+                      </h5>
+                      <ul className="space-y-1.5">
+                        <li className="text-[11px] text-amber-700 flex items-start gap-1.5">
+                          <span className="w-3.5 h-3.5 rounded-full bg-amber-200 flex items-center justify-center shrink-0 text-[9px] font-medium text-amber-800">1</span>
+                          <span>Publiser mer faginnhold</span>
+                        </li>
+                        <li className="text-[11px] text-amber-700 flex items-start gap-1.5">
+                          <span className="w-3.5 h-3.5 rounded-full bg-amber-200 flex items-center justify-center shrink-0 text-[9px] font-medium text-amber-800">2</span>
+                          <span>Bli mer synlig i media</span>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  {/* Right Column - Query Results */}
+                  <div className="col-span-2">
+                    <div className="flex items-center justify-between mb-3">
+                      <h4 className="font-medium text-neutral-900 text-sm">AI-svar på spørsmål</h4>
+                      <span className="text-[10px] text-neutral-400">GPT-4o mini</span>
+                    </div>
+                    <div className="space-y-2">
                       {[
-                        { priority: 'høy', title: 'Legg til meta description', desc: 'Viktig for CTR' },
-                        { priority: 'høy', title: 'Øk innholdsmengden', desc: 'Minst 1500 ord' },
-                        { priority: 'medium', title: 'Legg til alt-tekst', desc: '3 bilder mangler' },
-                      ].map((rec, i) => (
-                        <div key={i} className="p-3 bg-neutral-50 rounded-xl border border-neutral-100">
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className={`text-xs px-2 py-0.5 rounded font-medium ${
-                              rec.priority === 'høy' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-                            }`}>{rec.priority}</span>
-                            <span className="text-sm font-medium text-neutral-800">{rec.title}</span>
+                        { query: 'Hva vet du om Mediabooster?', status: 'known', response: 'Ja, Mediabooster er et norsk teknologi- og markedsføringsbyrå...' },
+                        { query: 'Kan du anbefale Mediabooster?', status: 'known', response: 'Basert på min kunnskap kan jeg anbefale dem for digitale tjenester...' },
+                        { query: 'Beste SEO-byrå i Norge?', status: 'partial', response: 'Det finnes flere gode alternativer, inkludert...' },
+                        { query: 'Hvem lager nettsider i Oslo?', status: 'known', response: 'Mediabooster er blant selskapene som tilbyr webutvikling...' },
+                      ].map((item, i) => (
+                        <div key={i} className={`p-3 rounded-xl border ${
+                          item.status === 'known' ? 'bg-green-50/50 border-green-200' : 'bg-blue-50/50 border-blue-200'
+                        }`}>
+                          <div className="flex items-start gap-2">
+                            <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
+                              item.status === 'known' ? 'bg-green-100' : 'bg-blue-100'
+                            }`}>
+                              {item.status === 'known' ? (
+                                <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                              ) : (
+                                <Search className="w-3 h-3 text-blue-600" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <p className="text-xs font-medium text-neutral-800">{item.query}</p>
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full shrink-0 font-medium ${
+                                  item.status === 'known' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                                }`}>
+                                  {item.status === 'known' ? 'Kjent' : 'Delvis'}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-neutral-600 leading-relaxed">{item.response}</p>
+                            </div>
                           </div>
-                          <p className="text-xs text-neutral-500 ml-12">{rec.desc}</p>
                         </div>
                       ))}
-                    </div>
-                    <h5 className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2">Handlingsplan</h5>
-                    <div className="grid grid-cols-3 gap-2">
-                      <div className="p-2 rounded-lg bg-red-50 border border-red-100">
-                        <div className="text-xs font-medium text-red-700 mb-1">Nå</div>
-                        <p className="text-xs text-neutral-600">Meta desc</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-amber-50 border border-amber-100">
-                        <div className="text-xs font-medium text-amber-700 mb-1">Kort sikt</div>
-                        <p className="text-xs text-neutral-600">Innhold</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-green-50 border border-green-100">
-                        <div className="text-xs font-medium text-green-700 mb-1">Lang sikt</div>
-                        <p className="text-xs text-neutral-600">Schema</p>
-                      </div>
                     </div>
                   </div>
                 </motion.div>
@@ -885,7 +1079,7 @@ export default function LandingPage() {
               <span className="text-neutral-400">av hele nettsiden.</span>
             </h2>
             <p className="text-lg text-neutral-500 max-w-xl mx-auto">
-              SEO, sikkerhet, innhold, nøkkelord og konkurrenter - med AI-anbefalinger.
+              SEO, sikkerhet, innhold, AI-søk synlighet og nøkkelord - med AI-anbefalinger.
             </p>
           </motion.div>
 
@@ -1065,13 +1259,116 @@ export default function LandingPage() {
                 </div>
               </div>
             </motion.div>
+
+            {/* AI Search Visibility - Full width card */}
+            <motion.div 
+              variants={itemVariants}
+              whileHover={{ y: -8, transition: { duration: 0.3 } }}
+              className="md:col-span-3 relative rounded-3xl p-8 group overflow-hidden"
+            >
+              {/* Animated gradient background */}
+              <motion.div 
+                className="absolute inset-0 bg-gradient-to-br from-violet-50 via-blue-50 to-cyan-50 group-hover:from-violet-100 group-hover:via-blue-100 group-hover:to-cyan-100 transition-colors duration-300"
+                initial={{ opacity: 0, scale: 1.1 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true, amount: 0.5 }}
+                transition={{ duration: 1.8, ease: "easeOut", delay: 0.3 }}
+              />
+              <div className="relative z-10">
+                <div className="flex items-start justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/20">
+                      <Eye className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold mb-1">AI-søk synlighet</h3>
+                      <p className="text-neutral-500">
+                        Finn ut om AI-modeller kjenner til bedriften din
+                      </p>
+                    </div>
+                  </div>
+                  <Badge className="bg-gradient-to-r from-violet-100 to-blue-100 text-violet-700 group-hover:from-violet-200 group-hover:to-blue-200 transition-colors border-0">Ny</Badge>
+                </div>
+                
+                <div className="grid md:grid-cols-3 gap-4">
+                  {/* Left - Score & Stats */}
+                  <div className="bg-white/80 backdrop-blur rounded-2xl p-5 group-hover:shadow-md transition-all">
+                    <div className="text-center mb-4">
+                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center mb-2">
+                        <div className="text-center">
+                          <span className="text-2xl font-bold text-amber-600">72</span>
+                          <p className="text-[9px] text-neutral-500">av 100</p>
+                        </div>
+                      </div>
+                      <p className="font-medium text-amber-700 text-sm">Moderat synlighet</p>
+                    </div>
+                    <div className="grid grid-cols-3 gap-1.5">
+                      <div className="p-2 rounded-lg bg-neutral-50 text-center">
+                        <p className="text-sm font-bold text-neutral-900">4</p>
+                        <p className="text-[8px] text-neutral-500 uppercase">Testet</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-green-50 text-center">
+                        <p className="text-sm font-bold text-green-600">3</p>
+                        <p className="text-[8px] text-neutral-500 uppercase">Kjent</p>
+                      </div>
+                      <div className="p-2 rounded-lg bg-amber-50 text-center">
+                        <p className="text-sm font-bold text-amber-600">1</p>
+                        <p className="text-[8px] text-neutral-500 uppercase">Delvis</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Right - AI Responses */}
+                  <div className="md:col-span-2 bg-white/80 backdrop-blur rounded-2xl p-5 group-hover:shadow-md transition-all">
+                    <div className="flex items-center justify-between mb-3">
+                      <p className="font-medium text-sm text-neutral-900">AI-svar på spørsmål</p>
+                      <span className="text-[10px] text-neutral-400">GPT-4o mini</span>
+                    </div>
+                    <div className="space-y-2">
+                      {[
+                        { query: 'Hva vet du om bedriften?', status: 'known', response: 'Ja, jeg kjenner til denne bedriften. De tilbyr digitale tjenester...' },
+                        { query: 'Kan du anbefale dem?', status: 'known', response: 'Basert på min kunnskap kan jeg anbefale dem...' },
+                        { query: 'Beste i bransjen?', status: 'partial', response: 'Det finnes flere gode alternativer...' },
+                      ].map((item, i) => (
+                        <div key={i} className={`p-2.5 rounded-xl border ${
+                          item.status === 'known' ? 'bg-green-50/50 border-green-200' : 'bg-blue-50/50 border-blue-200'
+                        }`}>
+                          <div className="flex items-start gap-2">
+                            <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${
+                              item.status === 'known' ? 'bg-green-100' : 'bg-blue-100'
+                            }`}>
+                              {item.status === 'known' ? (
+                                <CheckCircle2 className="w-3 h-3 text-green-600" />
+                              ) : (
+                                <Search className="w-2.5 h-2.5 text-blue-600" />
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-xs font-medium text-neutral-800">{item.query}</p>
+                                <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-medium ${
+                                  item.status === 'known' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                                }`}>
+                                  {item.status === 'known' ? 'Kjent' : 'Delvis'}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-neutral-500">{item.response}</p>
+                            </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+          </div>
+                </div>
+              </div>
+            </motion.div>
             </motion.div>
         </div>
       </section>
 
       {/* AI Suggestions Interactive Section */}
       <section className="py-20">
-        <div className="max-w-5xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1327,7 +1624,7 @@ export default function LandingPage() {
                 { 
                   step: 2, 
                 title: 'Start analysen',
-                  desc: 'Legg inn nettadressen din og klikk "Analyser". Vi sjekker SEO, sikkerhet, innhold og mer.',
+                  desc: 'Legg inn nettadressen din og klikk "Analyser". Vi sjekker SEO, sikkerhet, innhold og AI-synlighet.',
                 },
                 { 
                   step: 3, 
@@ -1405,9 +1702,16 @@ export default function LandingPage() {
                     className="p-6"
                   >
                     <div className="text-center mb-5">
-                      <h4 className="font-semibold text-xl">Opprett konto</h4>
+                      <h4 className="font-semibold text-xl">Opprett gratis konto</h4>
+                      <p className="text-sm text-neutral-500">Analyser hvilken som helst nettside på sekunder</p>
                     </div>
                     <div className="space-y-4">
+                      <div className="space-y-1.5">
+                        <label className="text-sm font-medium text-neutral-700">Navn (valgfritt)</label>
+                        <div className="p-2.5 rounded-md border border-neutral-200 bg-white">
+                          <span className="text-sm text-neutral-400">Ola Nordmann</span>
+                        </div>
+                      </div>
                       <div className="space-y-1.5">
                         <label className="text-sm font-medium text-neutral-700">E-post *</label>
                         <div className="p-2.5 rounded-md border border-neutral-200 bg-white">
@@ -1428,26 +1732,29 @@ export default function LandingPage() {
                           </div>
                         </div>
                       </div>
-                      <div className="pt-2 border-t border-neutral-100">
-                        <p className="text-xs text-neutral-500 mb-3">Bedriftsinformasjon</p>
-                        <div className="space-y-3">
-                          <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-neutral-700">Søk etter bedrift</label>
-                            <div className="p-2.5 rounded-md border border-neutral-200 bg-white flex items-center gap-2">
-                              <Search className="w-4 h-4 text-neutral-400" />
-                              <span className="text-sm text-neutral-400">Søk på navn eller org.nr...</span>
-                            </div>
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-neutral-700">Nettside URL *</label>
-                            <div className="p-2.5 rounded-md border border-neutral-200 bg-white">
-                              <span className="text-sm text-neutral-400">https://dinbedrift.no</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
                       <div className="p-2.5 rounded-md bg-neutral-900 text-white text-sm font-medium text-center">
                         Opprett konto
+                      </div>
+                      <div className="pt-3 border-t border-neutral-100">
+                        <p className="text-xs text-neutral-500 text-center mb-2">Med en gratis konto får du:</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          <div className="flex items-center gap-1.5 text-xs text-neutral-600">
+                            <div className="w-1 h-1 rounded-full bg-blue-500" />
+                            3 analyser/mnd
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-neutral-600">
+                            <div className="w-1 h-1 rounded-full bg-violet-500" />
+                            AI-anbefalinger
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-neutral-600">
+                            <div className="w-1 h-1 rounded-full bg-green-500" />
+                            Sikkerhetssjekk
+                          </div>
+                          <div className="flex items-center gap-1.5 text-xs text-neutral-600">
+                            <div className="w-1 h-1 rounded-full bg-cyan-500" />
+                            AI-synlighet
+                          </div>
+                        </div>
                       </div>
                   </div>
                 </motion.div>
@@ -1495,6 +1802,7 @@ export default function LandingPage() {
                           {[
                             { label: 'SEO-analyse', done: true },
                             { label: 'Sikkerhetssjekk', done: true },
+                            { label: 'AI-synlighet', done: true },
                             { label: 'Innholdsanalyse', done: true },
                             { label: 'AI-anbefalinger', done: false },
                           ].map((item, i) => (
@@ -1619,7 +1927,11 @@ export default function LandingPage() {
                 },
                 {
                   q: 'Hva analyserer dere?',
-                  a: 'Vi sjekker SEO (tittel, meta description, H1-struktur, bilder), sikkerhet (SSL-sertifikat, sikkerhetsheaders), innhold (ordantall, lesbarhet) og gir deg AI-genererte forbedringsforslag.',
+                  a: 'Vi sjekker SEO (tittel, meta description, H1-struktur, bilder), sikkerhet (SSL-sertifikat, sikkerhetsheaders), innhold (ordantall, lesbarhet), AI-synlighet og gir deg AI-genererte forbedringsforslag.',
+                },
+                {
+                  q: 'Hva er AI-søk synlighet?',
+                  a: 'Vi sjekker om AI-modeller som ChatGPT og Claude kjenner til bedriften din og kan anbefale den til brukere. Dette blir stadig viktigere ettersom flere bruker AI-assistenter for å finne tjenester.',
                 },
                 {
                   q: 'Hva er nøkkelordanalysen?',
@@ -1660,35 +1972,106 @@ export default function LandingPage() {
 
       {/* Final CTA - Inline style */}
       <section className="py-12">
-        <div className="max-w-5xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-6">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            whileHover={{ scale: 1.02 }}
-            className="bg-neutral-900 rounded-2xl p-8 md:p-10 relative overflow-hidden"
+            className="bg-neutral-900 rounded-2xl relative overflow-hidden min-h-[320px]"
           >
-            {/* Subtle gradient */}
-            <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 via-transparent to-blue-500/10" />
-            
-            <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="text-center md:text-left">
-                <h2 className="text-3xl md:text-4xl font-medium tracking-tight text-white mb-2">
-                  Prøv det selv <span className="text-neutral-400">- helt gratis.</span>
+            {/* Content grid */}
+            <div className="relative z-10 grid md:grid-cols-2 h-full">
+              {/* Left column - Text and CTA */}
+              <div className="p-10 md:p-12 flex flex-col justify-center">
+                <h2 className="text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight text-white mb-4 leading-tight">
+                  Prøv det selv<br />
+                  <span className="text-neutral-400">- helt gratis.</span>
                 </h2>
-                <p className="text-neutral-400 text-sm">
-                  Full analyse av nettsiden din på under ett minutt.
+                <p className="text-neutral-400 mb-8 max-w-sm">
+                  Full analyse av nettsiden din på under ett minutt. SEO, sikkerhet, innhold og AI-anbefalinger.
                 </p>
-              </div>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
-                <Button className="bg-white text-neutral-900 hover:bg-neutral-100" asChild>
+                  <Button className="bg-white text-neutral-900 hover:bg-neutral-100 h-12 px-6" asChild>
                   <Link href="/register">
                     Kom i gang gratis
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Link>
                 </Button>
               </motion.div>
+              </div>
+              
+              {/* Right column - Dashboard mockup */}
+              <div className="relative hidden md:block overflow-hidden">
+                {/* Gradient fade from left */}
+                <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-neutral-900 to-transparent z-10" />
+                
+                {/* Dashboard mockup - dark theme, tilted */}
+                <div className="absolute inset-0 flex items-center">
+                  <div 
+                    className="absolute -right-8 w-[500px] bg-neutral-800/90 rounded-xl overflow-hidden border border-neutral-700/50"
+                    style={{ transform: 'perspective(1200px) rotateY(-15deg) rotateX(2deg)' }}
+                  >
+                    {/* Header */}
+                    <div className="px-4 py-3 border-b border-neutral-700/50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="w-4 h-4 text-neutral-400" />
+                          <span className="text-sm font-medium text-white">Sammenligning</span>
+                          <span className="text-xs text-neutral-500">· Konkurrenter</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-neutral-500">
+                          <span>Synlighet</span>
+                          <span>Score</span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Rankings list */}
+                    <div className="p-2">
+                      {[
+                        { rank: 1, name: 'Din bedrift', score: 89, visibility: '95%', isYou: true, trend: 'up' },
+                        { rank: 2, name: 'Konkurrent A', score: 82, visibility: '80%', isYou: false, trend: 'down' },
+                        { rank: 3, name: 'Konkurrent B', score: 76, visibility: '72%', isYou: false, trend: 'up' },
+                        { rank: 4, name: 'Konkurrent C', score: 71, visibility: '65%', isYou: false, trend: 'neutral' },
+                        { rank: 5, name: 'Konkurrent D', score: 58, visibility: '50%', isYou: false, trend: 'down' },
+                        { rank: 6, name: 'Konkurrent E', score: 45, visibility: '38%', isYou: false, trend: 'down' },
+                      ].map((item) => (
+                        <div 
+                          key={item.rank} 
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 ${
+                            item.isYou ? 'bg-green-500/20 border border-green-500/30' : 'bg-neutral-700/30 hover:bg-neutral-700/50'
+                          }`}
+                        >
+                          <span className={`w-5 h-5 rounded flex items-center justify-center text-xs font-medium ${
+                            item.isYou ? 'bg-green-500 text-white' : 'bg-neutral-600 text-neutral-300'
+                          }`}>
+                            {item.rank}
+                          </span>
+                          <span className={`flex-1 text-sm ${item.isYou ? 'text-white font-medium' : 'text-neutral-300'}`}>
+                            {item.name}
+                          </span>
+                          <div className="flex items-center gap-4">
+                            <span className="text-xs text-neutral-400 w-12 text-right">{item.visibility}</span>
+                            <div className="flex items-center gap-1">
+                              <span className={`text-sm font-medium w-8 text-right ${
+                                item.isYou ? 'text-green-400' : 'text-neutral-400'
+                              }`}>
+                                {item.score}
+                              </span>
+                              {item.trend === 'up' && <TrendingUp className="w-3 h-3 text-green-400" />}
+                              {item.trend === 'down' && <TrendingUp className="w-3 h-3 text-red-400 rotate-180" />}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Gradient fades for smooth blending */}
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-neutral-900 via-neutral-900/80 to-transparent z-10" />
+                <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-neutral-900 via-neutral-900/50 to-transparent z-10" />
+              </div>
             </div>
           </motion.div>
         </div>
@@ -1696,7 +2079,7 @@ export default function LandingPage() {
 
       {/* Footer - Modern minimal */}
       <footer className="py-8">
-        <div className="max-w-5xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-6 border-t border-neutral-100">
             <motion.div 
               initial={{ opacity: 0 }}

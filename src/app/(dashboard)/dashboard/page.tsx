@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { usePremium, getPremiumLimits } from '@/hooks/usePremium';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -355,6 +356,7 @@ export default function DashboardPage() {
   const [competitorInput, setCompetitorInput] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
   const [keywordInput, setKeywordInput] = useState('');
+  const [suggestedKeywordCount, setSuggestedKeywordCount] = useState(20);
   const [suggestingKeywords, setSuggestingKeywords] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -385,6 +387,9 @@ export default function DashboardPage() {
   // Keyword sorting
   const [keywordSort, setKeywordSort] = useState<{ column: string; direction: 'asc' | 'desc' } | null>(null);
 
+  // Competitor sorting
+  const [competitorSort, setCompetitorSort] = useState<{ column: 'total' | 'seo' | 'content' | 'security' | 'aiVisibility'; direction: 'asc' | 'desc' } | null>(null);
+
   // AI Visibility state
   const [aiVisibilityResult, setAiVisibilityResult] = useState<{
     score: number;
@@ -400,19 +405,24 @@ export default function DashboardPage() {
   } | null>(null);
   const [checkingAiVisibility, setCheckingAiVisibility] = useState(false);
 
-  const FREE_MONTHLY_LIMIT = 2;
-  const FREE_KEYWORD_LIMIT = 10;
-  const FREE_COMPETITOR_LIMIT = 3;
-  const PREMIUM_COMPETITOR_LIMIT = 10;
-  const FREE_UPDATE_LIMIT = 2; // Updates per tab after full analysis
+  // Premium status
+  const { isPremium, loading: premiumLoading } = usePremium();
+  const limits = getPremiumLimits(isPremium);
+  
+  const FREE_MONTHLY_LIMIT = limits.monthlyAnalyses;
+  const FREE_KEYWORD_LIMIT = limits.keywords;
+  const FREE_COMPETITOR_LIMIT = limits.competitors;
+  const FREE_UPDATE_LIMIT = isPremium ? 999 : 2;
 
-  // Cache key for sessionStorage
-  const CACHE_KEY = 'dashboard_cache';
+  // Cache key for sessionStorage - will be set with user ID
+  const [cacheKey, setCacheKey] = useState<string | null>(null);
 
-  // Load cached data on mount (before fetch)
+  // Load cached data on mount (after we have user ID)
   useEffect(() => {
+    if (!cacheKey) return;
+    
     try {
-      const cached = sessionStorage.getItem(CACHE_KEY);
+      const cached = sessionStorage.getItem(cacheKey);
       if (cached) {
         const data = JSON.parse(cached);
         // Only use cache if no specific analysisId or it matches
@@ -436,134 +446,132 @@ export default function DashboardPage() {
     } catch {
       // Ignore cache errors
     }
-  }, []);
+  }, [cacheKey, analysisIdFromUrl]);
 
-  // Fetch company data and existing analysis on mount
+  // Fetch user data and existing analysis on mount
   useEffect(() => {
     async function fetchData() {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       
       if (user) {
+        // Set user-specific cache key
+        setCacheKey(`dashboard_cache_${user.id}`);
+        
         // Get user name from metadata or email
         const fullName = user.user_metadata?.full_name || user.user_metadata?.name;
         const firstName = fullName ? fullName.split(' ')[0] : user.email?.split('@')[0];
         setUserName(firstName || null);
 
-        // Fetch company
-        const { data: company } = await supabase
-          .from('companies')
-          .select('id, website_url, name')
-          .eq('user_id', user.id)
-          .maybeSingle();
+        // Get monthly analysis count for this user
+        const now = new Date();
+        const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
         
-        if (company) {
-          setCompanyId(company.id);
-          setCompanyUrl(company.website_url);
-          setCompanyName(company.name);
-          setUrl(company.website_url);
+        const { data: monthlyAnalyses } = await supabase
+          .from('analyses')
+          .select('id, created_at')
+          .eq('user_id', user.id)
+          .gte('created_at', firstDayOfMonth);
 
-          // Get monthly analysis count
-          const now = new Date();
-          const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+        const analysisCount = monthlyAnalyses?.length || 0;
+        setRemainingAnalyses(Math.max(0, FREE_MONTHLY_LIMIT - analysisCount));
+
+        // Fetch specific analysis if ID provided, otherwise latest for this user
+        let analysisQuery = supabase
+          .from('analyses')
+          .select('*, remaining_competitor_updates, remaining_keyword_updates, website_url, website_name')
+          .eq('user_id', user.id);
+        
+        if (analysisIdFromUrl) {
+          analysisQuery = analysisQuery.eq('id', analysisIdFromUrl);
+        } else {
+          analysisQuery = analysisQuery.order('created_at', { ascending: false }).limit(1);
+        }
+        
+        const { data: analysis } = await analysisQuery.maybeSingle();
+
+        if (analysis) {
+          // Store analysis ID for updates
+          setCurrentAnalysisId(analysis.id);
           
-          const { data: monthlyAnalyses } = await supabase
-            .from('analyses')
-            .select('id, created_at')
-            .eq('company_id', company.id)
-            .gte('created_at', firstDayOfMonth);
-
-          const analysisCount = monthlyAnalyses?.length || 0;
-          setRemainingAnalyses(Math.max(0, FREE_MONTHLY_LIMIT - analysisCount));
-
-          // Fetch specific analysis if ID provided, otherwise latest
-          let analysisQuery = supabase
-            .from('analyses')
-            .select('*, remaining_competitor_updates, remaining_keyword_updates')
-            .eq('company_id', company.id);
-          
-          if (analysisIdFromUrl) {
-            analysisQuery = analysisQuery.eq('id', analysisIdFromUrl);
-          } else {
-            analysisQuery = analysisQuery.order('created_at', { ascending: false }).limit(1);
+          // Set URL and name from analysis
+          if (analysis.website_url) {
+            setCompanyUrl(analysis.website_url);
+            setUrl(analysis.website_url);
+          }
+          if (analysis.website_name) {
+            setCompanyName(analysis.website_name);
           }
           
-          const { data: analysis } = await analysisQuery.maybeSingle();
-
-          if (analysis) {
-            // Store analysis ID for updates
-            setCurrentAnalysisId(analysis.id);
-            
-            // Load remaining updates from database
-            setRemainingCompetitorUpdates(analysis.remaining_competitor_updates ?? 2);
-            setRemainingKeywordUpdates(analysis.remaining_keyword_updates ?? 2);
-            // Map database format to component format
-            const defaultSeoResults = {
+          // Load remaining updates from database
+          setRemainingCompetitorUpdates(analysis.remaining_competitor_updates ?? 2);
+          setRemainingKeywordUpdates(analysis.remaining_keyword_updates ?? 2);
+          // Map database format to component format
+          const defaultSeoResults = {
+            score: 0,
+            meta: {
+              title: { content: null, length: 0, isOptimal: false },
+              description: { content: null, length: 0, isOptimal: false },
+              ogTags: { title: null, description: null, image: null },
+              canonical: null,
+            },
+            headings: { h1: { count: 0, contents: [] }, h2: { count: 0, contents: [] }, hasProperHierarchy: false },
+            images: { total: 0, withAlt: 0, withoutAlt: 0 },
+            links: { internal: { count: 0 }, external: { count: 0 } },
+          };
+          const defaultSecurityResults = {
+            score: 0,
+            ssl: { grade: 'Unknown', certificate: { daysUntilExpiry: null } },
+            headers: {
+              contentSecurityPolicy: false,
+              strictTransportSecurity: false,
+              xFrameOptions: false,
+              xContentTypeOptions: false,
+              referrerPolicy: false,
+              permissionsPolicy: false,
               score: 0,
-              meta: {
-                title: { content: null, length: 0, isOptimal: false },
-                description: { content: null, length: 0, isOptimal: false },
-                ogTags: { title: null, description: null, image: null },
-                canonical: null,
-              },
-              headings: { h1: { count: 0, contents: [] }, h2: { count: 0, contents: [] }, hasProperHierarchy: false },
-              images: { total: 0, withAlt: 0, withoutAlt: 0 },
-              links: { internal: { count: 0 }, external: { count: 0 } },
-            };
-            const defaultSecurityResults = {
-              score: 0,
-              ssl: { grade: 'Unknown', certificate: { daysUntilExpiry: null } },
-              headers: {
-                contentSecurityPolicy: false,
-                strictTransportSecurity: false,
-                xFrameOptions: false,
-                xContentTypeOptions: false,
-                referrerPolicy: false,
-                permissionsPolicy: false,
-                score: 0,
-              },
-              observatory: { grade: 'Unknown', score: 0 },
-            };
-            // Deep merge security results to ensure nested objects are preserved
-            const mergedSecurityResults = analysis.security_results ? {
-              score: analysis.security_results.score ?? defaultSecurityResults.score,
-              ssl: { ...defaultSecurityResults.ssl, ...(analysis.security_results.ssl || {}) },
-              headers: { ...defaultSecurityResults.headers, ...(analysis.security_results.headers || {}) },
-              observatory: { ...defaultSecurityResults.observatory, ...(analysis.security_results.observatory || {}) },
-            } : defaultSecurityResults;
+            },
+            observatory: { grade: 'Unknown', score: 0 },
+          };
+          // Deep merge security results to ensure nested objects are preserved
+          const mergedSecurityResults = analysis.security_results ? {
+            score: analysis.security_results.score ?? defaultSecurityResults.score,
+            ssl: { ...defaultSecurityResults.ssl, ...(analysis.security_results.ssl || {}) },
+            headers: { ...defaultSecurityResults.headers, ...(analysis.security_results.headers || {}) },
+            observatory: { ...defaultSecurityResults.observatory, ...(analysis.security_results.observatory || {}) },
+          } : defaultSecurityResults;
 
-            // Deep merge SEO results
-            const mergedSeoResults = analysis.seo_results ? {
-              score: analysis.seo_results.score ?? defaultSeoResults.score,
-              meta: {
-                title: { ...defaultSeoResults.meta.title, ...(analysis.seo_results.meta?.title || {}) },
-                description: { ...defaultSeoResults.meta.description, ...(analysis.seo_results.meta?.description || {}) },
-                ogTags: { ...defaultSeoResults.meta.ogTags, ...(analysis.seo_results.meta?.ogTags || {}) },
-                canonical: analysis.seo_results.meta?.canonical ?? defaultSeoResults.meta.canonical,
-              },
-              headings: {
-                h1: { ...defaultSeoResults.headings.h1, ...(analysis.seo_results.headings?.h1 || {}) },
-                h2: { ...defaultSeoResults.headings.h2, ...(analysis.seo_results.headings?.h2 || {}) },
-                hasProperHierarchy: analysis.seo_results.headings?.hasProperHierarchy ?? defaultSeoResults.headings.hasProperHierarchy,
-              },
-              images: { ...defaultSeoResults.images, ...(analysis.seo_results.images || {}) },
-              links: {
-                internal: { ...defaultSeoResults.links.internal, ...(analysis.seo_results.links?.internal || {}) },
-                external: { ...defaultSeoResults.links.external, ...(analysis.seo_results.links?.external || {}) },
-              },
-            } : defaultSeoResults;
+          // Deep merge SEO results
+          const mergedSeoResults = analysis.seo_results ? {
+            score: analysis.seo_results.score ?? defaultSeoResults.score,
+            meta: {
+              title: { ...defaultSeoResults.meta.title, ...(analysis.seo_results.meta?.title || {}) },
+              description: { ...defaultSeoResults.meta.description, ...(analysis.seo_results.meta?.description || {}) },
+              ogTags: { ...defaultSeoResults.meta.ogTags, ...(analysis.seo_results.meta?.ogTags || {}) },
+              canonical: analysis.seo_results.meta?.canonical ?? defaultSeoResults.meta.canonical,
+            },
+            headings: {
+              h1: { ...defaultSeoResults.headings.h1, ...(analysis.seo_results.headings?.h1 || {}) },
+              h2: { ...defaultSeoResults.headings.h2, ...(analysis.seo_results.headings?.h2 || {}) },
+              hasProperHierarchy: analysis.seo_results.headings?.hasProperHierarchy ?? defaultSeoResults.headings.hasProperHierarchy,
+            },
+            images: { ...defaultSeoResults.images, ...(analysis.seo_results.images || {}) },
+            links: {
+              internal: { ...defaultSeoResults.links.internal, ...(analysis.seo_results.links?.internal || {}) },
+              external: { ...defaultSeoResults.links.external, ...(analysis.seo_results.links?.external || {}) },
+            },
+          } : defaultSeoResults;
 
-            setResult({
-              seoResults: mergedSeoResults,
-              contentResults: analysis.content_results || { score: 0, wordCount: 0 },
-              securityResults: mergedSecurityResults,
-              overallScore: analysis.overall_score || 0,
-              competitors: analysis.competitor_results || undefined,
-              aiSummary: analysis.ai_summary || null,
-              keywordResearch: analysis.keyword_research || undefined,
-              aiVisibility: analysis.ai_visibility || undefined,
-            });
-          }
+          setResult({
+            seoResults: mergedSeoResults,
+            contentResults: analysis.content_results || { score: 0, wordCount: 0 },
+            securityResults: mergedSecurityResults,
+            overallScore: analysis.overall_score || 0,
+            competitors: analysis.competitor_results || undefined,
+            aiSummary: analysis.ai_summary || null,
+            keywordResearch: analysis.keyword_research || undefined,
+            aiVisibility: analysis.ai_visibility || undefined,
+          });
         }
       }
       setLoading(false);
@@ -574,7 +582,7 @@ export default function DashboardPage() {
 
   // Save to cache when data changes
   useEffect(() => {
-    if (result && !loading) {
+    if (result && !loading && cacheKey) {
       try {
         const cacheData = {
           result,
@@ -589,20 +597,21 @@ export default function DashboardPage() {
           companyId,
           timestamp: Date.now(),
         };
-        sessionStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
+        sessionStorage.setItem(cacheKey, JSON.stringify(cacheData));
       } catch {
         // Ignore cache errors (e.g., quota exceeded)
       }
     }
-  }, [result, companyName, companyUrl, url, userName, remainingAnalyses, remainingCompetitorUpdates, remainingKeywordUpdates, currentAnalysisId, companyId, loading]);
+  }, [result, companyName, companyUrl, url, userName, remainingAnalyses, remainingCompetitorUpdates, remainingKeywordUpdates, currentAnalysisId, companyId, loading, cacheKey]);
 
   const [elapsedTime, setElapsedTime] = useState(0);
   
   const analysisSteps = [
-    { label: 'Henter nettside...', description: 'Laster inn innhold fra nettsiden', duration: '~5 sek' },
-    { label: 'Analyserer SEO...', description: 'Sjekker meta-tags, overskrifter og lenker', duration: '~10 sek' },
-    { label: 'Sjekker sikkerhet...', description: 'Analyserer SSL-sertifikat og headers', duration: '~30 sek' },
-    { label: 'Genererer AI-anbefalinger...', description: 'AI analyserer funnene og lager rapport', duration: '~15 sek' },
+    { label: 'Henter nettside', description: 'Laster inn innhold fra nettsiden', duration: '~5s', icon: Globe },
+    { label: 'Analyserer SEO', description: 'Sjekker meta-tags, overskrifter og lenker', duration: '~10s', icon: Search },
+    { label: 'Sjekker sikkerhet', description: 'Analyserer SSL-sertifikat og headers', duration: '~15s', icon: Shield },
+    { label: 'AI-synlighet', description: 'Sjekker om AI kjenner til bedriften din', duration: '~10s', icon: Eye },
+    { label: 'Genererer rapport', description: 'AI analyserer funnene og lager anbefalinger', duration: '~20s', icon: Sparkles },
   ];
 
   // Timer for elapsed time during analysis
@@ -672,8 +681,8 @@ export default function DashboardPage() {
     setResult(null);
 
     // Progress through steps with realistic timing
-    // Step 0: Fetching (5s) -> Step 1: SEO (10s) -> Step 2: Security (30s) -> Step 3: AI (15s)
-    const stepTimings = [5000, 10000, 30000, 15000];
+    // Step 0: Fetching (5s) -> Step 1: SEO (8s) -> Step 2: Security (12s) -> Step 3: AI-synlighet (8s) -> Step 4: Rapport (12s)
+    const stepTimings = [5000, 8000, 12000, 8000, 12000];
     let currentStep = 0;
     
     const advanceStep = () => {
@@ -689,12 +698,16 @@ export default function DashboardPage() {
     const stepTimeout = setTimeout(advanceStep, stepTimings[0]);
 
     try {
+      // Get website name from URL
+      const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
+      const websiteName = new URL(normalizedUrl).hostname.replace(/^www\./, '');
+      
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url,
-          companyId,
+          websiteName,
           competitorUrls: competitorUrls,
           keywords: keywords.length > 0 ? keywords : undefined,
           includeAI: true,
@@ -716,6 +729,8 @@ export default function DashboardPage() {
 
       const data = await response.json();
       setResult(data);
+      setCompanyUrl(normalizedUrl);
+      setCompanyName(websiteName);
       setRemainingAnalyses((prev) => Math.max(0, prev - 1)); // Decrease remaining analyses
       setDialogOpen(false);
       toast.success('Analyse fullført!');
@@ -753,7 +768,7 @@ export default function DashboardPage() {
     const trimmed = competitorInput.trim().toLowerCase();
     if (!trimmed) return;
     if (competitorUrls.length >= FREE_COMPETITOR_LIMIT) {
-      toast.error(`Maks ${FREE_COMPETITOR_LIMIT} konkurrenter i gratis-versjonen`);
+      toast.error(isPremium ? 'Maks antall konkurrenter nådd' : `Maks ${FREE_COMPETITOR_LIMIT} konkurrenter i gratis-versjonen`);
       return;
     }
     // Normalize URL
@@ -784,7 +799,10 @@ export default function DashboardPage() {
       const response = await fetch('/api/suggest-keywords', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: targetUrl }),
+        body: JSON.stringify({
+          url: targetUrl,
+          count: Math.min(suggestedKeywordCount, FREE_KEYWORD_LIMIT),
+        }),
       });
 
       if (!response.ok) {
@@ -793,13 +811,12 @@ export default function DashboardPage() {
 
       const data = await response.json();
       if (data.keywords && Array.isArray(data.keywords)) {
-        // Only add keywords up to the limit
-        const newKeywords = data.keywords
-          .slice(0, FREE_KEYWORD_LIMIT - keywords.length)
-          .map((k: string) => k.toLowerCase())
-          .filter((k: string) => !keywords.includes(k));
+        const normalized = data.keywords.map((k: string) => k.toLowerCase().trim());
+        const newKeywords = normalized
+          .filter((k: string) => !keywords.includes(k))
+          .slice(0, FREE_KEYWORD_LIMIT - keywords.length);
         setKeywords([...keywords, ...newKeywords]);
-        toast.success(`${newKeywords.length} nøkkelord foreslått`);
+        toast.success(`${newKeywords.length} nøkkelord lagt til`);
       }
     } catch (error) {
       toast.error('Kunne ikke hente forslag til nøkkelord');
@@ -820,7 +837,7 @@ export default function DashboardPage() {
     const trimmed = editCompetitorInput.trim().toLowerCase();
     if (!trimmed) return;
     if (editCompetitorUrls.length >= FREE_COMPETITOR_LIMIT) {
-      toast.error(`Maks ${FREE_COMPETITOR_LIMIT} konkurrenter i gratis-versjonen`);
+      toast.error(isPremium ? 'Maks antall konkurrenter nådd' : `Maks ${FREE_COMPETITOR_LIMIT} konkurrenter i gratis-versjonen`);
       return;
     }
     const normalized = normalizeUrl(trimmed);
@@ -843,7 +860,7 @@ export default function DashboardPage() {
   };
 
   const updateCompetitorAnalysis = async () => {
-    if (remainingCompetitorUpdates <= 0) {
+    if (!isPremium && remainingCompetitorUpdates <= 0) {
       toast.error('Du har brukt opp dine gratis oppdateringer for konkurrenter');
       return;
     }
@@ -946,7 +963,7 @@ export default function DashboardPage() {
   };
 
   const updateKeywordAnalysis = async () => {
-    if (remainingKeywordUpdates <= 0) {
+    if (!isPremium && remainingKeywordUpdates <= 0) {
       toast.error('Du har brukt opp dine gratis oppdateringer for nøkkelord');
       return;
     }
@@ -1077,110 +1094,159 @@ export default function DashboardPage() {
           <DialogTrigger asChild>
             <Button 
               className="bg-neutral-900 hover:bg-neutral-800 text-white"
-              disabled={remainingAnalyses === 0}
+              disabled={!isPremium && remainingAnalyses === 0}
             >
               <Plus className="mr-2 h-4 w-4" />
               Ny analyse
-              {remainingAnalyses < FREE_MONTHLY_LIMIT && (
+              {!isPremium && remainingAnalyses < FREE_MONTHLY_LIMIT && (
                 <span className="ml-2 px-2 py-0.5 rounded-full bg-white/20 text-xs">
                   {remainingAnalyses} igjen
                 </span>
               )}
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="text-xl">Start nettside-analyse</DialogTitle>
-              <DialogDescription>
-                Få en komplett rapport med SEO, sikkerhet og AI-anbefalinger.
-              </DialogDescription>
-            </DialogHeader>
-
+          <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0">
             {analyzing ? (
-              <div className="py-6 space-y-6">
-                {/* Progress header */}
-                <div className="text-center space-y-4">
-                  <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center">
-                    <Loader2 className="h-8 w-8 text-amber-600 animate-spin" />
-                  </div>
-                  <div>
-                    <p className="text-lg font-semibold text-neutral-900">Analyserer nettside</p>
-                    <p className="text-sm text-neutral-500 mt-1">
-                      {companyUrl || url}
-                    </p>
-                  </div>
-                  <div className="flex items-center justify-center gap-3">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-100 text-sm text-neutral-600">
-                      <Clock className="h-3.5 w-3.5" />
-                      <span className="font-medium tabular-nums">{Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}</span>
+              <>
+                {/* Samme header-stil som "Start nettside-analyse" */}
+                <div className="p-6 pb-0">
+                  <div className="flex items-center gap-3 mb-1">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neutral-900 to-neutral-700 flex items-center justify-center">
+                      {(() => {
+                        const StepIcon = analysisSteps[analysisStep]?.icon || Loader2;
+                        return <StepIcon className="h-5 w-5 text-white animate-pulse" />;
+                      })()}
                     </div>
-                    <div className="px-3 py-1.5 rounded-full bg-amber-100 text-sm text-amber-700 font-medium">
-                      Steg {analysisStep + 1} av {analysisSteps.length}
+                    <div>
+                      <DialogHeader className="p-0 space-y-0">
+                        <DialogTitle className="text-lg">Analyse pågår</DialogTitle>
+                        <DialogDescription className="text-sm">
+                          {analysisSteps[analysisStep]?.label} · SEO, sikkerhet, innhold og AI-synlighet
+                        </DialogDescription>
+                      </DialogHeader>
                     </div>
-                  </div>
-                  <Progress value={(analysisStep + 1) * 25} className="w-full h-2 bg-neutral-100" />
-                </div>
-                
-                {/* Steps list */}
-                <div className="space-y-2">
-                  {analysisSteps.map((step, index) => (
-                    <div
-                      key={index}
-                      className={`flex items-center gap-3 p-3 rounded-xl transition-all ${
-                        index === analysisStep
-                          ? 'bg-amber-50 border border-amber-200'
-                          : index < analysisStep
-                          ? 'bg-green-50 border border-green-100'
-                          : 'bg-neutral-50 border border-transparent'
-                      }`}
-                    >
-                      <div className="shrink-0">
-                        {index < analysisStep ? (
-                          <div className="w-7 h-7 rounded-full bg-green-500 flex items-center justify-center">
-                            <CheckCircle2 className="h-4 w-4 text-white" />
-                          </div>
-                        ) : index === analysisStep ? (
-                          <div className="w-7 h-7 rounded-full bg-amber-500 flex items-center justify-center">
-                            <Loader2 className="h-4 w-4 text-white animate-spin" />
-                          </div>
-                        ) : (
-                          <div className="w-7 h-7 rounded-full bg-neutral-200 flex items-center justify-center">
-                            <span className="text-xs font-medium text-neutral-400">{index + 1}</span>
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`font-medium text-sm ${
-                          index === analysisStep ? 'text-amber-900' : index < analysisStep ? 'text-green-700' : 'text-neutral-400'
-                        }`}>
-                          {step.label}
-                        </p>
-                        <p className={`text-xs ${
-                          index === analysisStep ? 'text-amber-700' : index < analysisStep ? 'text-green-600' : 'text-neutral-400'
-                        }`}>
-                          {step.description}
-                        </p>
-                      </div>
-                      <span className={`text-xs font-medium shrink-0 ${
-                        index === analysisStep ? 'text-amber-600' : index < analysisStep ? 'text-green-500' : 'text-neutral-300'
-                      }`}>
-                        {step.duration}
+                    <div className="ml-auto flex items-center gap-2">
+                      <span className="px-2.5 py-1 rounded-lg bg-neutral-100 text-neutral-700 text-sm font-medium tabular-nums">
+                        {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
                       </span>
                     </div>
-                  ))}
+                  </div>
                 </div>
+                <div className="space-y-5 p-6 pt-4">
+                  {/* URL som i form-dialogen */}
+                  <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
+                    <div className="flex items-center gap-3">
+                      <Globe className="h-5 w-5 text-neutral-400" />
+                      <span className="font-medium text-neutral-900 truncate">{companyUrl || url || '—'}</span>
+                    </div>
+                  </div>
 
-                {/* Info message */}
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 border border-blue-100">
-                  <AlertCircle className="h-4 w-4 text-blue-500 shrink-0" />
-                  <p className="text-xs text-blue-700">
-                    Ikke lukk vinduet. Analysen tar vanligvis 30-60 sekunder.
-                  </p>
+                  {/* Progress – kompakt, nøytral */}
+                  <div className="flex items-center gap-6 p-4 rounded-xl bg-neutral-50 border border-neutral-200">
+                    <div className="relative w-14 h-14 shrink-0">
+                      <div className="absolute inset-0 rounded-full border-2 border-neutral-200" />
+                      <svg className="absolute inset-0 w-14 h-14 -rotate-90" viewBox="0 0 56 56">
+                        <circle
+                          cx="28"
+                          cy="28"
+                          r="25"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          className="text-neutral-900 transition-all duration-500"
+                          strokeDasharray={`${((analysisStep + 1) / analysisSteps.length) * 157} 157`}
+                        />
+                      </svg>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-neutral-900">{analysisSteps[analysisStep]?.label}</p>
+                      <p className="text-sm text-neutral-500 mt-0.5">{analysisSteps[analysisStep]?.description}</p>
+                    </div>
+                  </div>
+
+                  {/* Steg-liste – samme kartstil som resten av dialogen */}
+                  <div className="rounded-xl border border-neutral-200 overflow-hidden">
+                    <div className="relative">
+                      <div className="absolute left-5 top-0 bottom-0 w-px bg-neutral-200" />
+                      <div
+                        className="absolute left-5 top-0 w-px bg-neutral-900 transition-all duration-500"
+                        style={{ height: `${(analysisStep / Math.max(1, analysisSteps.length - 1)) * 100}%` }}
+                      />
+                      <div className="divide-y divide-neutral-100">
+                        {analysisSteps.map((step, index) => {
+                          const StepIcon = step.icon;
+                          const isComplete = index < analysisStep;
+                          const isCurrent = index === analysisStep;
+                          const isPending = index > analysisStep;
+                          return (
+                            <div
+                              key={index}
+                              className={`relative flex items-center gap-4 px-4 py-3 transition-colors ${
+                                isCurrent ? 'bg-neutral-50' : ''
+                              }`}
+                            >
+                              <div
+                                className={`relative z-10 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                                  isComplete ? 'bg-neutral-900' : isCurrent ? 'bg-neutral-900' : 'bg-neutral-100'
+                                }`}
+                              >
+                                {isComplete ? (
+                                  <CheckCircle2 className="h-5 w-5 text-white" />
+                                ) : isCurrent ? (
+                                  <StepIcon className="h-5 w-5 text-white animate-pulse" />
+                                ) : (
+                                  <StepIcon className={`h-5 w-5 ${isPending ? 'text-neutral-400' : 'text-neutral-600'}`} />
+                                )}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className={`font-medium text-sm ${isComplete ? 'text-neutral-700' : isCurrent ? 'text-neutral-900' : 'text-neutral-400'}`}>
+                                  {step.label}
+                                </p>
+                                <p className="text-xs text-neutral-500">{step.description}</p>
+                              </div>
+                              <span className="text-xs font-medium text-neutral-400 tabular-nums shrink-0">
+                                {isComplete ? '✓' : step.duration}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Infoboks – nøytral som resten */}
+                  <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-lg bg-neutral-200 flex items-center justify-center">
+                        <Clock className="h-4 w-4 text-neutral-600" />
+                      </div>
+                      <p className="text-sm text-neutral-600">
+                        <span className="font-medium text-neutral-900">Analysen kjører.</span> Vanligvis ferdig under ett minutt.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+              <div className="p-6 pb-0">
+                <div className="flex items-center gap-3 mb-1">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neutral-900 to-neutral-700 flex items-center justify-center">
+                    <Search className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <DialogHeader className="p-0 space-y-0">
+                      <DialogTitle className="text-lg">Start nettside-analyse</DialogTitle>
+                      <DialogDescription className="text-sm">
+                        SEO, sikkerhet, innhold og AI-synlighet
+                      </DialogDescription>
+                    </DialogHeader>
+                  </div>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-5 py-4">
-                {/* URL Input */}
+              <div className="space-y-5 p-6 pt-4">
+                {/* URL Input - full width */}
                 <div className="space-y-2">
                   <Label htmlFor="url" className="text-sm font-medium text-neutral-700">Nettside URL</Label>
                   {companyUrl ? (
@@ -1205,156 +1271,212 @@ export default function DashboardPage() {
                   )}
                 </div>
 
-                {/* Competitor Analysis */}
-                <div className="p-4 rounded-xl bg-neutral-50 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="competitor" className="text-sm font-medium text-neutral-700">
-                      Sammenlign med konkurrenter
-                    </Label>
-                    <span className="px-2 py-0.5 rounded-full bg-green-100 text-neutral-900 text-xs font-medium">
-                      {competitorUrls.length}/{FREE_COMPETITOR_LIMIT}
-                    </span>
-                  </div>
-                  
-                  {/* Competitor input */}
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <BarChart3 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                      <Input
-                        id="competitor"
-                        placeholder="konkurrent.no"
-                        value={competitorInput}
-                        onChange={(e) => setCompetitorInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addCompetitor();
-                          }
-                        }}
-                        className="pl-11 h-11 rounded-xl border-neutral-200 bg-white"
-                        disabled={competitorUrls.length >= FREE_COMPETITOR_LIMIT}
-                      />
+                {/* 2 columns: Competitors | Keywords */}
+                <div className="grid md:grid-cols-2 gap-6">
+                  {/* Left: Competitor Analysis */}
+                  <div className="p-4 rounded-xl bg-neutral-50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="competitor" className="text-sm font-medium text-neutral-700">
+                        Sammenlign med konkurrenter
+                      </Label>
+                      <span className="px-2 py-0.5 rounded-full bg-green-100 text-neutral-900 text-xs font-medium">
+                        {competitorUrls.length}/{FREE_COMPETITOR_LIMIT}
+                      </span>
                     </div>
+                    
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <BarChart3 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                        <Input
+                          id="competitor"
+                          placeholder="konkurrent.no"
+                          value={competitorInput}
+                          onChange={(e) => setCompetitorInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addCompetitor();
+                            }
+                          }}
+                          className="pl-11 h-11 rounded-xl border-neutral-200 bg-white"
+                          disabled={competitorUrls.length >= FREE_COMPETITOR_LIMIT}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addCompetitor}
+                        disabled={competitorUrls.length >= FREE_COMPETITOR_LIMIT || !competitorInput.trim()}
+                        className="h-11 px-4 rounded-xl border-neutral-200 bg-white"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {competitorUrls.length > 0 && (
+                      <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                        {competitorUrls.map((competitor) => (
+                          <span
+                            key={competitor}
+                            className="px-3 py-1.5 rounded-full bg-white text-neutral-700 text-sm font-medium border border-neutral-200 cursor-pointer hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-colors group flex items-center gap-1.5 shrink-0"
+                            onClick={() => removeCompetitor(competitor)}
+                          >
+                            {new URL(competitor).hostname}
+                            <X className="h-3.5 w-3.5 opacity-50 group-hover:opacity-100" />
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Right: Keyword Analysis */}
+                  <div className="p-4 rounded-xl bg-neutral-50 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-sm font-medium text-neutral-700">Nøkkelord for analyse</Label>
+                      <span className="px-2 py-0.5 rounded-full bg-green-100 text-neutral-900 text-xs font-medium">
+                        {keywords.length}/{FREE_KEYWORD_LIMIT}
+                      </span>
+                    </div>
+                    
+                    <div className="flex gap-2">
+                      <div className="relative flex-1">
+                        <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
+                        <Input
+                          placeholder="Skriv nøkkelord og trykk Enter..."
+                          value={keywordInput}
+                          onChange={(e) => setKeywordInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              e.preventDefault();
+                              addKeyword();
+                            }
+                          }}
+                          className="pl-11 h-11 rounded-xl border-neutral-200 bg-white"
+                          disabled={keywords.length >= FREE_KEYWORD_LIMIT}
+                        />
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={addKeyword}
+                        disabled={keywords.length >= FREE_KEYWORD_LIMIT || !keywordInput.trim()}
+                        className="h-11 px-4 rounded-xl border-neutral-200 bg-white"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+
+                    {(() => {
+                      const keywordCountOptions = [10, 20, 30, 50].filter((n) => n <= FREE_KEYWORD_LIMIT);
+                      const maxAllowed = keywordCountOptions.length ? Math.max(...keywordCountOptions) : 10;
+                      const displayCount = keywordCountOptions.includes(suggestedKeywordCount) ? suggestedKeywordCount : maxAllowed;
+                      return (
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                          <Label className="text-sm text-neutral-600 shrink-0">Antall å foreslå:</Label>
+                          <select
+                            value={displayCount}
+                            onChange={(e) => setSuggestedKeywordCount(Number(e.target.value))}
+                            className="h-9 rounded-lg border border-neutral-200 bg-white px-3 text-sm text-neutral-700 focus:outline-none focus:ring-2 focus:ring-neutral-400 max-w-[100px]"
+                          >
+                            {keywordCountOptions.map((n) => (
+                              <option key={n} value={n}>
+                                {n}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      );
+                    })()}
+
                     <Button
                       type="button"
                       variant="outline"
-                      onClick={addCompetitor}
-                      disabled={competitorUrls.length >= FREE_COMPETITOR_LIMIT || !competitorInput.trim()}
-                      className="h-11 px-4 rounded-xl border-neutral-200 bg-white"
+                      onClick={suggestKeywords}
+                      disabled={suggestingKeywords || keywords.length >= FREE_KEYWORD_LIMIT}
+                      className="w-full h-10 rounded-xl border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-100"
                     >
-                      <Plus className="h-4 w-4" />
+                      {suggestingKeywords ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Henter forslag...
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles className="mr-2 h-4 w-4" />
+                          Foreslå nøkkelord ({Math.min(suggestedKeywordCount, FREE_KEYWORD_LIMIT)} stk)
+                        </>
+                      )}
                     </Button>
-                  </div>
 
-                  {/* Competitors list */}
-                  {competitorUrls.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {competitorUrls.map((competitor) => (
-                        <span
-                          key={competitor}
-                          className="px-3 py-1.5 rounded-full bg-white text-neutral-700 text-sm font-medium border border-neutral-200 cursor-pointer hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-colors group flex items-center gap-1.5"
-                          onClick={() => removeCompetitor(competitor)}
-                        >
-                          {new URL(competitor).hostname}
-                          <X className="h-3.5 w-3.5 opacity-50 group-hover:opacity-100" />
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                    {keywords.length > 0 && (
+                      <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto">
+                        {keywords.map((keyword) => (
+                          <span
+                            key={keyword}
+                            className="px-3 py-1.5 rounded-full bg-white text-neutral-700 text-sm font-medium border border-neutral-200 cursor-pointer hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-colors group flex items-center gap-1.5 shrink-0"
+                            onClick={() => removeKeyword(keyword)}
+                          >
+                            {keyword}
+                            <X className="h-3.5 w-3.5 opacity-50 group-hover:opacity-100" />
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                {/* Keyword Analysis */}
-                <div className="p-4 rounded-xl bg-neutral-50 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <Label className="text-sm font-medium text-neutral-700">Nøkkelord for analyse</Label>
-                    <span className="px-2 py-0.5 rounded-full bg-green-100 text-neutral-900 text-xs font-medium">
-                      {keywords.length}/{FREE_KEYWORD_LIMIT}
-                    </span>
-                  </div>
-                  
-                  {/* Keyword input */}
-                  <div className="flex gap-2">
-                    <div className="relative flex-1">
-                      <Tag className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-neutral-400" />
-                      <Input
-                        placeholder="Skriv nøkkelord og trykk Enter..."
-                        value={keywordInput}
-                        onChange={(e) => setKeywordInput(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.preventDefault();
-                            addKeyword();
-                          }
-                        }}
-                        className="pl-11 h-11 rounded-xl border-neutral-200 bg-white"
-                        disabled={keywords.length >= FREE_KEYWORD_LIMIT}
-                      />
+                {/* What's included + Button - full width */}
+                <div className="grid grid-cols-5 gap-2 pt-2">
+                  {[
+                    { icon: Search, label: 'SEO' },
+                    { icon: Shield, label: 'Sikkerhet' },
+                    { icon: FileText, label: 'Innhold' },
+                    { icon: Eye, label: 'AI-søk' },
+                    { icon: Sparkles, label: 'AI-tips' },
+                  ].map((item, i) => (
+                    <div key={i} className="flex flex-col items-center gap-1 p-2 rounded-lg bg-neutral-50">
+                      <item.icon className="h-4 w-4 text-neutral-600" />
+                      <span className="text-[10px] text-neutral-500 font-medium">{item.label}</span>
                     </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={addKeyword}
-                      disabled={keywords.length >= FREE_KEYWORD_LIMIT || !keywordInput.trim()}
-                      className="h-11 px-4 rounded-xl border-neutral-200 bg-white"
-                    >
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  {/* Suggest keywords button */}
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={suggestKeywords}
-                    disabled={suggestingKeywords || keywords.length >= FREE_KEYWORD_LIMIT}
-                    className="w-full h-10 rounded-xl border-neutral-200 bg-white text-neutral-600 hover:bg-neutral-100"
-                  >
-                    {suggestingKeywords ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Henter forslag...
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="mr-2 h-4 w-4" />
-                        Foreslå nøkkelord basert på nettside
-                      </>
-                    )}
-                  </Button>
-
-                  {/* Keywords list */}
-                  {keywords.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {keywords.map((keyword) => (
-                        <span
-                          key={keyword}
-                          className="px-3 py-1.5 rounded-full bg-white text-neutral-700 text-sm font-medium border border-neutral-200 cursor-pointer hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-colors group flex items-center gap-1.5"
-                          onClick={() => removeKeyword(keyword)}
-                        >
-                          {keyword}
-                          <X className="h-3.5 w-3.5 opacity-50 group-hover:opacity-100" />
-                        </span>
-                      ))}
-                    </div>
-                  )}
+                  ))}
                 </div>
 
                 <Button 
                   onClick={runAnalysis} 
-                  className="w-full h-12 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white font-medium" 
+                  className="w-full h-12 rounded-xl bg-gradient-to-r from-neutral-900 to-neutral-800 hover:from-neutral-800 hover:to-neutral-700 text-white font-medium shadow-lg shadow-neutral-900/20 transition-all hover:shadow-xl hover:shadow-neutral-900/30" 
                   disabled={!url}
                 >
                   <Search className="mr-2 h-5 w-5" />
                   Start analyse
                 </Button>
               </div>
+              </>
             )}
           </DialogContent>
         </Dialog>
       </div>
 
       {/* Monthly Usage & Premium Banner - Combined */}
-      {remainingAnalyses === 0 ? (
+      {isPremium ? (
+        // Premium user banner
+        result ? (
+          <div className="rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 p-4">
+            <div className="flex items-center gap-4">
+              <span className="inline-flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500">
+                <Sparkles className="w-5 h-5 text-white" />
+              </span>
+              <div>
+                <p className="text-sm font-medium text-neutral-900">
+                  Premium aktiv
+                </p>
+                <p className="text-xs text-neutral-600">
+                  Ubegrenset analyser, konkurrenter og oppdateringer
+                </p>
+              </div>
+            </div>
+          </div>
+        ) : null
+      ) : remainingAnalyses === 0 ? (
         <div className="rounded-2xl bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 p-5">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-4">
@@ -2336,6 +2458,161 @@ export default function DashboardPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* AI Search Visibility Group */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="flex items-center gap-2 text-sm font-semibold text-neutral-900">
+                          <div className="w-6 h-6 rounded-lg bg-cyan-100 flex items-center justify-center">
+                            <Eye className="w-3.5 h-3.5 text-cyan-600" />
+                          </div>
+                          AI-søk synlighet
+                        </h4>
+                        <span className="text-xs text-neutral-500">Slik ser AI-modeller bedriften din</span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {/* AI Visibility Score */}
+                        <div 
+                          onClick={() => {
+                            const visData = result.aiVisibility;
+                            const score = visData?.score ?? 0;
+                            let issue = '';
+                            if (score < 70) {
+                              issue = `AI-synlighetsscoren er ${score}/100. `;
+                              if (score < 40) {
+                                issue += 'AI-modeller som GPT og Claude kjenner ikke godt til bedriften. Dette betyr at potensielle kunder som bruker AI-assistenter ikke får anbefalt din bedrift.';
+                              } else {
+                                issue += 'AI-modeller har delvis kjennskap til bedriften, men kan ikke anbefale den konsistent.';
+                              }
+                            }
+                            fetchAISuggestion(
+                              'AI-synlighet',
+                              visData ? `${score}/100 - ${visData.level === 'high' ? 'God' : visData.level === 'medium' ? 'Moderat' : 'Lav'} synlighet` : 'Ikke sjekket ennå',
+                              score >= 70 ? 'good' : score >= 40 ? 'warning' : 'bad',
+                              issue || undefined
+                            );
+                          }}
+                          className="p-4 rounded-xl bg-neutral-50 border border-neutral-100 cursor-pointer hover:bg-neutral-100 hover:border-neutral-200 transition-all group"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                (result.aiVisibility?.score ?? 0) >= 70 ? 'bg-green-100' : 
+                                (result.aiVisibility?.score ?? 0) >= 40 ? 'bg-yellow-100' : 
+                                'bg-red-100'
+                              }`}>
+                                <Eye className={`w-4 h-4 ${
+                                  (result.aiVisibility?.score ?? 0) >= 70 ? 'text-green-600' : 
+                                  (result.aiVisibility?.score ?? 0) >= 40 ? 'text-yellow-600' : 
+                                  'text-red-600'
+                                }`} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <span className="font-medium text-sm text-neutral-900">Synlighet i AI-søk</span>
+                                <p className="text-xs text-neutral-500 mt-0.5">
+                                  {result.aiVisibility 
+                                    ? `${result.aiVisibility.details.timesCited} av ${result.aiVisibility.details.queriesTested} spørsmål gjenkjent`
+                                    : 'Sjekk AI-synlighet fanen for detaljer'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="text-right shrink-0">
+                                <span className={`font-semibold text-sm ${
+                                  (result.aiVisibility?.score ?? 0) >= 70 ? 'text-green-600' : 
+                                  (result.aiVisibility?.score ?? 0) >= 40 ? 'text-yellow-600' : 
+                                  'text-red-600'
+                                }`}>
+                                  {result.aiVisibility?.score ?? '–'}/100
+                                </span>
+                                <p className="text-xs text-neutral-400">70+ anbefalt</p>
+                              </div>
+                              <div className="flex items-center gap-1 text-neutral-300 group-hover:text-amber-500 transition-colors">
+                                <Lightbulb className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <ChevronRight className="w-4 h-4" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* AI Recognition */}
+                        <div 
+                          onClick={() => {
+                            const visData = result.aiVisibility;
+                            const cited = visData?.details.timesCited ?? 0;
+                            const mentioned = visData?.details.timesMentioned ?? 0;
+                            const total = visData?.details.queriesTested ?? 0;
+                            let issue = '';
+                            if (cited < total / 2) {
+                              issue = `Bedriften ble kun gjenkjent i ${cited} av ${total} AI-spørsmål. `;
+                              issue += 'For å øke AI-synlighet bør du publisere mer innhold, få flere omtaler i media, og bygge autoritet i din bransje.';
+                            }
+                            fetchAISuggestion(
+                              'AI-gjenkjenning',
+                              visData ? `Kjenner til: ${cited}, Delvis kjent: ${mentioned - cited}` : 'Ikke sjekket ennå',
+                              cited >= total / 2 ? 'good' : cited > 0 ? 'warning' : 'bad',
+                              issue || undefined
+                            );
+                          }}
+                          className="p-4 rounded-xl bg-neutral-50 border border-neutral-100 cursor-pointer hover:bg-neutral-100 hover:border-neutral-200 transition-all group"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="flex items-start gap-3 min-w-0 flex-1">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                                (result.aiVisibility?.details.timesCited ?? 0) > 0 ? 'bg-green-100' : 'bg-yellow-100'
+                              }`}>
+                                <Sparkles className={`w-4 h-4 ${
+                                  (result.aiVisibility?.details.timesCited ?? 0) > 0 ? 'text-green-600' : 'text-yellow-600'
+                                }`} />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <span className="font-medium text-sm text-neutral-900">AI-anbefalinger</span>
+                                <p className="text-xs text-neutral-500 mt-0.5">
+                                  {result.aiVisibility 
+                                    ? result.aiVisibility.details.timesCited > 0
+                                      ? 'AI kan anbefale bedriften din'
+                                      : 'AI anbefaler ikke bedriften ennå'
+                                    : 'Se AI-synlighet fanen'}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="text-right shrink-0">
+                                <span className={`font-semibold text-sm ${
+                                  (result.aiVisibility?.details.timesCited ?? 0) > 0 ? 'text-green-600' : 'text-yellow-600'
+                                }`}>
+                                  {result.aiVisibility?.details.timesCited ?? '–'}/{result.aiVisibility?.details.queriesTested ?? '–'}
+                                </span>
+                                <p className="text-xs text-neutral-400">gjenkjent</p>
+                              </div>
+                              <div className="flex items-center gap-1 text-neutral-300 group-hover:text-amber-500 transition-colors">
+                                <Lightbulb className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                <ChevronRight className="w-4 h-4" />
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Link to AI Visibility Tab */}
+                        <div 
+                          onClick={() => setActiveTab('ai-visibility')}
+                          className="md:col-span-2 p-4 rounded-xl bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-100 cursor-pointer hover:from-cyan-100 hover:to-blue-100 transition-all group"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center">
+                                <Eye className="w-4 h-4 text-cyan-600" />
+                              </div>
+                              <div>
+                                <span className="font-medium text-sm text-neutral-900">Se full AI-synlighetsrapport</span>
+                                <p className="text-xs text-neutral-500">Se hva AI svarte og få detaljerte anbefalinger</p>
+                              </div>
+                            </div>
+                            <ChevronRight className="w-5 h-5 text-cyan-400 group-hover:text-cyan-600 transition-colors" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
                
@@ -2374,9 +2651,11 @@ export default function DashboardPage() {
                         <BarChart3 className="h-4 w-4 text-neutral-600" />
                         Rediger konkurrenter
                       </h3>
-                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">
-                        {remainingCompetitorUpdates} oppdatering{remainingCompetitorUpdates !== 1 ? 'er' : ''} igjen
-                      </span>
+                      {!isPremium && (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">
+                          {remainingCompetitorUpdates} oppdatering{remainingCompetitorUpdates !== 1 ? 'er' : ''} igjen
+                        </span>
+                      )}
                     </div>
                     <button
                       onClick={cancelEditingCompetitors}
@@ -2451,7 +2730,7 @@ export default function DashboardPage() {
                     {/* Action button */}
                     <Button
                       onClick={updateCompetitorAnalysis}
-                      disabled={updatingCompetitors || remainingCompetitorUpdates <= 0}
+                      disabled={updatingCompetitors || (!isPremium && remainingCompetitorUpdates <= 0)}
                       className="w-full rounded-xl bg-neutral-900 hover:bg-neutral-800"
                     >
                       {updatingCompetitors ? (
@@ -2474,23 +2753,28 @@ export default function DashboardPage() {
                 <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
                   <div className="p-6 border-b border-neutral-100">
                     <div className="flex items-center justify-between">
-                      <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium">
-                        <BarChart3 className="h-4 w-4 text-neutral-600" />
-                        Konkurrentsammenligning ({result.competitors.length} {result.competitors.length === 1 ? 'konkurrent' : 'konkurrenter'})
-                      </h3>
+                      <div>
+                        <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-3">
+                          <BarChart3 className="h-4 w-4 text-neutral-600" />
+                          Konkurrentsammenligning ({result.competitors.length} {result.competitors.length === 1 ? 'konkurrent' : 'konkurrenter'})
+                        </h3>
+                        <p className="text-sm text-neutral-600">Sammenlign din nettside med konkurrentene dine</p>
+                      </div>
                       {!editingCompetitors && (
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={startEditingCompetitors}
-                          disabled={remainingCompetitorUpdates <= 0}
+                          disabled={!isPremium && remainingCompetitorUpdates <= 0}
                           className="rounded-lg text-xs"
                         >
                           <Plus className="mr-1 h-3.5 w-3.5" />
                           Endre konkurrenter
-                          <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
-                            {remainingCompetitorUpdates}/{FREE_UPDATE_LIMIT}
-                          </span>
+                          {!isPremium && (
+                            <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
+                              {remainingCompetitorUpdates}/{FREE_UPDATE_LIMIT}
+                            </span>
+                          )}
                         </Button>
                       )}
                     </div>
@@ -2503,76 +2787,210 @@ export default function DashboardPage() {
                         <thead>
                           <tr className="bg-neutral-50 border-b border-neutral-200">
                             <th className="text-left py-3 px-4 font-medium text-neutral-600">Nettside</th>
-                            <th className="text-center py-3 px-3 font-medium text-neutral-600">Total</th>
-                            <th className="text-center py-3 px-3 font-medium text-neutral-600">SEO</th>
-                            <th className="text-center py-3 px-3 font-medium text-neutral-600">Innhold</th>
-                            <th className="text-center py-3 px-3 font-medium text-neutral-600">Sikkerhet</th>
+                            <th className="text-center py-3 px-3 font-medium text-neutral-600">
+                              <button 
+                                onClick={() => setCompetitorSort(prev => 
+                                  prev?.column === 'total' 
+                                    ? { column: 'total', direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+                                    : { column: 'total', direction: 'desc' }
+                                )}
+                                className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors"
+                              >
+                                Total
+                                {competitorSort?.column === 'total' ? (
+                                  competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+                                ) : (
+                                  <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />
+                                )}
+                              </button>
+                            </th>
+                            <th className="text-center py-3 px-3 font-medium text-neutral-600">
+                              <button 
+                                onClick={() => setCompetitorSort(prev => 
+                                  prev?.column === 'seo' 
+                                    ? { column: 'seo', direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+                                    : { column: 'seo', direction: 'desc' }
+                                )}
+                                className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors"
+                              >
+                                SEO
+                                {competitorSort?.column === 'seo' ? (
+                                  competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+                                ) : (
+                                  <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />
+                                )}
+                              </button>
+                            </th>
+                            <th className="text-center py-3 px-3 font-medium text-neutral-600">
+                              <button 
+                                onClick={() => setCompetitorSort(prev => 
+                                  prev?.column === 'content' 
+                                    ? { column: 'content', direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+                                    : { column: 'content', direction: 'desc' }
+                                )}
+                                className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors"
+                              >
+                                Innhold
+                                {competitorSort?.column === 'content' ? (
+                                  competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+                                ) : (
+                                  <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />
+                                )}
+                              </button>
+                            </th>
+                            <th className="text-center py-3 px-3 font-medium text-neutral-600">
+                              <button 
+                                onClick={() => setCompetitorSort(prev => 
+                                  prev?.column === 'security' 
+                                    ? { column: 'security', direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+                                    : { column: 'security', direction: 'desc' }
+                                )}
+                                className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors"
+                              >
+                                Sikkerhet
+                                {competitorSort?.column === 'security' ? (
+                                  competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+                                ) : (
+                                  <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />
+                                )}
+                              </button>
+                            </th>
+                            <th className="text-center py-3 px-3 font-medium text-neutral-600">
+                              <button 
+                                onClick={() => setCompetitorSort(prev => 
+                                  prev?.column === 'aiVisibility' 
+                                    ? { column: 'aiVisibility', direction: prev.direction === 'asc' ? 'desc' : 'asc' }
+                                    : { column: 'aiVisibility', direction: 'desc' }
+                                )}
+                                className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors"
+                              >
+                                AI-søk
+                                {competitorSort?.column === 'aiVisibility' ? (
+                                  competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />
+                                ) : (
+                                  <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />
+                                )}
+                              </button>
+                            </th>
                           </tr>
                         </thead>
                         <tbody>
-                          {/* Your scores */}
-                          <tr className="border-b border-neutral-100 bg-green-50/50 hover:bg-green-50 transition-colors">
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
-                                  <Globe className="h-4 w-4 text-green-600" />
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="font-medium text-neutral-900 truncate">Du</p>
-                                  <p className="text-xs text-neutral-500 truncate">{companyName || new URL(companyUrl || url).hostname}</p>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="text-center py-3 px-3">
-                              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold text-sm">
-                                {result.overallScore}
-                              </span>
-                            </td>
-                            {(() => {
-                              const avgSeo = result.competitors.reduce((sum, c) => sum + c.results.seoResults.score, 0) / result.competitors.length;
-                              const avgContent = result.competitors.reduce((sum, c) => sum + c.results.contentResults.score, 0) / result.competitors.length;
-                              const avgSecurity = result.competitors.reduce((sum, c) => sum + c.results.securityResults.score, 0) / result.competitors.length;
+                          {/* All entries (user + competitors) - sorted */}
+                          {(() => {
+                            // Create array with user's own scores for sorting
+                            const userAiScore = result.aiVisibility?.score ?? null;
+                            const allEntries = [
+                              {
+                                type: 'user' as const,
+                                url: companyUrl || url,
+                                name: companyName || new URL(companyUrl || url).hostname,
+                                total: result.overallScore,
+                                seo: result.seoResults.score,
+                                content: result.contentResults.score,
+                                security: result.securityResults.score,
+                                aiVisibility: userAiScore,
+                              },
+                              ...result.competitors.map((c, idx) => ({
+                                type: 'competitor' as const,
+                                url: c.url,
+                                name: c.companyName || new URL(c.url).hostname,
+                                total: c.results.overallScore,
+                                seo: c.results.seoResults.score,
+                                content: c.results.contentResults.score,
+                                security: c.results.securityResults.score,
+                                aiVisibility: c.results.aiVisibility?.score ?? null,
+                                competitor: c,
+                                index: idx,
+                              })),
+                            ];
+
+                            // Sort if sort is active
+                            if (competitorSort) {
+                              allEntries.sort((a, b) => {
+                                const aVal = a[competitorSort.column];
+                                const bVal = b[competitorSort.column];
+                                // Handle null (e.g. AI-søk for competitors)
+                                const aNum = aVal == null ? -1 : aVal;
+                                const bNum = bVal == null ? -1 : bVal;
+                                return competitorSort.direction === 'asc' ? aNum - bNum : bNum - aNum;
+                              });
+                            }
+
+                            // Calculate averages for color coding
+                            const avgSeo = result.competitors.reduce((sum, c) => sum + c.results.seoResults.score, 0) / result.competitors.length;
+                            const avgContent = result.competitors.reduce((sum, c) => sum + c.results.contentResults.score, 0) / result.competitors.length;
+                            const avgSecurity = result.competitors.reduce((sum, c) => sum + c.results.securityResults.score, 0) / result.competitors.length;
+
+                            return allEntries.map((entry, idx) => {
+                              if (entry.type === 'user') {
+                                return (
+                                  <tr key="user" className="border-b border-neutral-100 bg-green-50/50 hover:bg-green-50 transition-colors">
+                                    <td className="py-3 px-4">
+                                      <div className="flex items-center gap-2">
+                                        <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
+                                          <Globe className="h-4 w-4 text-green-600" />
+                                        </div>
+                                        <div className="min-w-0">
+                                          <p className="font-medium text-neutral-900 truncate">Du</p>
+                                          <p className="text-xs text-neutral-500 truncate">{entry.name}</p>
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="text-center py-3 px-3">
+                                      <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold text-sm">
+                                        {entry.total}
+                                      </span>
+                                    </td>
+                                    <td className="text-center py-3 px-3">
+                                      <div className="flex flex-col items-center gap-1">
+                                        <span className={`font-semibold ${entry.seo >= avgSeo ? 'text-green-600' : 'text-red-600'}`}>
+                                          {entry.seo}
+                                        </span>
+                                        <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
+                                          <div className={`h-full rounded-full ${entry.seo >= avgSeo ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${entry.seo}%` }} />
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="text-center py-3 px-3">
+                                      <div className="flex flex-col items-center gap-1">
+                                        <span className={`font-semibold ${entry.content >= avgContent ? 'text-green-600' : 'text-red-600'}`}>
+                                          {entry.content}
+                                        </span>
+                                        {result.contentResults?.wordCount != null && (
+                                          <span className="text-[10px] text-neutral-500">{result.contentResults.wordCount.toLocaleString('nb-NO')} ord</span>
+                                        )}
+                                        <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
+                                          <div className={`h-full rounded-full ${entry.content >= avgContent ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${entry.content}%` }} />
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="text-center py-3 px-3">
+                                      <div className="flex flex-col items-center gap-1">
+                                        <span className={`font-semibold ${entry.security >= avgSecurity ? 'text-green-600' : 'text-red-600'}`}>
+                                          {entry.security}
+                                        </span>
+                                        <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
+                                          <div className={`h-full rounded-full ${entry.security >= avgSecurity ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${entry.security}%` }} />
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="text-center py-3 px-3">
+                                      {result.aiVisibility?.score != null ? (
+                                        <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">
+                                          {result.aiVisibility.score}
+                                        </span>
+                                      ) : (
+                                        <span className="text-neutral-400 text-sm">–</span>
+                                      )}
+                                    </td>
+                                  </tr>
+                                );
+                              }
+
+                              const competitor = entry.competitor!;
+                              const index = entry.index!;
+                              const isWinning = competitor.results.overallScore > result.overallScore;
                               return (
-                                <>
-                                  <td className="text-center py-3 px-3">
-                                    <div className="flex flex-col items-center gap-1">
-                                      <span className={`font-semibold ${result.seoResults.score >= avgSeo ? 'text-green-600' : 'text-red-600'}`}>
-                                        {result.seoResults.score}
-                                      </span>
-                                      <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
-                                        <div className={`h-full rounded-full ${result.seoResults.score >= avgSeo ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${result.seoResults.score}%` }} />
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="text-center py-3 px-3">
-                                    <div className="flex flex-col items-center gap-1">
-                                      <span className={`font-semibold ${result.contentResults.score >= avgContent ? 'text-green-600' : 'text-red-600'}`}>
-                                        {result.contentResults.score}
-                                      </span>
-                                      <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
-                                        <div className={`h-full rounded-full ${result.contentResults.score >= avgContent ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${result.contentResults.score}%` }} />
-                                      </div>
-                                    </div>
-                                  </td>
-                                  <td className="text-center py-3 px-3">
-                                    <div className="flex flex-col items-center gap-1">
-                                      <span className={`font-semibold ${result.securityResults.score >= avgSecurity ? 'text-green-600' : 'text-red-600'}`}>
-                                        {result.securityResults.score}
-                                      </span>
-                                      <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
-                                        <div className={`h-full rounded-full ${result.securityResults.score >= avgSecurity ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${result.securityResults.score}%` }} />
-                                      </div>
-                                    </div>
-                                  </td>
-                                </>
-                              );
-                            })()}
-                          </tr>
-                          
-                          {/* Competitor scores */}
-                          {result.competitors.map((competitor, index) => {
-                            const isWinning = competitor.results.overallScore > result.overallScore;
-                            return (
                               <tr key={competitor.url} className="border-b border-neutral-100 last:border-b-0 hover:bg-neutral-50 transition-colors group">
                                 <td className="py-3 px-4">
                                   <div className="flex items-center gap-2">
@@ -2616,6 +3034,9 @@ export default function DashboardPage() {
                                     <span className={`font-semibold ${competitor.results.contentResults.score > result.contentResults.score ? 'text-red-600' : 'text-neutral-600'}`}>
                                       {competitor.results.contentResults.score}
                                     </span>
+                                    {competitor.results.contentResults?.wordCount != null && (
+                                      <span className="text-[10px] text-neutral-500">{competitor.results.contentResults.wordCount.toLocaleString('nb-NO')} ord</span>
+                                    )}
                                     <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
                                       <div className="h-full rounded-full bg-neutral-400" style={{ width: `${competitor.results.contentResults.score}%` }} />
                                     </div>
@@ -2631,9 +3052,19 @@ export default function DashboardPage() {
                                     </div>
                                   </div>
                                 </td>
+                                <td className="text-center py-3 px-3">
+                                  {competitor.results.aiVisibility?.score != null ? (
+                                    <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">
+                                      {competitor.results.aiVisibility.score}
+                                    </span>
+                                  ) : (
+                                    <span className="text-neutral-400 text-sm">–</span>
+                                  )}
+                                </td>
                               </tr>
-                            );
-                          })}
+                              );
+                            });
+                          })()}
                         </tbody>
                       </table>
                     </div>
@@ -2725,7 +3156,7 @@ export default function DashboardPage() {
                   <p className="text-sm text-neutral-500 max-w-md mx-auto mb-4">
                     Du valgte ingen konkurrenter i den opprinnelige analysen.
                   </p>
-                  {remainingCompetitorUpdates > 0 && !editingCompetitors && (
+                  {(isPremium || remainingCompetitorUpdates > 0) && !editingCompetitors && (
                     <Button
                       variant="outline"
                       onClick={startEditingCompetitors}
@@ -2733,9 +3164,11 @@ export default function DashboardPage() {
                     >
                       <Plus className="mr-2 h-4 w-4" />
                       Legg til konkurrenter
-                      <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
-                        {remainingCompetitorUpdates}/{FREE_UPDATE_LIMIT}
-                      </span>
+                      {!isPremium && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
+                          {remainingCompetitorUpdates}/{FREE_UPDATE_LIMIT}
+                        </span>
+                      )}
                     </Button>
                   )}
                 </div>
@@ -2755,9 +3188,11 @@ export default function DashboardPage() {
                         <Tag className="h-4 w-4 text-purple-600" />
                         Rediger nøkkelord
                       </h3>
-                      <span className="px-2 py-0.5 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">
-                        {remainingKeywordUpdates} oppdatering{remainingKeywordUpdates !== 1 ? 'er' : ''} igjen
-                      </span>
+                      {!isPremium && (
+                        <span className="px-2 py-0.5 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">
+                          {remainingKeywordUpdates} oppdatering{remainingKeywordUpdates !== 1 ? 'er' : ''} igjen
+                        </span>
+                      )}
                     </div>
                     <button
                       onClick={cancelEditingKeywords}
@@ -2832,7 +3267,7 @@ export default function DashboardPage() {
                     {/* Action button */}
                     <Button
                       onClick={updateKeywordAnalysis}
-                      disabled={updatingKeywords || remainingKeywordUpdates <= 0 || editKeywords.length === 0}
+                      disabled={updatingKeywords || (!isPremium && remainingKeywordUpdates <= 0) || editKeywords.length === 0}
                       className="w-full rounded-xl bg-neutral-900 hover:bg-neutral-800"
                     >
                       {updatingKeywords ? (
@@ -2864,18 +3299,20 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-2">
                         {!editingKeywords && (
-                          <Button
+                            <Button
                             variant="outline"
                             size="sm"
                             onClick={startEditingKeywords}
-                            disabled={remainingKeywordUpdates <= 0}
+                            disabled={!isPremium && remainingKeywordUpdates <= 0}
                             className="rounded-lg text-xs"
                           >
                             <Plus className="mr-1 h-3.5 w-3.5" />
                             Endre nøkkelord
-                            <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
-                              {remainingKeywordUpdates}/{FREE_UPDATE_LIMIT}
-                            </span>
+                            {!isPremium && (
+                              <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
+                                {remainingKeywordUpdates}/{FREE_UPDATE_LIMIT}
+                              </span>
+                            )}
                           </Button>
                         )}
                         <span className="px-2.5 py-1 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">
@@ -3159,57 +3596,92 @@ export default function DashboardPage() {
                   </div>
                 </div>
               ) : result.aiSummary?.keywordAnalysis ? (
-                /* Keyword Analysis from AI - Show if no keyword research data */
-                <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-                  <div className="p-6 border-b border-neutral-100">
-                    <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-3">
-                      <Tag className="h-4 w-4 text-neutral-600" />
-                      Søkeordsanalyse
-                    </h3>
-                    <p className="text-sm text-neutral-600">{result.aiSummary.keywordAnalysis.summary}</p>
-                  </div>
-                  
-                  <div className="p-6 space-y-6">
-                    {/* Keywords Grid */}
-                    <div className="grid md:grid-cols-2 gap-6">
-                      <div>
-                        <h4 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-neutral-900 text-sm font-medium mb-3">
-                          Hovedsøkeord funnet
-                        </h4>
-                        <div className="flex flex-wrap gap-2">
-                          {result.aiSummary.keywordAnalysis.primaryKeywords.map((kw, i) => (
-                            <span key={i} className="px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-700 text-sm font-medium border border-neutral-200">
-                              {kw}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                      {result.aiSummary.keywordAnalysis.missingKeywords.length > 0 && (
-                        <div>
-                          <h4 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 text-neutral-900 text-sm font-medium mb-3">
-                            Anbefalte å legge til
-                          </h4>
-                          <div className="flex flex-wrap gap-2">
-                            {result.aiSummary.keywordAnalysis.missingKeywords.map((kw, i) => (
-                              <span key={i} className="px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-700 text-sm font-medium border border-neutral-200">
-                                + {kw}
-                              </span>
-                            ))}
+                /* Same table layout when only AI keyword analysis (no CPC data) – unified nøkkelord tab */
+                (() => {
+                  const primary = result.aiSummary!.keywordAnalysis!.primaryKeywords || [];
+                  const missing = result.aiSummary!.keywordAnalysis!.missingKeywords || [];
+                  const aiKeywordsAsTable: KeywordResearchData[] = [
+                    ...primary.map((keyword) => ({
+                      keyword,
+                      searchVolume: 0,
+                      cpc: 0,
+                      competition: 'medium' as const,
+                      competitionScore: 50,
+                      intent: 'informational' as const,
+                      difficulty: 50,
+                      trend: 'stabil' as const,
+                    })),
+                    ...missing.map((keyword) => ({
+                      keyword: `+ ${keyword}`,
+                      searchVolume: 0,
+                      cpc: 0,
+                      competition: 'medium' as const,
+                      competitionScore: 50,
+                      intent: 'commercial' as const,
+                      difficulty: 50,
+                      trend: 'stabil' as const,
+                    })),
+                  ];
+                  const hasAiKeywords = aiKeywordsAsTable.length > 0;
+                  if (!hasAiKeywords) return null;
+                  return (
+                    <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
+                      <div className="p-6 border-b border-neutral-100">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-3">
+                              <Tag className="h-4 w-4 text-neutral-600" />
+                              Nøkkelordanalyse
+                            </h3>
+                            <p className="text-sm text-neutral-600">Søkeord fra AI-analyse (CPC/søkevolum ikke tilgjengelig uten nøkkelord i analysen)</p>
                           </div>
                         </div>
-                      )}
+                      </div>
+                      <div className="p-6">
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b border-neutral-200">
+                                <th className="text-left py-3 px-4 font-medium text-neutral-600">Nøkkelord</th>
+                                <th className="text-right py-3 px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Søkevolum ~/mnd</th>
+                                <th className="text-right py-3 px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wide">CPC ~</th>
+                                <th className="text-center py-3 px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Konkurranse</th>
+                                <th className="text-center py-3 px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Vanskelighet</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {aiKeywordsAsTable.map((kw, i) => (
+                                <tr key={i} className="border-b border-neutral-100 last:border-b-0">
+                                  <td className="py-4 px-4">
+                                    <span className={`font-medium ${kw.keyword.startsWith('+ ') ? 'text-amber-700' : 'text-neutral-900'}`}>
+                                      {kw.keyword}
+                                    </span>
+                                  </td>
+                                  <td className="py-4 px-4 text-right text-neutral-400">–</td>
+                                  <td className="py-4 px-4 text-right text-neutral-400">–</td>
+                                  <td className="py-4 px-4 text-center text-neutral-400">–</td>
+                                  <td className="py-4 px-4 text-center text-neutral-400">–</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                        {result.aiSummary?.keywordAnalysis?.recommendations && (
+                          <div className="mt-6 p-5 rounded-xl bg-neutral-50 border border-neutral-100">
+                            <h5 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 text-neutral-900 text-sm font-medium mb-3">
+                              <Sparkles className="h-4 w-4 text-blue-600" />
+                              Anbefalinger
+                            </h5>
+                            <p className="text-sm text-neutral-700">{result.aiSummary.keywordAnalysis.recommendations}</p>
+                          </div>
+                        )}
+                        <p className="mt-4 text-xs text-neutral-500">
+                          Legg til nøkkelord før analyse for å få full CPC-tabell med søkevolum og konkurranse.
+                        </p>
+                      </div>
                     </div>
-
-                    {/* Recommendations */}
-                    <div className="p-5 rounded-xl bg-white border border-neutral-200">
-                      <h5 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 text-neutral-900 text-sm font-medium mb-3">
-                        <Sparkles className="h-4 w-4 text-blue-600" />
-                        Anbefalinger
-                      </h5>
-                      <p className="text-sm text-neutral-700">{result.aiSummary.keywordAnalysis.recommendations}</p>
-                    </div>
-                  </div>
-                </div>
+                  );
+                })()
               ) : (
                 <div className="rounded-2xl border border-neutral-200 bg-white p-12 text-center">
                   <div className="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -3219,7 +3691,7 @@ export default function DashboardPage() {
                   <p className="text-sm text-neutral-500 max-w-md mx-auto mb-4">
                     Du la ikke til nøkkelord i den opprinnelige analysen.
                   </p>
-                  {remainingKeywordUpdates > 0 && !editingKeywords && (
+                  {(isPremium || remainingKeywordUpdates > 0) && !editingKeywords && (
                     <Button
                       variant="outline"
                       onClick={startEditingKeywords}
@@ -3227,9 +3699,11 @@ export default function DashboardPage() {
                     >
                       <Plus className="mr-2 h-4 w-4" />
                       Legg til nøkkelord
-                      <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
-                        {remainingKeywordUpdates}/{FREE_UPDATE_LIMIT}
-                      </span>
+                      {!isPremium && (
+                        <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
+                          {remainingKeywordUpdates}/{FREE_UPDATE_LIMIT}
+                        </span>
+                      )}
                     </Button>
                   )}
                 </div>
@@ -3240,16 +3714,24 @@ export default function DashboardPage() {
           {activeTab === 'ai' && (
             <>
               {result.aiSummary ? (
+                <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
+                  <div className="p-6 border-b border-neutral-100">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-3">
+                          <Sparkles className="h-4 w-4 text-neutral-600" />
+                          AI-analyse
+                        </h3>
+                        <p className="text-sm text-neutral-600">AI-genererte innsikter og anbefalinger basert på analysen</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-6">
                 <div className="grid md:grid-cols-2 gap-8">
                   {/* Left Column - AI Summary & Key Findings */}
                   <div>
                     {/* AI Summary */}
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center">
-                        <Sparkles className="w-4 h-4 text-white" />
-                      </div>
-                      <h4 className="font-semibold text-neutral-900">AI-vurdering</h4>
-                    </div>
+                    <h4 className="text-sm font-semibold text-neutral-700 mb-3">AI-vurdering</h4>
                     <p className="text-sm text-neutral-600 leading-relaxed mb-6">
                       {result.aiSummary.overallAssessment}
                     </p>
@@ -3356,6 +3838,8 @@ export default function DashboardPage() {
                     )}
                   </div>
                 </div>
+                  </div>
+                </div>
               ) : (
                 <div className="text-center py-12">
                   <div className="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -3371,19 +3855,19 @@ export default function DashboardPage() {
           )}
 
           {activeTab === 'ai-visibility' && (
-            <div className="space-y-6">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-violet-100 to-blue-100 flex items-center justify-center">
-                    <Eye className="w-5 h-5 text-violet-600" />
-                  </div>
+            <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
+              <div className="p-6 border-b border-neutral-100">
+                <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="font-semibold text-neutral-900">AI-synlighet</h3>
-                    <p className="text-sm text-neutral-500">Hvor godt AI-modeller kjenner til bedriften din</p>
+                    <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-3">
+                      <Eye className="h-4 w-4 text-neutral-600" />
+                      AI-synlighet
+                    </h3>
+                    <p className="text-sm text-neutral-600">Hvor godt AI-modeller kjenner til bedriften din</p>
                   </div>
                 </div>
               </div>
+              <div className="p-6 space-y-6">
 
               {(() => {
                 // Use stored AI visibility data if available, otherwise use live check result
@@ -3391,119 +3875,122 @@ export default function DashboardPage() {
                 
                 if (visData) {
                   return (
-                    <div className="space-y-6">
-                      {/* Score Card */}
-                      <div className="rounded-2xl border border-neutral-200 bg-white p-6">
-                        <div className="grid md:grid-cols-2 gap-6">
-                          {/* Score visualization */}
-                          <div className="flex items-center gap-6">
-                            <div className="relative">
-                              <div className={`w-28 h-28 rounded-full flex items-center justify-center ${
-                                visData.level === 'high' ? 'bg-green-100' :
-                                visData.level === 'medium' ? 'bg-amber-100' :
-                                'bg-red-100'
-                              }`}>
-                                <span className={`text-4xl font-bold ${
-                                  visData.level === 'high' ? 'text-green-600' :
-                                  visData.level === 'medium' ? 'text-amber-600' :
-                                  'text-red-600'
-                                }`}>{visData.score}</span>
-                              </div>
-                            </div>
-                            <div className="flex-1">
-                              <p className={`text-lg font-semibold mb-1 ${
-                                visData.level === 'high' ? 'text-green-700' :
-                                visData.level === 'medium' ? 'text-amber-700' :
-                                'text-red-700'
-                              }`}>
-                                {visData.level === 'high' ? 'God AI-synlighet' :
-                                 visData.level === 'medium' ? 'Moderat AI-synlighet' :
-                                 visData.level === 'low' ? 'Lav AI-synlighet' :
-                                 'Ikke synlig i AI-søk'}
-                              </p>
-                              <p className="text-sm text-neutral-600">{visData.description}</p>
+                    <div className="grid lg:grid-cols-3 gap-6">
+                      {/* Left Column - Score & Stats */}
+                      <div className="lg:col-span-1 space-y-4">
+                        {/* Score Card */}
+                        <div className="text-center">
+                          <div className={`w-32 h-32 mx-auto rounded-full flex items-center justify-center mb-4 ${
+                            visData.level === 'high' ? 'bg-gradient-to-br from-green-100 to-green-200' :
+                            visData.level === 'medium' ? 'bg-gradient-to-br from-amber-100 to-amber-200' :
+                            'bg-gradient-to-br from-red-100 to-red-200'
+                          }`}>
+                            <div className="text-center">
+                              <span className={`text-4xl font-bold ${
+                                visData.level === 'high' ? 'text-green-600' :
+                                visData.level === 'medium' ? 'text-amber-600' :
+                                'text-red-600'
+                              }`}>{visData.score}</span>
+                              <p className="text-xs text-neutral-500 mt-0.5">av 100</p>
                             </div>
                           </div>
-                          
-                          {/* Stats */}
-                          <div className="grid grid-cols-3 gap-4">
-                            <div className="p-4 rounded-xl bg-neutral-50 text-center">
-                              <p className="text-3xl font-bold text-neutral-900">{visData.details.queriesTested}</p>
-                              <p className="text-xs text-neutral-500 mt-1">Spørsmål testet</p>
-                            </div>
-                            <div className="p-4 rounded-xl bg-green-50 text-center">
-                              <p className="text-3xl font-bold text-green-600">{visData.details.timesCited}</p>
-                              <p className="text-xs text-neutral-500 mt-1">Kjenner til</p>
-                            </div>
-                            <div className="p-4 rounded-xl bg-blue-50 text-center">
-                              <p className="text-3xl font-bold text-blue-600">{visData.details.timesMentioned}</p>
-                              <p className="text-xs text-neutral-500 mt-1">Delvis kjent</p>
-                            </div>
+                          <h4 className={`font-semibold mb-1 ${
+                            visData.level === 'high' ? 'text-green-700' :
+                            visData.level === 'medium' ? 'text-amber-700' :
+                            'text-red-700'
+                          }`}>
+                            {visData.level === 'high' ? 'God AI-synlighet' :
+                             visData.level === 'medium' ? 'Moderat AI-synlighet' :
+                             visData.level === 'low' ? 'Lav AI-synlighet' :
+                             'Ikke synlig i AI-søk'}
+                          </h4>
+                          <p className="text-sm text-neutral-500">{visData.description}</p>
+                        </div>
+
+                        {/* Stats Grid */}
+                        <div className="grid grid-cols-3 gap-2">
+                          <div className="p-3 rounded-xl bg-neutral-50 text-center">
+                            <p className="text-2xl font-bold text-neutral-900">{visData.details.queriesTested}</p>
+                            <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Testet</p>
+                          </div>
+                          <div className="p-3 rounded-xl bg-green-50 text-center">
+                            <p className="text-2xl font-bold text-green-600">{visData.details.timesCited}</p>
+                            <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Kjent</p>
+                          </div>
+                          <div className="p-3 rounded-xl bg-amber-50 text-center">
+                            <p className="text-2xl font-bold text-amber-600">{visData.details.timesMentioned}</p>
+                            <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Delvis</p>
                           </div>
                         </div>
+
+                        {/* Recommendations */}
+                        {visData.recommendations.length > 0 && (
+                          <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
+                            <h5 className="font-medium text-amber-800 text-sm mb-3 flex items-center gap-2">
+                              <Lightbulb className="w-4 h-4" />
+                              Forbedringer
+                            </h5>
+                            <ul className="space-y-2">
+                              {visData.recommendations.map((rec, i) => (
+                                <li key={i} className="text-xs text-amber-700 flex items-start gap-2">
+                                  <span className="w-4 h-4 rounded-full bg-amber-200 flex items-center justify-center shrink-0 text-[10px] font-medium text-amber-800 mt-0.5">
+                                    {i + 1}
+                                  </span>
+                                  <span>{rec}</span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
 
-                      {/* Search queries tested */}
-                      <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-                        <div className="p-5 border-b border-neutral-100">
-                          <h4 className="font-semibold text-neutral-900">Hva AI svarte</h4>
-                          <p className="text-sm text-neutral-500 mt-0.5">Svar fra GPT på spørsmål om bedriften din</p>
+                      {/* Right Column - Query Results */}
+                      <div className="lg:col-span-2">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="font-medium text-neutral-900">AI-svar på spørsmål</h4>
+                          <span className="text-xs text-neutral-500">GPT-4o mini</span>
                         </div>
-                        <div className="p-5 space-y-4">
+                        <div className="space-y-3">
                           {visData.details.queries.map((q, i) => (
-                            <div key={i} className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
-                              <div className="flex items-center gap-3 mb-3">
-                                <div className={`w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${
+                            <div key={i} className={`p-4 rounded-xl border ${
+                              q.cited ? 'bg-green-50/50 border-green-200' : 
+                              q.mentioned ? 'bg-blue-50/50 border-blue-200' : 
+                              'bg-neutral-50 border-neutral-200'
+                            }`}>
+                              <div className="flex items-start gap-3">
+                                <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
                                   q.cited ? 'bg-green-100' : q.mentioned ? 'bg-blue-100' : 'bg-neutral-200'
                                 }`}>
                                   {q.cited ? (
-                                    <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                                    <CheckCircle2 className="w-4 h-4 text-green-600" />
                                   ) : q.mentioned ? (
-                                    <Search className="w-3 h-3 text-blue-600" />
+                                    <Search className="w-4 h-4 text-blue-600" />
                                   ) : (
-                                    <X className="w-3 h-3 text-neutral-400" />
+                                    <X className="w-4 h-4 text-neutral-400" />
                                   )}
                                 </div>
-                                <p className="text-sm font-medium text-neutral-700 flex-1">&quot;{q.query}&quot;</p>
-                                <span className={`text-xs px-2.5 py-1 rounded-full shrink-0 font-medium ${
-                                  q.cited ? 'bg-green-100 text-green-700' : 
-                                  q.mentioned ? 'bg-blue-100 text-blue-700' : 
-                                  'bg-neutral-200 text-neutral-600'
-                                }`}>
-                                  {q.cited ? 'Kjenner til' : q.mentioned ? 'Delvis kjent' : 'Ukjent'}
-                                </span>
-                              </div>
-                              {q.aiResponse && (
-                                <div className="pl-9">
-                                  <p className="text-sm text-neutral-600 italic bg-white p-3 rounded-lg border border-neutral-100">
-                                    &quot;{q.aiResponse}&quot;
-                                  </p>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2 mb-1">
+                                    <p className="text-sm font-medium text-neutral-800">{q.query}</p>
+                                    <span className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 font-medium ${
+                                      q.cited ? 'bg-green-100 text-green-700' : 
+                                      q.mentioned ? 'bg-blue-100 text-blue-700' : 
+                                      'bg-neutral-200 text-neutral-600'
+                                    }`}>
+                                      {q.cited ? 'Kjent' : q.mentioned ? 'Delvis' : 'Ukjent'}
+                                    </span>
+                                  </div>
+                                  {q.aiResponse && (
+                                    <p className="text-sm text-neutral-600 leading-relaxed">
+                                      {q.aiResponse}
+                                    </p>
+                                  )}
                                 </div>
-                              )}
+                              </div>
                             </div>
                           ))}
                         </div>
                       </div>
-
-                      {/* Recommendations */}
-                      {visData.recommendations.length > 0 && (
-                        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
-                          <h4 className="font-semibold text-amber-800 mb-3 flex items-center gap-2">
-                            <Lightbulb className="w-5 h-5" />
-                            Anbefalinger for bedre AI-synlighet
-                          </h4>
-                          <ul className="space-y-2">
-                            {visData.recommendations.map((rec, i) => (
-                              <li key={i} className="text-sm text-amber-700 flex items-start gap-3">
-                                <span className="w-5 h-5 rounded-full bg-amber-200 flex items-center justify-center shrink-0 text-xs font-medium text-amber-800">
-                                  {i + 1}
-                                </span>
-                                {rec}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
                     </div>
                   );
                 }
@@ -3647,6 +4134,7 @@ export default function DashboardPage() {
                   </div>
                 );
               })()}
+              </div>
             </div>
           )}
         </>
@@ -3657,20 +4145,22 @@ export default function DashboardPage() {
             <div className="w-20 h-20 bg-neutral-100 rounded-2xl flex items-center justify-center mb-6">
               <BarChart3 className="w-10 h-10 text-neutral-400" />
             </div>
-            <h3 className="text-xl font-semibold mb-2 text-neutral-900">Klar for din gratis analyse</h3>
+            <h3 className="text-xl font-semibold mb-2 text-neutral-900">
+              {isPremium ? 'Klar for analyse' : 'Klar for din gratis analyse'}
+            </h3>
             <p className="text-neutral-500 text-center max-w-md mb-8">
-              Start analysen for å få en komplett rapport om nettsiden din med SEO, sikkerhet og AI-drevne anbefalinger.
+              Start analysen for å få en komplett rapport om nettsiden med SEO, sikkerhet og AI-drevne anbefalinger.
             </p>
             <div className="flex flex-col sm:flex-row gap-3">
               <Button onClick={() => setDialogOpen(true)} size="lg" className="bg-neutral-900 hover:bg-neutral-800 text-white">
                 <Plus className="mr-2 h-5 w-5" />
-                Start din første analyse
+                {isPremium ? 'Start analyse' : 'Start din første analyse'}
               </Button>
             </div>
             <div className="flex items-center gap-6 mt-8 text-sm text-neutral-400">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
-                <span>{FREE_MONTHLY_LIMIT} gratis/mnd</span>
+                <span>{isPremium ? 'Ubegrenset analyser' : `${FREE_MONTHLY_LIMIT} gratis/mnd`}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -3680,6 +4170,12 @@ export default function DashboardPage() {
                 <CheckCircle2 className="h-4 w-4 text-green-500" />
                 <span>Konkurrentsjekk</span>
               </div>
+              {isPremium && (
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  <span>AI-synlighet</span>
+                </div>
+              )}
             </div>
           </div>
         </div>

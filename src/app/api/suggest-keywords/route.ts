@@ -6,14 +6,24 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const MAX_KEYWORDS = 50;
+const DEFAULT_COUNT = 20;
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { url } = body;
+    const { url, count: requestedCount } = body;
 
     if (!url) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 });
     }
+
+    // User can choose 10, 20, 30, or 50 (capped at MAX_KEYWORDS)
+    const validCounts = [10, 20, 30, 50];
+    const count = validCounts.includes(Number(requestedCount))
+      ? Number(requestedCount)
+      : Math.min(MAX_KEYWORDS, Math.max(10, Math.round(Number(requestedCount) || DEFAULT_COUNT)));
+    const safeCount = Math.min(MAX_KEYWORDS, Math.max(10, count));
 
     // Normalize URL
     const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
@@ -55,7 +65,7 @@ export async function POST(request: NextRequest) {
         {
           role: 'system',
           content: `Du er en SEO-ekspert som foreslår relevante nøkkelord for norske nettsider. 
-Foreslå 15-20 relevante nøkkelord basert på URL og innhold.
+Foreslå nøyaktig ${safeCount} relevante nøkkelord basert på URL og innhold.
 Fokuser på:
 - Bransje og tjenester
 - Geografisk relevans (hvis aktuelt)
@@ -64,7 +74,7 @@ Fokuser på:
 - Kombiner generiske og spesifikke søkeord
 
 Returner kun en JSON-array med nøkkelord på norsk, f.eks: ["nøkkelord1", "nøkkelord2"]
-Ikke inkluder forklaringer, kun JSON-arrayen.`
+Ikke inkluder forklaringer, kun JSON-arrayen. Antall nøkkelord må være ${safeCount}.`
         },
         {
           role: 'user',
@@ -75,7 +85,7 @@ Foreslå relevante nøkkelord for denne nettsiden:`
         }
       ],
       temperature: 0.7,
-      max_tokens: 500,
+      max_tokens: safeCount <= 20 ? 500 : 1200,
     });
 
     const content = completion.choices[0]?.message?.content || '[]';
@@ -106,7 +116,7 @@ Foreslå relevante nøkkelord for denne nettsiden:`
 
     return NextResponse.json({
       success: true,
-      keywords: keywords.slice(0, 20),
+      keywords: keywords.slice(0, safeCount),
       tokensUsed: completion.usage?.total_tokens || 0,
     });
   } catch (error) {

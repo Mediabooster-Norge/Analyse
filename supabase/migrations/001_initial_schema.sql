@@ -52,9 +52,8 @@ CREATE INDEX IF NOT EXISTS idx_companies_website_url ON companies(website_url);
 -- Only one company per org_number (if provided)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_companies_unique_org_number 
   ON companies(org_number) WHERE org_number IS NOT NULL;
--- Only one company per website_url
-CREATE UNIQUE INDEX IF NOT EXISTS idx_companies_unique_website_url 
-  ON companies(website_url);
+-- NOTE: We allow multiple users to analyze the same website
+-- DROP INDEX IF EXISTS idx_companies_unique_website_url;
 
 -- ============================================================================
 -- Analyses Table
@@ -157,7 +156,8 @@ CREATE TABLE IF NOT EXISTS api_usage (
 CREATE INDEX IF NOT EXISTS idx_api_usage_user_date ON api_usage(user_id, usage_date);
 
 -- ============================================================================
--- Function to check if company exists
+-- Function to check if company exists (only checks org_number, not website)
+-- Multiple users can analyze the same website
 -- ============================================================================
 CREATE OR REPLACE FUNCTION check_company_exists(
   p_website_url TEXT,
@@ -165,23 +165,18 @@ CREATE OR REPLACE FUNCTION check_company_exists(
 )
 RETURNS TABLE(exists_by TEXT, company_name TEXT) AS $$
 BEGIN
-  -- Check by org_number first (if provided)
+  -- Only check by org_number (if provided)
+  -- We allow multiple users to analyze the same website
   IF p_org_number IS NOT NULL THEN
     RETURN QUERY
     SELECT 'org_number'::TEXT, c.name
     FROM companies c
     WHERE c.org_number = p_org_number
     LIMIT 1;
-    
-    IF FOUND THEN RETURN; END IF;
   END IF;
   
-  -- Check by website_url
-  RETURN QUERY
-  SELECT 'website_url'::TEXT, c.name
-  FROM companies c
-  WHERE c.website_url = p_website_url
-  LIMIT 1;
+  -- No check for website_url - multiple users can analyze same site
+  RETURN;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -206,15 +201,13 @@ DECLARE
   v_company_id UUID;
   v_existing_check RECORD;
 BEGIN
-  -- Check if company already exists
-  SELECT * INTO v_existing_check 
-  FROM check_company_exists(p_website_url, p_org_number) LIMIT 1;
-  
-  IF v_existing_check IS NOT NULL THEN
-    IF v_existing_check.exists_by = 'org_number' THEN
+  -- Only check org_number uniqueness (if provided)
+  IF p_org_number IS NOT NULL THEN
+    SELECT * INTO v_existing_check 
+    FROM check_company_exists(p_website_url, p_org_number) LIMIT 1;
+    
+    IF v_existing_check IS NOT NULL AND v_existing_check.exists_by = 'org_number' THEN
       RAISE EXCEPTION 'COMPANY_EXISTS_ORG:Bedriften med dette organisasjonsnummeret er allerede registrert';
-    ELSE
-      RAISE EXCEPTION 'COMPANY_EXISTS_URL:En bedrift med denne nettsiden er allerede registrert';
     END IF;
   END IF;
 
