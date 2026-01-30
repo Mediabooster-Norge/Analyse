@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runFullAnalysis, runCompetitorAnalysis } from '@/lib/analyzers';
 import { createClient } from '@/lib/supabase/server';
 import { getPremiumStatusServer } from '@/lib/premium-server';
+import type { AIVisibilityData } from '@/lib/services/openai';
 
 export const maxDuration = 60; // Allow up to 60 seconds for analysis
 
@@ -124,6 +125,56 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check for cached security and AI visibility results from recent analyses (within 24 hours)
+    // Both security and AI visibility are domain-level, so we can reuse them
+    const urlDomain = new URL(normalizedUrl).hostname;
+    let cachedSecurityResults = null;
+    const cachedAiVisibilityByDomain: Record<string, AIVisibilityData> = {};
+    
+    const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: recentAnalyses } = await supabase
+      .from('analyses')
+      .select('security_results, ai_visibility, website_url, competitor_results')
+      .eq('user_id', userId)
+      .gte('created_at', twentyFourHoursAgo)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    
+    // Build cache of security and AI visibility results by domain
+    if (recentAnalyses && recentAnalyses.length > 0) {
+      for (const analysis of recentAnalyses) {
+        try {
+          const analysisDomain = new URL(analysis.website_url).hostname;
+          
+          // Cache main site's security and AI visibility
+          if (analysisDomain === urlDomain && !cachedSecurityResults && analysis.security_results) {
+            cachedSecurityResults = analysis.security_results;
+            console.log(`[Security] Reusing cached security results for domain: ${urlDomain}`);
+          }
+          
+          if (analysis.ai_visibility && !cachedAiVisibilityByDomain[analysisDomain]) {
+            cachedAiVisibilityByDomain[analysisDomain] = analysis.ai_visibility as AIVisibilityData;
+          }
+          
+          // Also cache competitor AI visibility results
+          if (Array.isArray(analysis.competitor_results)) {
+            for (const comp of analysis.competitor_results as Array<{ url: string; results?: { aiVisibility?: AIVisibilityData } }>) {
+              try {
+                const compDomain = new URL(comp.url).hostname;
+                if (comp.results?.aiVisibility && !cachedAiVisibilityByDomain[compDomain]) {
+                  cachedAiVisibilityByDomain[compDomain] = comp.results.aiVisibility;
+                }
+              } catch { /* ignore invalid URLs */ }
+            }
+          }
+        } catch { /* ignore invalid URLs */ }
+      }
+      
+      if (Object.keys(cachedAiVisibilityByDomain).length > 0) {
+        console.log(`[AI Visibility] Found cached results for ${Object.keys(cachedAiVisibilityByDomain).length} domains`);
+      }
+    }
+
     // Run the analysis
     let result;
     let competitors: Array<{ url: string; results: unknown }> = [];
@@ -135,6 +186,8 @@ export async function POST(request: NextRequest) {
         targetKeywords: keywords,
         companyName: companyName || websiteName,
         isPremium,
+        cachedSecurityResults,
+        cachedAiVisibilityByDomain,
       });
       result = competitorAnalysis.mainResults;
       competitors = competitorAnalysis.competitorResults;
@@ -146,6 +199,8 @@ export async function POST(request: NextRequest) {
         targetKeywords: keywords,
         companyName: companyName || websiteName,
         isPremium,
+        cachedSecurityResults,
+        cachedAiVisibility: cachedAiVisibilityByDomain[urlDomain],
       });
     }
 

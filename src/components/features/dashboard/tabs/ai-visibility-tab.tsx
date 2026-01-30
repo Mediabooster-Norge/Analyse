@@ -148,15 +148,27 @@ export function AiVisibilityTab({
                   </div>
 
                   {visData.recommendations.length > 0 && (
-                    <div className="p-4 rounded-xl bg-amber-50 border border-amber-100">
-                      <h5 className="font-medium text-amber-800 text-sm mb-3 flex items-center gap-2">
+                    <div className={`p-4 rounded-xl border ${
+                      visData.level === 'high' 
+                        ? 'bg-green-50 border-green-100' 
+                        : 'bg-amber-50 border-amber-100'
+                    }`}>
+                      <h5 className={`font-medium text-sm mb-3 flex items-center gap-2 ${
+                        visData.level === 'high' ? 'text-green-800' : 'text-amber-800'
+                      }`}>
                         <Lightbulb className="w-4 h-4" />
-                        Forbedringer
+                        {visData.level === 'high' ? 'Tips for å holde deg på topp' : 'Forbedringer'}
                       </h5>
                       <ul className="space-y-2">
                         {visData.recommendations.map((rec, i) => (
-                          <li key={i} className="text-xs text-amber-700 flex items-start gap-2">
-                            <span className="w-4 h-4 rounded-full bg-amber-200 flex items-center justify-center shrink-0 text-[10px] font-medium text-amber-800 mt-0.5">
+                          <li key={i} className={`text-xs flex items-start gap-2 ${
+                            visData.level === 'high' ? 'text-green-700' : 'text-amber-700'
+                          }`}>
+                            <span className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-[10px] font-medium mt-0.5 ${
+                              visData.level === 'high' 
+                                ? 'bg-green-200 text-green-800' 
+                                : 'bg-amber-200 text-amber-800'
+                            }`}>
                               {i + 1}
                             </span>
                             <span>{rec}</span>
@@ -168,9 +180,8 @@ export function AiVisibilityTab({
                 </div>
 
                 <div className="lg:col-span-2">
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="mb-4">
                     <h4 className="font-medium text-neutral-900">AI-svar på spørsmål</h4>
-                    <span className="text-xs text-neutral-500">GPT-4o mini</span>
                   </div>
                   <div className="space-y-3">
                     {visData.details.queries.map((q, i) => (

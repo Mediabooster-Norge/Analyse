@@ -29,6 +29,10 @@ export async function runFullAnalysis(
     companyName?: string;
     checkAiVisibility?: boolean;
     isPremium?: boolean;
+    /** Reuse existing security results (same domain = same security) */
+    cachedSecurityResults?: SecurityResults;
+    /** Reuse existing AI visibility results (same domain = same visibility) */
+    cachedAiVisibility?: AIVisibilityData;
   } = {}
 ): Promise<FullAnalysisResult> {
   const {
@@ -40,6 +44,8 @@ export async function runFullAnalysis(
     companyName,
     checkAiVisibility: shouldCheckVisibility = true,
     isPremium = false,
+    cachedSecurityResults,
+    cachedAiVisibility,
   } = options;
 
   // Step 1: Scrape the URL
@@ -47,15 +53,22 @@ export async function runFullAnalysis(
   const scrapedData = await scrapeUrl(url);
   const $ = parseHtml(scrapedData.html);
 
-  // Step 2: Run all analyses in parallel
+  // Step 2: Run analyses in parallel
+  // Security is domain-level, so reuse cached results if available (same domain)
   console.log('Running analyses...');
   const [seoResults, contentResults, securityResults] = await Promise.all([
     analyzeSEO($, url),
     Promise.resolve(analyzeContent($)),
-    quickSecurityScan
-      ? analyzeSecurityQuick(url, scrapedData.headers)
-      : analyzeSecurity(url, scrapedData.headers),
+    cachedSecurityResults
+      ? Promise.resolve(cachedSecurityResults)
+      : quickSecurityScan
+        ? analyzeSecurityQuick(url, scrapedData.headers)
+        : analyzeSecurity(url, scrapedData.headers),
   ]);
+  
+  if (cachedSecurityResults) {
+    console.log('[Security] Using cached security results (same domain)');
+  }
 
   // Step 3: Calculate overall score
   const overallScore = Math.round(
@@ -75,6 +88,12 @@ export async function runFullAnalysis(
 
   if (includeAI) {
     console.log('Generating AI analysis...');
+    
+    // Use cached AI visibility if available (same domain = same visibility)
+    const shouldRunVisibilityCheck = shouldCheckVisibility && isPremium && !cachedAiVisibility;
+    if (cachedAiVisibility) {
+      console.log(`[AI Visibility] Using cached results for domain: ${domain}`);
+    }
     
     // Run AI analysis, keyword research, and visibility check in parallel
     const [aiResult, keywordResult, visibilityResult] = await Promise.all([
@@ -98,7 +117,7 @@ export async function runFullAnalysis(
             return null;
           })
         : Promise.resolve(null),
-      shouldCheckVisibility && isPremium
+      shouldRunVisibilityCheck
         ? checkAIVisibility(domain, companyName, targetKeywords).catch(error => {
             console.error('AI visibility check failed:', error);
             return null;
@@ -118,8 +137,11 @@ export async function runFullAnalysis(
       tokensUsed += keywordResult.tokensUsed;
       costUsd += keywordResult.costUsd;
     }
-
-    if (visibilityResult) {
+    
+    // Use cached AI visibility or new result
+    if (cachedAiVisibility) {
+      aiVisibility = cachedAiVisibility;
+    } else if (visibilityResult) {
       aiVisibility = visibilityResult.visibility;
       tokensUsed += visibilityResult.tokensUsed;
       costUsd += visibilityResult.costUsd;
@@ -168,31 +190,42 @@ export async function runCompetitorAnalysis(
     targetKeywords?: string[];
     companyName?: string;
     isPremium?: boolean;
+    /** Reuse existing security results for main URL (same domain = same security) */
+    cachedSecurityResults?: SecurityResults;
+    /** Reuse existing AI visibility results by domain */
+    cachedAiVisibilityByDomain?: Record<string, AIVisibilityData>;
   } = {}
 ): Promise<{
   mainResults: FullAnalysisResult;
   competitorResults: Array<{ url: string; results: FullAnalysisResult }>;
 }> {
-  const { usePremiumAI = false, industry, targetKeywords = [], companyName, isPremium = false } = options;
+  const { usePremiumAI = false, industry, targetKeywords = [], companyName, isPremium = false, cachedSecurityResults, cachedAiVisibilityByDomain = {} } = options;
   
   // Step 1: Scrape main URL
   console.log(`Scraping main URL ${mainUrl}...`);
   const mainScrapedData = await scrapeUrl(mainUrl);
   const main$ = parseHtml(mainScrapedData.html);
 
-  // Step 2: Run main analysis (full SSL)
+  // Step 2: Run main analysis
+  // Security is domain-level, so reuse cached results if available (same domain)
   console.log('Analyzing main URL...');
   const [mainSeoResults, mainContentResults, mainSecurityResults] = await Promise.all([
     analyzeSEO(main$, mainUrl),
     Promise.resolve(analyzeContent(main$)),
-    analyzeSecurity(mainUrl, mainScrapedData.headers),
+    cachedSecurityResults
+      ? Promise.resolve(cachedSecurityResults)
+      : analyzeSecurity(mainUrl, mainScrapedData.headers),
   ]);
+  
+  if (cachedSecurityResults) {
+    console.log('[Security] Using cached security results for main URL (same domain)');
+  }
 
   const mainOverallScore = Math.round(
     (mainSeoResults.score * 0.4 + mainContentResults.score * 0.3 + mainSecurityResults.score * 0.3)
   );
 
-  // Step 3: Analyze competitors (up to 3 for free, quick security scan)
+  // Step 3: Analyze competitors with full security scan for accurate comparison
   const competitorResults: Array<{ url: string; results: FullAnalysisResult }> = [];
   
   if (competitorUrls.length > 0) {
@@ -204,10 +237,11 @@ export async function runCompetitorAnalysis(
         const compScrapedData = await scrapeUrl(competitorUrl);
         const comp$ = parseHtml(compScrapedData.html);
         
+        // Use full security analysis for accurate comparison (same as main site)
         const [compSeoResults, compContentResults, compSecurityResults] = await Promise.all([
           analyzeSEO(comp$, competitorUrl),
           Promise.resolve(analyzeContent(comp$)),
-          analyzeSecurityQuick(competitorUrl, compScrapedData.headers),
+          analyzeSecurity(competitorUrl, compScrapedData.headers),
         ]);
 
         const compOverallScore = Math.round(
@@ -247,11 +281,26 @@ export async function runCompetitorAnalysis(
 
   // Extract domain for AI visibility check
   const domain = new URL(mainUrl).hostname.replace('www.', '');
+  
+  // Check for cached AI visibility
+  const mainCachedVisibility = cachedAiVisibilityByDomain[domain] || cachedAiVisibilityByDomain[domain.replace('www.', '')];
+  const shouldCheckMainVisibility = isPremium && !mainCachedVisibility;
+  
+  if (mainCachedVisibility) {
+    console.log(`[AI Visibility] Using cached results for main domain: ${domain}`);
+  }
 
-  // AI-synlighet kun for premium (bruker GPT-4o – høyere kostnad)
+  // AI-synlighet kun for premium - check cache first for each competitor
   const competitorVisibilityPromises = isPremium
     ? competitorResults.map((c) => {
         const compDomain = new URL(c.url).hostname.replace('www.', '');
+        const cachedVisibility = cachedAiVisibilityByDomain[compDomain] || cachedAiVisibilityByDomain[`www.${compDomain}`];
+        
+        if (cachedVisibility) {
+          console.log(`[AI Visibility] Using cached results for competitor: ${compDomain}`);
+          return Promise.resolve({ visibility: cachedVisibility, tokensUsed: 0, costUsd: 0, cached: true });
+        }
+        
         return checkAIVisibility(compDomain, undefined, []).catch((err) => {
           console.error(`AI visibility check failed for ${c.url}:`, err);
           return null;
@@ -290,7 +339,7 @@ export async function runCompetitorAnalysis(
           return null;
         })
       : Promise.resolve(null),
-    isPremium
+    shouldCheckMainVisibility
       ? checkAIVisibility(domain, companyName, targetKeywords).catch(error => {
           console.error('AI visibility check failed:', error);
           return null;
@@ -302,7 +351,7 @@ export async function runCompetitorAnalysis(
   const aiResult = allPromiseResults[0];
   const keywordResult = allPromiseResults[1];
   const visibilityResult = allPromiseResults[2];
-  const competitorVisibilityResults = allPromiseResults.slice(3) as Array<{ visibility: AIVisibilityData; tokensUsed: number; costUsd: number } | null>;
+  const competitorVisibilityResults = allPromiseResults.slice(3) as Array<{ visibility: AIVisibilityData; tokensUsed: number; costUsd: number; cached?: boolean } | null>;
 
   let aiVisibility: AIVisibilityData | undefined;
 
@@ -319,7 +368,10 @@ export async function runCompetitorAnalysis(
     costUsd += keywordResult.costUsd;
   }
 
-  if (visibilityResult) {
+  // Use cached AI visibility or new result for main site
+  if (mainCachedVisibility) {
+    aiVisibility = mainCachedVisibility;
+  } else if (visibilityResult) {
     aiVisibility = visibilityResult.visibility;
     tokensUsed += visibilityResult.tokensUsed;
     costUsd += visibilityResult.costUsd;
@@ -392,10 +444,11 @@ export async function analyzeCompetitorsOnly(
         const compScrapedData = await scrapeUrl(competitorUrl);
         const comp$ = parseHtml(compScrapedData.html);
         
+        // Use full security analysis for accurate results
         const [compSeoResults, compContentResults, compSecurityResults] = await Promise.all([
           analyzeSEO(comp$, competitorUrl),
           Promise.resolve(analyzeContent(comp$)),
-          analyzeSecurityQuick(competitorUrl, compScrapedData.headers),
+          analyzeSecurity(competitorUrl, compScrapedData.headers),
         ]);
 
         const compOverallScore = Math.round(

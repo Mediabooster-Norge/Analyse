@@ -443,9 +443,26 @@ export function OverviewTab({
                   </div>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1.5">
                     {suggested.slice(0, 10).map((pathname) => {
+                      // Handle both relative paths and full URLs
                       let fullUrl = '';
-                      try { fullUrl = new URL(pathname, url).href; } catch { return null; }
-                      const label = pathname === '/' ? 'Forside' : pathname.replace(/^\//, '').replace(/-/g, ' ') || pathname;
+                      let label = pathname;
+                      try {
+                        if (pathname.startsWith('http://') || pathname.startsWith('https://')) {
+                          // Already a full URL
+                          fullUrl = pathname;
+                          const parsedUrl = new URL(pathname);
+                          label = parsedUrl.pathname === '/' ? 'Forside' : parsedUrl.pathname.replace(/^\//, '').replace(/-/g, ' ') || parsedUrl.hostname;
+                        } else {
+                          // Relative path - construct full URL
+                          fullUrl = `${baseUrl}${pathname.startsWith('/') ? '' : '/'}${pathname}`;
+                          label = pathname === '/' ? 'Forside' : pathname.replace(/^\//, '').replace(/-/g, ' ') || pathname;
+                        }
+                      } catch {
+                        // Fallback: just use baseUrl + pathname
+                        fullUrl = `${baseUrl}${pathname.startsWith('/') ? '' : '/'}${pathname}`;
+                        label = pathname.replace(/^\//, '').replace(/-/g, ' ') || pathname;
+                      }
+                      
                       return (
                         <button
                           key={pathname}

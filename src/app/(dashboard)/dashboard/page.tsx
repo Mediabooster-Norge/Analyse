@@ -104,6 +104,7 @@ function DashboardPageContent() {
     loadingSuggestion,
     addKeyword,
     removeKeyword,
+    clearKeywords,
     addCompetitor,
     removeCompetitor,
     runAnalysis,
@@ -238,6 +239,7 @@ function DashboardPageContent() {
           setKeywordInput={setKeywordInput}
           addKeyword={addKeyword}
           removeKeyword={removeKeyword}
+          clearKeywords={clearKeywords}
           suggestedKeywordCount={suggestedKeywordCount}
           setSuggestedKeywordCount={setSuggestedKeywordCount}
           suggestingKeywords={suggestingKeywords}

@@ -410,6 +410,10 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     updateState({ keywords: state.keywords.filter(k => k !== keyword) });
   }, [state.keywords, updateState]);
 
+  const clearKeywords = useCallback(() => {
+    updateState({ keywords: [] });
+  }, [updateState]);
+
   const addCompetitor = useCallback(() => {
     const trimmed = state.competitorInput.trim().toLowerCase();
     if (!trimmed) return;
@@ -501,7 +505,9 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
   }, [state.url, state.competitorUrls, state.keywords, state.remainingAnalyses, updateState]);
 
   const suggestKeywords = useCallback(async () => {
-    const targetUrl = state.companyUrl || state.url;
+    // Use the URL from the dialog input (state.url) first, as that's what the user is currently editing
+    // Fall back to companyUrl only if no URL is entered in the dialog
+    const targetUrl = state.url || state.companyUrl;
     if (!targetUrl) {
       toast.error('Vennligst oppgi en URL først');
       return;
@@ -765,6 +771,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     checkAiVisibility,
     addKeyword,
     removeKeyword,
+    clearKeywords,
     addCompetitor,
     removeCompetitor,
     runAnalysis,

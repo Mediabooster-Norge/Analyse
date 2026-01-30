@@ -428,13 +428,18 @@ export async function checkAIVisibility(
   // Calculate AI visibility score
   const validResults = results.filter(r => !('error' in r));
   const citedCount = validResults.filter(r => r.cited).length;
-  const mentionedCount = validResults.filter(r => r.mentioned).length;
+  const mentionedOnlyCount = validResults.filter(r => r.mentioned && !r.cited).length;
   
+  // Score calculation:
+  // - Cited (fully known): 2 points each
+  // - Mentioned only (partially known): 1 point each
+  // - Neither: 0 points
+  // Max possible = validResults.length * 2
   let score = 0;
   if (validResults.length > 0) {
-    score = Math.round(
-      ((citedCount * 2 + mentionedCount) / (validResults.length * 3)) * 100
-    );
+    const points = (citedCount * 2) + (mentionedOnlyCount * 1);
+    const maxPoints = validResults.length * 2;
+    score = Math.round((points / maxPoints) * 100);
   }
 
   // Determine visibility level
@@ -455,12 +460,35 @@ export async function checkAIVisibility(
     description = 'AI-modeller ser ikke ut til å kjenne til bedriften din ennå.';
   }
 
-  const recommendations = [
-    score < 70 && 'Publiser mer innhold som svarer på vanlige spørsmål i din bransje',
-    score < 50 && 'Øk online tilstedeværelse gjennom PR, artikler og bransjekatalog',
-    citedCount === 0 && 'Skap autorativt innhold som etablerer bedriften som ekspert',
-    mentionedCount === 0 && 'Bygg merkevarebevissthet gjennom sosiale medier og omtaler',
-  ].filter(Boolean) as string[];
+  // Always provide some recommendations, even with high scores
+  const recommendations: string[] = [];
+  
+  // Tips based on score level
+  if (score < 50) {
+    recommendations.push('Øk online tilstedeværelse gjennom PR, artikler og bransjekataloger');
+    recommendations.push('Publiser mer innhold som svarer på vanlige spørsmål i din bransje');
+  } else if (score < 70) {
+    recommendations.push('Publiser mer innhold som svarer på vanlige spørsmål i din bransje');
+    recommendations.push('Del ekspertise gjennom blogginnlegg og fagartikler');
+  } else if (score < 90) {
+    recommendations.push('Fortsett å publisere kvalitetsinnhold for å opprettholde synligheten');
+    recommendations.push('Del kunnskap i podcaster, webinarer eller intervjuer for bredere dekning');
+  } else {
+    recommendations.push('Utmerket! Oppretthold aktiviteten for å beholde toppplasseringen');
+  }
+  
+  // Tips based on citation/mention status
+  if (citedCount === 0) {
+    recommendations.push('Skap autorativt innhold som etablerer bedriften som ekspert');
+  }
+  if (citedCount === 0 && mentionedOnlyCount === 0) {
+    recommendations.push('Bygg merkevarebevissthet gjennom sosiale medier og omtaler');
+  }
+  
+  // Additional tips for improvement
+  if (citedCount < validResults.length && score >= 50) {
+    recommendations.push('Optimaliser "Om oss"-siden med tydelig beskrivelse av tjenester og ekspertise');
+  }
 
   return {
     visibility: {
@@ -470,7 +498,7 @@ export async function checkAIVisibility(
       details: {
         queriesTested: validResults.length,
         timesCited: citedCount,
-        timesMentioned: mentionedCount,
+        timesMentioned: mentionedOnlyCount, // Only count partially mentioned (not cited)
         queries: results.map(r => ({
           query: r.query,
           cited: r.cited,

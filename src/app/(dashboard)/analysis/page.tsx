@@ -19,6 +19,8 @@ import {
   Eye,
   Sparkles,
   CheckCircle2,
+  Trash2,
+  AlertTriangle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -58,6 +60,8 @@ export default function AnalysisPage() {
   const [rerunningAnalysis, setRerunningAnalysis] = useState<{ id: string; url: string } | null>(null);
   const [rerunStep, setRerunStep] = useState(0);
   const [rerunElapsedTime, setRerunElapsedTime] = useState(0);
+  const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; url: string } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const RERUN_STEPS = [
     { label: 'Henter nettside', description: 'Laster inn innhold fra nettsiden', duration: '~5s', icon: Globe },
@@ -172,6 +176,67 @@ export default function AnalysisPage() {
       toast.error('Noe gikk galt. Prøv igjen.');
     } finally {
       setRerunningAnalysis(null);
+    }
+  };
+
+  const handleDeleteAnalysis = async (analysisId: string) => {
+    setDeleting(true);
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error('Du må være logget inn for å slette analyser');
+        return;
+      }
+      
+      // Delete the analysis - verify user owns it via user_id
+      // This does NOT refund the analysis count for free users
+      const { error, count } = await supabase
+        .from('analyses')
+        .delete({ count: 'exact' })
+        .eq('id', analysisId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Delete error:', error);
+        if (error.code === '42501') {
+          toast.error('Du har ikke tilgang til å slette denne analysen. Kjør SQL-migrasjonen for å aktivere sletting.');
+        } else {
+          toast.error('Kunne ikke slette analysen: ' + error.message);
+        }
+        return;
+      }
+
+      if (count === 0) {
+        toast.error('Analysen ble ikke funnet eller du har ikke tilgang til å slette den');
+        return;
+      }
+
+      // Calculate new analyses list BEFORE updating state
+      const newAnalyses = analyses.filter(a => a.id !== analysisId);
+      
+      // Update local state
+      setAnalyses(newAnalyses);
+      
+      // Clear ALL related caches to ensure consistency across pages
+      try {
+        // Update analyses cache with the new list
+        sessionStorage.setItem(`analyses_cache_${user.id}`, JSON.stringify({ analyses: newAnalyses, timestamp: Date.now() }));
+        
+        // Clear dashboard cache so it refetches fresh data
+        sessionStorage.removeItem(`dashboard_cache_${user.id}`);
+      } catch {
+        // Ignore cache errors
+      }
+
+      toast.success('Analysen ble slettet');
+      setDeleteConfirm(null);
+    } catch (err) {
+      console.error('Delete error:', err);
+      toast.error('Noe gikk galt. Prøv igjen.');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -348,6 +413,56 @@ export default function AnalysisPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              <DialogTitle>Slett analyse</DialogTitle>
+            </div>
+            <DialogDescription className="text-left">
+              Er du sikker på at du vil slette analysen for <strong>{deleteConfirm?.url}</strong>?
+              {!isPremium && (
+                <span className="block mt-2 text-amber-600 font-medium">
+                  Merk: Du får ikke tilbake analysen din selv om du sletter.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex gap-3 mt-4">
+            <Button
+              variant="outline"
+              className="flex-1 rounded-xl"
+              onClick={() => setDeleteConfirm(null)}
+              disabled={deleting}
+            >
+              Avbryt
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1 rounded-xl bg-red-600 hover:bg-red-700"
+              onClick={() => deleteConfirm && handleDeleteAnalysis(deleteConfirm.id)}
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sletter...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Slett
+                </>
+              )}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -449,6 +564,14 @@ export default function AnalysisPage() {
                       Se detaljer
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-10 w-10 p-0 rounded-xl border-neutral-200 hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-neutral-400"
+                    onClick={() => setDeleteConfirm({ id: analysis.id, url: analysis.url })}
+                  >
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
