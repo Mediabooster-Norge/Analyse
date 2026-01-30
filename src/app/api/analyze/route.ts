@@ -6,7 +6,7 @@ import { getPremiumStatusServer } from '@/lib/premium-server';
 export const maxDuration = 60; // Allow up to 60 seconds for analysis
 
 interface AnalyzeRequest {
-  url: string;
+  url?: string;
   competitorUrls?: string[];
   keywords?: string[];
   includeAI?: boolean;
@@ -14,16 +14,74 @@ interface AnalyzeRequest {
   industry?: string;
   companyName?: string;
   websiteName?: string;
+  /** Kjør samme analyse på nytt med data fra denne analysen (teller som ny analyse for gratis) */
+  rerunFromAnalysisId?: string;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = (await request.json()) as AnalyzeRequest;
-    const { url, competitorUrls = [], keywords = [], includeAI = true, usePremiumAI = false, industry, companyName, websiteName } = body;
+    const { rerunFromAnalysisId, includeAI = true, usePremiumAI = false, industry } = body;
 
-    // Validate URL
-    if (!url) {
-      return NextResponse.json({ error: 'URL is required' }, { status: 400 });
+    // Check authentication first
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const userId = user.id;
+
+    let url: string;
+    let competitorUrls: string[];
+    let keywords: string[];
+    let companyName: string | undefined;
+    let websiteName: string | undefined;
+
+    if (rerunFromAnalysisId) {
+      // Load existing analysis and use its data (same URL, competitors, keywords)
+      const { data: existingAnalysis, error: fetchError } = await supabase
+        .from('analyses')
+        .select('website_url, website_name, competitor_results, keyword_research')
+        .eq('id', rerunFromAnalysisId)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (fetchError || !existingAnalysis?.website_url) {
+        return NextResponse.json(
+          { error: 'Analysen finnes ikke eller du har ikke tilgang.' },
+          { status: 404 }
+        );
+      }
+
+      url = existingAnalysis.website_url;
+      websiteName = existingAnalysis.website_name ?? undefined;
+      companyName = websiteName;
+      competitorUrls = Array.isArray(existingAnalysis.competitor_results)
+        ? (existingAnalysis.competitor_results as Array<{ url: string }>).map((c) => c.url)
+        : [];
+      keywords = Array.isArray(existingAnalysis.keyword_research)
+        ? (existingAnalysis.keyword_research as Array<{ keyword: string }>).map((k) => k.keyword)
+        : [];
+    } else {
+      const {
+        url: bodyUrl,
+        competitorUrls: bodyCompetitors = [],
+        keywords: bodyKeywords = [],
+        companyName: bodyCompanyName,
+        websiteName: bodyWebsiteName,
+      } = body;
+
+      if (!bodyUrl) {
+        return NextResponse.json({ error: 'URL is required' }, { status: 400 });
+      }
+
+      url = bodyUrl;
+      competitorUrls = bodyCompetitors;
+      keywords = bodyKeywords;
+      companyName = bodyCompanyName;
+      websiteName = bodyWebsiteName;
     }
 
     // Normalize URL
@@ -34,16 +92,6 @@ export async function POST(request: NextRequest) {
     } catch {
       return NextResponse.json({ error: 'Invalid URL format' }, { status: 400 });
     }
-
-    // Check authentication
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const userId = user.id;
 
     // Check premium status for limits (server-side)
     const premiumStatus = await getPremiumStatusServer(user);

@@ -1,0 +1,100 @@
+---
+description: Refactoring priorities and migration guide for this codebase
+alwaysApply: true
+---
+
+# Refactoring Priorities
+
+## Extracted Components (Ready to Use)
+
+### Types (`src/types/dashboard.ts`)
+All dashboard-specific types are now extracted:
+- `AISuggestion`, `AISuggestionData`
+- `KeywordResearchData`
+- `DashboardAnalysisResult`
+- `DashboardTab`, `KeywordSort`, `CompetitorSort`
+- `SelectedElement`, `AnalysisStep`
+
+### Components (`src/components/features/dashboard/`)
+- `ScoreRing` - Circular score visualization
+- `ActionPlanTabs` - Tabbed action plan display
+
+### Hooks (`src/hooks/`)
+- `useDashboard` - Complete state management and API calls
+
+### Utils (`src/lib/utils/score-utils.ts`)
+- `getScoreColor`, `getScoreBadge`, `getScoreLabel`
+- `getScoreBackground`, `getStatusColor`
+- `normalizeUrl`, `extractDomain`
+
+## Migration Strategy for dashboard/page.tsx
+
+### Phase 1: Replace Inline Types
+```tsx
+// Before
+interface AISuggestion { ... }
+interface AnalysisResult { ... }
+
+// After
+import type { AISuggestion, DashboardAnalysisResult } from '@/types/dashboard';
+```
+
+### Phase 2: Replace Inline Components
+```tsx
+// Before (inline ScoreRing component ~70 lines)
+function ScoreRing({ score, label }) { ... }
+
+// After
+import { ScoreRing, ActionPlanTabs } from '@/components/features/dashboard';
+```
+
+### Phase 3: Use Dashboard Hook
+```tsx
+// Before (~300 lines of useState + useEffect)
+const [url, setUrl] = useState('');
+const [result, setResult] = useState(null);
+// ... 50+ more state variables
+
+// After (~10 lines)
+const dashboard = useDashboard({
+  analysisIdFromUrl,
+  showNewDialog,
+});
+```
+
+### Phase 4: Extract Tab Content (Future)
+When ready, extract each tab into its own component:
+```
+src/components/features/dashboard/
+├── tabs/
+│   ├── overview-tab.tsx      (~800 lines)
+│   ├── competitors-tab.tsx   (~400 lines)
+│   ├── keywords-tab.tsx      (~400 lines)
+│   ├── ai-analysis-tab.tsx   (~300 lines)
+│   └── ai-visibility-tab.tsx (~400 lines)
+```
+
+## Known Issues
+
+| File | Current | Target |
+|------|---------|--------|
+| `dashboard/page.tsx` | ~4500 lines | < 300 lines |
+| `settings/page.tsx` | ~540 lines | < 200 lines |
+| `analysis/page.tsx` | ~490 lines | < 200 lines |
+
+## Safety Guidelines
+
+1. **One extraction at a time** - Don't refactor everything at once
+2. **Test after each change** - Verify functionality works
+3. **Keep old code commented** - Until new code is verified
+4. **Use TypeScript strictly** - Types catch errors early
+
+## Refactoring Checklist
+
+When extracting a section:
+- [ ] Extract types first
+- [ ] Create component with props interface
+- [ ] Test component in isolation
+- [ ] Replace inline code with import
+- [ ] Remove old inline code
+- [ ] Update barrel exports

@@ -306,7 +306,7 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* All premium benefits – kun det som er eksklusivt for Premium (AI-synlighet og AI-anbefalinger er inkludert i gratis) */}
+              {/* Premium-fordeler (AI-synlighet bruker GPT-4o og er derfor begrenset til Premium) */}
               <div>
                 <h4 className="text-sm font-semibold text-neutral-700 mb-3">Dine Premium-fordeler</h4>
                 <div className="grid md:grid-cols-2 gap-2">
@@ -325,6 +325,10 @@ export default function SettingsPage() {
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
                     <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
                     <span className="text-sm text-neutral-700">Ubegrenset oppdateringer</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
+                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <span className="text-sm text-neutral-700">AI-synlighetssjekk</span>
                   </div>
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
                     <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
@@ -399,13 +403,6 @@ export default function SettingsPage() {
                   </div>
                   <p className="text-lg font-bold text-neutral-900">{limits.keywords}</p>
                 </div>
-                <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-100">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Eye className="h-4 w-4 text-neutral-500" />
-                    <span className="text-xs font-medium text-neutral-600">AI-synlighet</span>
-                  </div>
-                  <p className="text-lg font-bold text-neutral-900">{limits.aiVisibilityChecks}</p>
-                </div>
               </div>
 
               {/* Upgrade CTA */}
@@ -445,6 +442,15 @@ export default function SettingsPage() {
             <div className="grid gap-4 md:grid-cols-2">
               <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-100">
                 <div className="flex items-center gap-2 mb-2">
+                  <Eye className="h-5 w-5 text-neutral-700" />
+                  <h4 className="font-medium text-neutral-900">AI-synlighetssjekk</h4>
+                </div>
+                <p className="text-sm text-neutral-500">
+                  Se hvor godt AI-modeller kjenner til bedriften din og få en score. Inkludert for deg og konkurrenter i konkurranseanalyser.
+                </p>
+              </div>
+              <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-100">
+                <div className="flex items-center gap-2 mb-2">
                   <BarChart3 className="h-5 w-5 text-neutral-700" />
                   <h4 className="font-medium text-neutral-900">Flere konkurrenter</h4>
                 </div>
@@ -473,10 +479,13 @@ export default function SettingsPage() {
               <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-100">
                 <div className="flex items-center gap-2 mb-2">
                   <Layers className="h-5 w-5 text-neutral-700" />
-                  <h4 className="font-medium text-neutral-900">Multi-side crawling</h4>
+                  <h4 className="font-medium text-neutral-900">Foreslåtte undersider</h4>
+                  <Badge variant="secondary" className="text-xs bg-neutral-200 text-neutral-600 border-0">
+                    Kommer snart
+                  </Badge>
                 </div>
                 <p className="text-sm text-neutral-500">
-                  Analyser flere undersider automatisk for en komplett oversikt.
+                  Etter at et domene er analysert, får du automatisk forslag på andre viktige sider på samme domene å sjekke – f.eks. tjenester, kontakt og produktsider.
                 </p>
               </div>
             </div>

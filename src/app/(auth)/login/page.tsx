@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createClient } from '@/lib/supabase/client';
 import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
-export default function LoginPage() {
+function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const message = searchParams.get('message');
@@ -131,5 +131,13 @@ export default function LoginPage() {
         </p>
       </CardFooter>
     </Card>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<Card><CardHeader><div className="h-8 w-48 bg-neutral-100 rounded animate-pulse" /></CardHeader><CardContent><div className="h-10 w-full bg-neutral-100 rounded animate-pulse" /></CardContent></Card>}>
+      <LoginPageContent />
+    </Suspense>
   );
 }

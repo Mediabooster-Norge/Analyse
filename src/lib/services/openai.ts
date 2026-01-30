@@ -337,28 +337,25 @@ export async function checkAIVisibility(
     searchQueries.map(async (query) => {
       try {
         const response = await openai.chat.completions.create({
-          model: 'gpt-4o-mini',
+          model: 'gpt-4o',
           messages: [
             {
               role: 'system',
-              content: `Du er en hjelpsom assistent. Svar basert på din kunnskap. 
-Hvis du kjenner til bedriften eller nettsiden som nevnes, beskriv hva du vet.
-Hvis du ikke kjenner til den, si det ærlig.
-Hold svaret kort og konsist (2-3 setninger).`,
+              content: `Du er en hjelpsom assistent med kunnskap om norske bedrifter og nettsider. Når du blir spurt om en bedrift eller nettside: beskriv konkret det du vet – hva de driver med, hva de er kjent for, bransje osv. Bruk din kunnskap aktivt og gi et nyttig svar. Si kun at du ikke kjenner til den hvis du virkelig ikke har noe relevant å si. Hold svaret konkret (2–4 setninger).`,
             },
             {
               role: 'user',
               content: query,
             },
           ],
-          max_tokens: 200,
+          max_tokens: 400,
           temperature: 0.3,
         });
 
         const inputTokens = response.usage?.prompt_tokens || 0;
         const outputTokens = response.usage?.completion_tokens || 0;
         totalTokens += inputTokens + outputTokens;
-        totalCost += calculateCost('gpt-4o-mini', inputTokens, outputTokens);
+        totalCost += calculateCost('gpt-4o', inputTokens, outputTokens);
 
         const content = response.choices[0]?.message?.content || '';
         
@@ -367,11 +364,16 @@ Hold svaret kort og konsist (2-3 setninger).`,
         const domainLower = domain.toLowerCase();
         const companyLower = companyName?.toLowerCase() || '';
         
-        // Check for explicit mentions
-        const isMentioned = contentLower.includes(domainLower) || 
-          (companyName && contentLower.includes(companyLower));
+        // Domenet uten TLD (f.eks. mediabooster fra mediabooster.no) – AI svarer ofte uten .no
+        const domainWithoutTld = domainLower.replace(/\.(no|com|org|net|io|co\.uk|eu)$/i, '').trim();
+        const hasMeaningfulName = domainWithoutTld.length >= 4; // unngå for korte som "co.no"
         
-        // Check if AI indicates it knows about the company
+        const isMentioned =
+          contentLower.includes(domainLower) ||
+          (companyName && contentLower.includes(companyLower)) ||
+          (hasMeaningfulName && contentLower.includes(domainWithoutTld));
+        
+        // Fanger både norsk og engelsk, og uttrykk som betyr «vet ikke» / «usikker»
         const unknownPhrases = [
           'kjenner ikke til',
           'har ikke informasjon',
@@ -383,10 +385,32 @@ Hold svaret kort og konsist (2-3 setninger).`,
           'har ikke hørt om',
           'ingen spesifikk',
           'ikke nok informasjon',
+          'begrenset kunnskap',
+          'begrenset informasjon',
+          'har ikke nok',
+          'kan ikke si',
+          'usikker',
+          "don't have",
+          "do not have",
+          'limited knowledge',
+          'limited information',
+          'not sure',
+          'no specific',
+          'cannot find',
+          "don't know",
+          "do not know",
+          'unfamiliar',
+          'not familiar',
         ];
         
-        const knowsAbout = !unknownPhrases.some(phrase => contentLower.includes(phrase));
-        const isCited = isMentioned && knowsAbout;
+        const indicatesUnknown = unknownPhrases.some(phrase => contentLower.includes(phrase));
+        const knowsAbout = !indicatesUnknown;
+        
+        // Positivt signal: AI beskriver bedriften (norsk og engelsk, mange vanlige ord)
+        const hasPositiveSignal = /(tilbyr|leverer|er en|er et|driver|bedrift|selskap|agency|company|anbefaler|recommend|web|digital|markedsføring|offer|offers|services|based|norway|norge|solutions|løsninger|byrå|bureau|marketing|help|hjelper)/i.test(content);
+        // Langt svar uten «vet ikke» tyder også på at AI faktisk beskriver noe
+        const substantialAnswer = content.trim().length >= 80 && knowsAbout;
+        const isCited = isMentioned && knowsAbout && (hasPositiveSignal || substantialAnswer);
 
         return {
           query,

@@ -98,7 +98,7 @@ export async function runFullAnalysis(
             return null;
           })
         : Promise.resolve(null),
-      shouldCheckVisibility
+      shouldCheckVisibility && isPremium
         ? checkAIVisibility(domain, companyName, targetKeywords).catch(error => {
             console.error('AI visibility check failed:', error);
             return null;
@@ -248,16 +248,18 @@ export async function runCompetitorAnalysis(
   // Extract domain for AI visibility check
   const domain = new URL(mainUrl).hostname.replace('www.', '');
 
-  // AI-synlighet for hver konkurrent (kjøres parallelt med resten)
-  const competitorVisibilityPromises = competitorResults.map((c) => {
-    const compDomain = new URL(c.url).hostname.replace('www.', '');
-    return checkAIVisibility(compDomain, undefined, targetKeywords).catch((err) => {
-      console.error(`AI visibility check failed for ${c.url}:`, err);
-      return null;
-    });
-  });
+  // AI-synlighet kun for premium (bruker GPT-4o – høyere kostnad)
+  const competitorVisibilityPromises = isPremium
+    ? competitorResults.map((c) => {
+        const compDomain = new URL(c.url).hostname.replace('www.', '');
+        return checkAIVisibility(compDomain, undefined, []).catch((err) => {
+          console.error(`AI visibility check failed for ${c.url}:`, err);
+          return null;
+        });
+      })
+    : [];
 
-  // Run AI analysis, keyword research, main visibility + alle konkurrenters AI-synlighet i parallell
+  // Run AI analysis, keyword research, main visibility (premium) + konkurrenters AI-synlighet (premium) i parallell
   const allPromiseResults = await Promise.all([
     generateAIAnalysis(
       {
@@ -288,10 +290,12 @@ export async function runCompetitorAnalysis(
           return null;
         })
       : Promise.resolve(null),
-    checkAIVisibility(domain, companyName, targetKeywords).catch(error => {
-      console.error('AI visibility check failed:', error);
-      return null;
-    }),
+    isPremium
+      ? checkAIVisibility(domain, companyName, targetKeywords).catch(error => {
+          console.error('AI visibility check failed:', error);
+          return null;
+        })
+      : Promise.resolve(null),
     ...competitorVisibilityPromises,
   ]);
 

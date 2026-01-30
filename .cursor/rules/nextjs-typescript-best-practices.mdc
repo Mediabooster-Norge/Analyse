@@ -1,0 +1,231 @@
+---
+description: Best practices for Next.js 15+ with TypeScript - component structure, state management, and code organization
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# Next.js 15+ TypeScript Best Practices
+
+## File Size Limits
+
+- **Page components**: Max 200-300 lines
+- **Regular components**: Max 150-200 lines
+- **Utility files**: Max 100-150 lines
+- **If a file exceeds limits**: Split into smaller modules
+
+## Component Organization
+
+### Directory Structure
+
+```
+src/
+├── app/                    # Next.js App Router pages
+├── components/
+│   ├── ui/                 # Reusable UI primitives (Button, Input, Card)
+│   ├── features/           # Feature-specific components
+│   │   ├── dashboard/      # Dashboard feature components
+│   │   ├── analysis/       # Analysis feature components
+│   │   └── auth/           # Auth feature components
+│   └── shared/             # Shared components across features
+├── hooks/                  # Custom React hooks
+├── lib/                    # Utilities, services, helpers
+├── types/                  # Shared TypeScript types/interfaces
+└── stores/                 # State management (if using Zustand/Jotai)
+```
+
+### Page Component Pattern
+
+```tsx
+// ❌ BAD: Everything in page.tsx
+// 4000+ lines with inline components, types, and logic
+
+// ✅ GOOD: Page as composition root
+// src/app/(dashboard)/dashboard/page.tsx (~50-100 lines)
+import { DashboardHeader } from '@/components/features/dashboard/dashboard-header';
+import { AnalysisResults } from '@/components/features/dashboard/analysis-results';
+import { ScoreOverview } from '@/components/features/dashboard/score-overview';
+
+export default function DashboardPage() {
+  return (
+    <main>
+      <DashboardHeader />
+      <ScoreOverview />
+      <AnalysisResults />
+    </main>
+  );
+}
+```
+
+## Type Organization
+
+### Extract Types to Dedicated Files
+
+```tsx
+// ❌ BAD: Types inline in component file
+interface AnalysisResult {
+  seoResults: { score: number; /* 50 more lines */ };
+  // ... 100 lines of type definitions
+}
+
+// ✅ GOOD: Types in dedicated file
+// src/types/analysis.ts
+export interface AnalysisResult { ... }
+export interface SEOResults { ... }
+export interface SecurityResults { ... }
+
+// Component file
+import type { AnalysisResult } from '@/types/analysis';
+```
+
+## State Management
+
+### Local State vs Global State
+
+```tsx
+// Use local state (useState) for:
+// - UI state (open/closed, loading, selected tab)
+// - Form inputs
+// - Component-specific data
+
+// Use global state (Zustand/Context) for:
+// - User authentication state
+// - Theme/preferences
+// - Data shared across multiple routes
+```
+
+### Zustand Store Pattern (Recommended)
+
+```tsx
+// src/stores/analysis-store.ts
+import { create } from 'zustand';
+import type { AnalysisResult } from '@/types/analysis';
+
+interface AnalysisStore {
+  results: AnalysisResult | null;
+  isLoading: boolean;
+  setResults: (results: AnalysisResult) => void;
+  reset: () => void;
+}
+
+export const useAnalysisStore = create<AnalysisStore>((set) => ({
+  results: null,
+  isLoading: false,
+  setResults: (results) => set({ results }),
+  reset: () => set({ results: null, isLoading: false }),
+}));
+```
+
+## Custom Hooks
+
+### Extract Logic to Hooks
+
+```tsx
+// ❌ BAD: 200 lines of useEffect and state in component
+export default function DashboardPage() {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  
+  useEffect(() => {
+    // 50 lines of fetch logic
+  }, []);
+  
+  // ... more logic
+}
+
+// ✅ GOOD: Extract to custom hook
+// src/hooks/use-analysis.ts
+export function useAnalysis(id: string) {
+  const [data, setData] = useState<AnalysisResult | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    fetchAnalysis(id)
+      .then(setData)
+      .catch(setError)
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  return { data, loading, error };
+}
+
+// Component becomes simple
+export default function DashboardPage() {
+  const { data, loading, error } = useAnalysis(id);
+  if (loading) return <Skeleton />;
+  if (error) return <ErrorState error={error} />;
+  return <AnalysisResults data={data} />;
+}
+```
+
+## Server vs Client Components
+
+### Default to Server Components
+
+```tsx
+// ✅ Server Component (default) - no 'use client'
+// Runs on server, smaller bundle, can fetch data directly
+async function AnalysisList() {
+  const analyses = await fetchAnalyses(); // Direct DB/API call
+  return <ul>{analyses.map(a => <li key={a.id}>{a.name}</li>)}</ul>;
+}
+
+// ✅ Client Component - only when needed
+'use client';
+// Use for: useState, useEffect, event handlers, browser APIs
+function InteractiveChart({ data }) {
+  const [selected, setSelected] = useState(null);
+  return <Chart data={data} onSelect={setSelected} />;
+}
+```
+
+### Composition Pattern
+
+```tsx
+// Server Component wrapper
+async function DashboardWrapper() {
+  const data = await fetchData(); // Server-side fetch
+  return <Dashboard data={data} />; // Pass to client component
+}
+
+// Client Component for interactivity
+'use client';
+function Dashboard({ data }) {
+  const [filter, setFilter] = useState('all');
+  return <FilteredView data={data} filter={filter} onFilter={setFilter} />;
+}
+```
+
+## Component Extraction Checklist
+
+When a component grows too large, extract:
+
+1. **Reusable UI pieces** → `components/ui/`
+2. **Feature-specific components** → `components/features/{feature}/`
+3. **Types/Interfaces** → `types/{domain}.ts`
+4. **Data fetching logic** → Custom hooks in `hooks/`
+5. **Business logic** → `lib/` utilities
+6. **Complex state** → Zustand stores in `stores/`
+
+## Naming Conventions
+
+- **Components**: PascalCase (`ScoreRing.tsx`, `AnalysisCard.tsx`)
+- **Hooks**: camelCase with `use` prefix (`useAnalysis.ts`, `usePremium.ts`)
+- **Types**: PascalCase (`AnalysisResult`, `SEOData`)
+- **Utils**: camelCase (`formatDate.ts`, `calculateScore.ts`)
+- **Stores**: camelCase with `use` prefix (`useAnalysisStore.ts`)
+
+## Co-location Principle
+
+Keep related code close together:
+
+```
+components/features/dashboard/
+├── index.ts              # Public exports
+├── dashboard-header.tsx
+├── score-overview.tsx
+├── analysis-card.tsx
+├── use-dashboard.ts      # Feature-specific hook
+└── types.ts              # Feature-specific types (if small)
+```
