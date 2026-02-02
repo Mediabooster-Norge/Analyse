@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { AISuggestionData } from '@/types/dashboard';
-import { Lightbulb, CheckCircle2, AlertCircle, Sparkles, Zap, Loader2, Copy, Check } from 'lucide-react';
+import { Lightbulb, CheckCircle2, AlertCircle, Sparkles, Zap, Loader2, Copy, Check, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 const loadingMessages = [
@@ -22,7 +22,7 @@ const loadingMessages = [
 export interface AISuggestionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedElement: { name: string; value: string; status: 'good' | 'warning' | 'bad' } | null;
+  selectedElement: { name: string; value: string; status: 'good' | 'warning' | 'bad'; relatedUrls?: string[] } | null;
   aiSuggestion: AISuggestionData | null;
   loadingSuggestion: boolean;
 }
@@ -157,6 +157,29 @@ export function AISuggestionDialog({
                         <p className="text-sm text-red-700 leading-relaxed">{aiSuggestion.problem}</p>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                {selectedElement?.relatedUrls && selectedElement.relatedUrls.length > 0 && (
+                  <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200">
+                    <p className="font-medium text-xs text-neutral-700 mb-2">
+                      {selectedElement.name.includes('Bilder') ? 'Bilder som mangler alt-tekst:' : 'Relaterte lenker:'}
+                    </p>
+                    <ul className="space-y-1.5">
+                      {selectedElement.relatedUrls.map((url, i) => (
+                        <li key={i} className="group">
+                          <a
+                            href={url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-xs text-blue-600 hover:text-blue-800 hover:underline break-all"
+                          >
+                            <ExternalLink className="h-3 w-3 shrink-0 opacity-60 group-hover:opacity-100" />
+                            <span className="truncate">{url}</span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
                 )}
 

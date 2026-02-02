@@ -598,7 +598,7 @@ export default function LandingPage() {
                               <span className="text-neutral-400 mx-1">·</span>
                               <span className="text-xs text-neutral-500">{issue.desc}</span>
                             </div>
-                            <ChevronRight className="w-3 h-3 text-neutral-400 group-hover:text-neutral-600 shrink-0" />
+                            <ChevronRight className="w-3 h-3 text-neutral-400 md:group-hover:text-neutral-600 shrink-0" />
                           </div>
                         ))}
                       </div>
@@ -978,7 +978,7 @@ export default function LandingPage() {
             viewport={{ once: true }}
             className="text-center mb-8 sm:mb-12 md:mb-16"
           >
-            <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-3 sm:mb-4">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-3 sm:mb-4">
               Komplett analyse<br />
               <span className="text-neutral-400">av hele nettsiden.</span>
             </h2>
@@ -989,39 +989,30 @@ export default function LandingPage() {
 
           {/* Bento Grid */}
           <motion.div 
-            className="grid md:grid-cols-3 gap-3 sm:gap-4"
+            className="grid md:grid-cols-3 gap-2 sm:gap-3 md:gap-4"
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
+            viewport={{ once: true, margin: "-50px" }}
           >
-            {/* SEO - Large card with hover reveal */}
+            {/* SEO - Large card */}
             <motion.div 
               variants={itemVariants}
-              whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className="md:col-span-2 relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 overflow-hidden group"
+              className="md:col-span-2 relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 md:p-8 overflow-hidden group bg-neutral-100"
             >
-              {/* Animated background */}
-              <motion.div 
-                className="absolute inset-0 bg-neutral-50 group-hover:bg-neutral-100 transition-colors duration-300"
-                initial={{ opacity: 0, scale: 1.1 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 1.8, ease: "easeOut" }}
-              />
               <div className="relative z-10">
-                <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
-                  <Search className="w-6 h-6 text-neutral-700" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white shadow-sm flex items-center justify-center mb-3 sm:mb-6 md:group-hover:scale-110 transition-transform">
+                  <Search className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-700" />
                 </div>
-                <h3 className="text-xl font-semibold mb-2">SEO-analyse</h3>
-                <p className="text-neutral-500 mb-6 max-w-sm">
+                <h3 className="text-base sm:text-xl font-semibold mb-1 sm:mb-2">SEO-analyse</h3>
+                <p className="text-neutral-500 mb-3 sm:mb-6 max-w-sm text-sm sm:text-base">
                   Sjekk meta tags, overskrifter, bilder, lenker og teknisk SEO
                 </p>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5 sm:gap-2">
                   {['Title', 'Description', 'H1-H6', 'Bilder', 'Lenker', 'Open Graph'].map((tag, i) => (
                     <span 
                       key={tag} 
-                      className="px-3 py-1 bg-white rounded-full text-sm text-neutral-600 transition-all duration-300 group-hover:bg-neutral-900 group-hover:text-white"
+                      className="px-2 sm:px-3 py-0.5 sm:py-1 bg-white rounded-full text-xs sm:text-sm text-neutral-600 md:transition-all md:duration-300 md:group-hover:bg-neutral-900 md:group-hover:text-white"
                       style={{ transitionDelay: `${i * 50}ms` }}
                     >
                       {tag}
@@ -1029,114 +1020,87 @@ export default function LandingPage() {
                   ))}
                 </div>
               </div>
-              <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 transform translate-x-4 group-hover:translate-x-0 z-10">
+              <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 md:group-hover:opacity-100 transition-all duration-300 transform translate-x-4 md:group-hover:translate-x-0 z-10 hidden md:block">
                 <ScoreRing score={92} label="SEO" size="lg" />
               </div>
             </motion.div>
 
-            {/* Security - Small card with hover animation */}
+            {/* Security - Small card */}
             <motion.div 
               variants={itemVariants}
-              whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className="relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 group overflow-hidden"
+              className="relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 md:p-8 group overflow-hidden bg-gradient-to-br from-green-100 to-emerald-100"
             >
-              {/* Animated gradient background */}
-              <motion.div 
-                className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 group-hover:from-green-100 group-hover:to-emerald-100 transition-colors duration-300"
-                initial={{ opacity: 0, scale: 1.1 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 1.8, ease: "easeOut" }}
-              />
               <div className="relative z-10">
-                <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-6 group-hover:shadow-md group-hover:scale-110 transition-all">
-                  <Shield className="w-6 h-6 text-green-600" />
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white shadow-sm flex items-center justify-center mb-3 sm:mb-6 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
+                  <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
                 </div>
-                <h3 className="text-xl font-semibold text-neutral-900 mb-2">Sikkerhet</h3>
-                <p className="text-neutral-500 mb-6">
+                <h3 className="text-base sm:text-xl font-semibold text-neutral-900 mb-1 sm:mb-2">Sikkerhet</h3>
+                <p className="text-neutral-500 mb-3 sm:mb-6 text-sm sm:text-base">
                   SSL-sertifikat og sikkerhetsheaders
                 </p>
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-xl bg-green-100 flex items-center justify-center group-hover:scale-110 group-hover:bg-green-200 transition-all">
-                    <span className="text-xl font-bold text-green-600">A+</span>
+                <div className="flex items-center gap-3 sm:gap-4">
+                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-green-100 flex items-center justify-center md:group-hover:scale-110 md:group-hover:bg-green-200 md:transition-all">
+                    <span className="text-lg sm:text-xl font-bold text-green-600">A+</span>
                   </div>
-                  <div className="text-sm text-neutral-500 group-hover:text-neutral-600 transition-colors">
+                  <div className="text-xs sm:text-sm text-neutral-500 md:group-hover:text-neutral-600 md:transition-colors">
                     SSL Grade
                   </div>
                 </div>
               </div>
             </motion.div>
 
-            {/* Content - Small card with animated counters */}
+            {/* Content - Small card */}
             <motion.div 
               variants={itemVariants}
-              whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className="relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 group overflow-hidden"
+              className="relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 md:p-8 group overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100"
             >
-              {/* Animated gradient background */}
-              <motion.div 
-                className="absolute inset-0 bg-gradient-to-br from-purple-50 to-pink-50 group-hover:from-purple-100 group-hover:to-pink-100 transition-colors duration-300"
-                initial={{ opacity: 0, scale: 1.1 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 1.8, ease: "easeOut", delay: 0.1 }}
-              />
               <div className="relative z-10">
-              <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-6 group-hover:shadow-md group-hover:scale-110 transition-all">
-                <FileText className="w-6 h-6 text-purple-600" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white shadow-sm flex items-center justify-center mb-3 sm:mb-6 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
+                <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">Innhold</h3>
-              <p className="text-neutral-500 mb-6">
+              <h3 className="text-base sm:text-xl font-semibold mb-1 sm:mb-2">Innhold</h3>
+              <p className="text-neutral-500 mb-3 sm:mb-6 text-sm sm:text-base">
                 Ordtelling, lesbarhet og struktur
               </p>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-white rounded-xl p-3 text-center group-hover:shadow-md transition-all">
-                  <div className="text-2xl font-bold group-hover:text-purple-600 transition-colors">847</div>
-                  <div className="text-xs text-neutral-500">Ord</div>
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
+                <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 text-center md:group-hover:shadow-md md:transition-all">
+                  <div className="text-xl sm:text-2xl font-bold md:group-hover:text-purple-600 md:transition-colors">847</div>
+                  <div className="text-[10px] sm:text-xs text-neutral-500">Ord</div>
                 </div>
-                <div className="bg-white rounded-xl p-3 text-center group-hover:shadow-md transition-all">
-                  <div className="text-2xl font-bold group-hover:text-purple-600 transition-colors">38</div>
-                  <div className="text-xs text-neutral-500">LIX</div>
+                <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 text-center md:group-hover:shadow-md md:transition-all">
+                  <div className="text-xl sm:text-2xl font-bold md:group-hover:text-purple-600 md:transition-colors">38</div>
+                  <div className="text-[10px] sm:text-xs text-neutral-500">LIX</div>
                   </div>
                 </div>
               </div>
             </motion.div>
 
-            {/* Keywords - Medium card with hover table highlight */}
+            {/* Keywords - Medium card */}
             <motion.div 
               variants={itemVariants}
-              whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className="md:col-span-2 relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 group overflow-hidden"
+              className="md:col-span-2 relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 md:p-8 group overflow-hidden bg-gradient-to-br from-blue-100 to-cyan-100"
             >
-              {/* Animated gradient background */}
-              <motion.div 
-                className="absolute inset-0 bg-gradient-to-br from-blue-50 to-cyan-50 group-hover:from-blue-100 group-hover:to-cyan-100 transition-colors duration-300"
-                initial={{ opacity: 0, scale: 1.1 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 1.8, ease: "easeOut", delay: 0.2 }}
-              />
               <div className="relative z-10">
-              <div className="flex items-start justify-between mb-6">
+              <div className="flex items-start justify-between mb-3 sm:mb-6">
                 <div>
-                  <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4 group-hover:shadow-md group-hover:scale-110 transition-all">
-                    <Tag className="w-6 h-6 text-blue-600" />
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-4 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
+                    <Tag className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                   </div>
-                  <h3 className="text-xl font-semibold mb-2">Nøkkelordanalyse</h3>
-                  <p className="text-neutral-500">
+                  <h3 className="text-base sm:text-xl font-semibold mb-1 sm:mb-2">Nøkkelordanalyse</h3>
+                  <p className="text-neutral-500 text-sm sm:text-base">
                     AI-estimert søkevolum, CPC og konkurranse
                   </p>
                 </div>
-                <Badge className="bg-amber-100 text-amber-700 group-hover:bg-amber-200 transition-colors">AI-drevet</Badge>
+                <Badge className="bg-amber-100 text-amber-700 md:group-hover:bg-amber-200 md:transition-colors text-[10px] sm:text-xs">AI-drevet</Badge>
               </div>
-              <div className="bg-white rounded-2xl p-4 overflow-hidden group-hover:shadow-md transition-all">
-                  <table className="w-full text-sm">
+              <div className="bg-white rounded-lg sm:rounded-2xl p-2 sm:p-4 overflow-hidden md:group-hover:shadow-md md:transition-all">
+                  <table className="w-full text-xs sm:text-sm">
                     <thead>
                       <tr className="border-b border-neutral-100">
-                        <th className="text-left py-2 px-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Nøkkelord</th>
-                        <th className="text-right py-2 px-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Volum</th>
-                        <th className="text-right py-2 px-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">CPC</th>
-                        <th className="text-center py-2 px-2 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Konkurranse</th>
+                        <th className="text-left py-1.5 sm:py-2 px-1 sm:px-2 text-[10px] sm:text-xs font-semibold text-neutral-500 uppercase tracking-wide">Nøkkelord</th>
+                        <th className="text-right py-1.5 sm:py-2 px-1 sm:px-2 text-[10px] sm:text-xs font-semibold text-neutral-500 uppercase tracking-wide">Volum</th>
+                        <th className="text-right py-1.5 sm:py-2 px-1 sm:px-2 text-[10px] sm:text-xs font-semibold text-neutral-500 uppercase tracking-wide hidden sm:table-cell">CPC</th>
+                        <th className="text-center py-1.5 sm:py-2 px-1 sm:px-2 text-[10px] sm:text-xs font-semibold text-neutral-500 uppercase tracking-wide">Konk.</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1146,11 +1110,11 @@ export default function LandingPage() {
                         { word: 'nettside analyse', vol: '890', cpc: '28 kr', comp: 'lav' },
                 ].map((kw, i) => (
                         <tr key={i} className="border-t border-neutral-50 hover:bg-blue-50 transition-colors">
-                          <td className="py-2.5 px-2 text-neutral-700">{kw.word}</td>
-                          <td className="py-2.5 px-2 text-right text-neutral-600">{kw.vol}</td>
-                          <td className="py-2.5 px-2 text-right text-green-600 font-medium">{kw.cpc}</td>
-                          <td className="py-2.5 px-2 text-center">
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                          <td className="py-1.5 sm:py-2.5 px-1 sm:px-2 text-neutral-700 truncate max-w-[120px] sm:max-w-none">{kw.word}</td>
+                          <td className="py-1.5 sm:py-2.5 px-1 sm:px-2 text-right text-neutral-600">{kw.vol}</td>
+                          <td className="py-1.5 sm:py-2.5 px-1 sm:px-2 text-right text-green-600 font-medium hidden sm:table-cell">{kw.cpc}</td>
+                          <td className="py-1.5 sm:py-2.5 px-1 sm:px-2 text-center">
+                            <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${
                               kw.comp === 'høy' ? 'bg-red-100 text-red-700' :
                               kw.comp === 'medium' ? 'bg-amber-100 text-amber-700' :
                               'bg-green-100 text-green-700'
@@ -1167,71 +1131,60 @@ export default function LandingPage() {
             {/* AI Articles - Full width card */}
             <motion.div 
               variants={itemVariants}
-              whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className="md:col-span-3 relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 group overflow-hidden"
+              className="md:col-span-3 relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 md:p-8 group overflow-hidden bg-gradient-to-br from-violet-100 via-purple-100 to-fuchsia-100"
             >
-              {/* Animated gradient background */}
-              <motion.div 
-                className="absolute inset-0 bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 group-hover:from-violet-100 group-hover:via-purple-100 group-hover:to-fuchsia-100 transition-colors duration-300"
-                initial={{ opacity: 0, scale: 1.1 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true, amount: 0.5 }}
-                transition={{ duration: 1.8, ease: "easeOut", delay: 0.3 }}
-              />
               <div className="relative z-10">
-                <div className="flex items-start justify-between mb-6">
+                <div className="flex items-start justify-between mb-3 sm:mb-6">
                   <div>
-                    <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4 group-hover:shadow-md group-hover:scale-110 transition-all">
-                      <Sparkles className="w-6 h-6 text-violet-600" />
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-4 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
+                      <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-violet-600" />
                     </div>
-                    <h3 className="text-xl font-semibold mb-2">AI-genererte artikler</h3>
-                    <p className="text-neutral-500 max-w-md">
-                      Få artikkelideer basert på analysen og generer fullstendige artikler med ett klikk
+                    <h3 className="text-base sm:text-xl font-semibold mb-1 sm:mb-2">AI-genererte artikler</h3>
+                    <p className="text-neutral-500 max-w-md text-sm sm:text-base">
+                      Få artikkelideer basert på analysen og generer fullstendige artikler
                     </p>
                   </div>
-                  <Badge className="bg-violet-100 text-violet-700 group-hover:bg-violet-200 transition-colors">Ny</Badge>
+                  <Badge className="bg-violet-100 text-violet-700 md:group-hover:bg-violet-200 md:transition-colors text-[10px] sm:text-xs">Ny</Badge>
                 </div>
                 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid md:grid-cols-2 gap-2 sm:gap-4">
                   {/* Left - Article suggestions */}
-                  <div className="bg-white rounded-2xl p-4 group-hover:shadow-md transition-all">
-                    <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-3">Artikkelideer</p>
-                    <div className="space-y-2">
+                  <div className="bg-white rounded-lg sm:rounded-2xl p-2 sm:p-4 md:group-hover:shadow-md md:transition-all">
+                    <p className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2 sm:mb-3">Artikkelideer</p>
+                    <div className="space-y-1.5 sm:space-y-2">
                       {[
-                        { title: '10 strategier for digital markedsføring i 2026', priority: 'høy' },
+                        { title: '10 strategier for digital markedsføring', priority: 'høy' },
                         { title: 'Hvordan velge riktig SEO-byrå', priority: 'høy' },
-                        { title: 'AI og automatisering: En komplett guide', priority: 'medium' },
                       ].map((article, i) => (
-                        <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-neutral-50 hover:bg-violet-50 transition-colors">
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 mt-0.5 ${
+                        <div key={i} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-neutral-50 hover:bg-violet-50 transition-colors">
+                          <span className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded font-medium shrink-0 mt-0.5 ${
                             article.priority === 'høy' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
                           }`}>{article.priority}</span>
-                          <span className="text-sm text-neutral-700 line-clamp-1">{article.title}</span>
+                          <span className="text-xs sm:text-sm text-neutral-700 line-clamp-1">{article.title}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   
                   {/* Right - Generated article preview */}
-                  <div className="bg-white rounded-2xl p-4 group-hover:shadow-md transition-all">
-                    <div className="flex items-center justify-between mb-3">
-                      <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Generert artikkel</p>
+                  <div className="bg-white rounded-lg sm:rounded-2xl p-2 sm:p-4 md:group-hover:shadow-md md:transition-all hidden sm:block">
+                    <div className="flex items-center justify-between mb-2 sm:mb-3">
+                      <p className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide">Generert artikkel</p>
                       <div className="flex items-center gap-1.5">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
                         <span className="text-[10px] text-neutral-400">600-1200 ord</span>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <div className="h-5 bg-neutral-100 rounded w-3/4 group-hover:bg-violet-100 transition-colors" />
-                      <div className="h-3 bg-neutral-50 rounded w-full" />
-                      <div className="h-3 bg-neutral-50 rounded w-full" />
-                      <div className="h-3 bg-neutral-50 rounded w-5/6" />
-                      <div className="h-4 bg-neutral-100 rounded w-1/2 mt-3 group-hover:bg-violet-100 transition-colors" />
-                      <div className="h-3 bg-neutral-50 rounded w-full" />
-                      <div className="h-3 bg-neutral-50 rounded w-4/5" />
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <div className="h-4 sm:h-5 bg-neutral-100 rounded w-3/4 md:group-hover:bg-violet-100 md:transition-colors" />
+                      <div className="h-2.5 sm:h-3 bg-neutral-50 rounded w-full" />
+                      <div className="h-2.5 sm:h-3 bg-neutral-50 rounded w-full" />
+                      <div className="h-2.5 sm:h-3 bg-neutral-50 rounded w-5/6" />
+                      <div className="h-3 sm:h-4 bg-neutral-100 rounded w-1/2 mt-2 sm:mt-3 md:group-hover:bg-violet-100 md:transition-colors" />
+                      <div className="h-2.5 sm:h-3 bg-neutral-50 rounded w-full" />
                     </div>
-                    <div className="flex gap-2 mt-4">
-                      <div className="px-3 py-1.5 rounded-lg bg-violet-100 text-violet-700 text-xs font-medium group-hover:bg-violet-200 transition-colors">
+                    <div className="flex gap-2 mt-3 sm:mt-4">
+                      <div className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-violet-100 text-violet-700 text-[10px] sm:text-xs font-medium md:group-hover:bg-violet-200 md:transition-colors">
                         Kopier artikkel
                       </div>
                       <div className="px-3 py-1.5 rounded-lg bg-neutral-100 text-neutral-600 text-xs font-medium">
@@ -1243,7 +1196,7 @@ export default function LandingPage() {
               </div>
             </motion.div>
 
-            </motion.div>
+          </motion.div>
         </div>
       </section>
 
@@ -1256,7 +1209,7 @@ export default function LandingPage() {
               viewport={{ once: true }}
             className="text-center mb-8 sm:mb-12"
           >
-            <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-2 sm:mb-3">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-2 sm:mb-3">
               Fra problem<br />
               <span className="text-neutral-400">til løsning.</span>
               </h2>
@@ -1265,14 +1218,18 @@ export default function LandingPage() {
             </p>
             </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
             {/* Problem cards - narrower */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="lg:col-span-2 space-y-2"
+              className="lg:col-span-2 space-y-1.5 sm:space-y-2"
             >
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-green-600 mb-1.5 sm:mb-2 px-1">
+                <span>Klikk for å utforske</span>
+                <ChevronDown className="w-3 h-3 animate-bounce" />
+              </div>
               {[
                 { 
                   id: 'meta', 
@@ -1302,26 +1259,26 @@ export default function LandingPage() {
                 <button
                   key={issue.id}
                   onClick={() => setSelectedIssue(issue.id)}
-                  className={`w-full text-left p-4 rounded-2xl border transition-all duration-200 cursor-pointer ${
+                  className={`w-full text-left p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border transition-all duration-200 cursor-pointer ${
                     selectedIssue === issue.id
                       ? 'border-neutral-300 bg-neutral-50'
                       : 'border-transparent bg-neutral-50/50 hover:bg-neutral-50 hover:border-neutral-200'
                   }`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 ${
                       selectedIssue === issue.id ? 'bg-neutral-200' : 'bg-neutral-100'
                     }`}>
-                      <issue.icon className={`w-4 h-4 ${
+                      <issue.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
                         selectedIssue === issue.id ? 'text-neutral-700' : 'text-neutral-500'
                       }`} />
                   </div>
                     <div className="flex-1 min-w-0">
-                      <h4 className={`text-sm font-medium ${
+                      <h4 className={`text-xs sm:text-sm font-medium ${
                         selectedIssue === issue.id ? 'text-neutral-900' : 'text-neutral-600'
                       }`}>{issue.title}</h4>
                 </div>
-                    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium ${
                       issue.severity === 'høy' 
                         ? 'bg-red-100 text-red-600'
                         : issue.severity === 'medium'
@@ -1473,29 +1430,33 @@ export default function LandingPage() {
       </section>
 
       {/* How it works - Two column layout */}
-      <section className="py-20 bg-neutral-50 overflow-hidden">
-        <div className="max-w-6xl mx-auto px-6">
+      <section className="py-12 sm:py-16 md:py-20 bg-neutral-50 overflow-hidden">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-12"
+            className="mb-8 sm:mb-12"
           >
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-3">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-2 sm:mb-3">
               Tre enkle steg<br />
               <span className="text-neutral-400">til bedre resultater.</span>
             </h2>
-            <p className="text-lg text-neutral-500 max-w-xl">Ingen installasjon, ingen ventetid. Bare resultater.</p>
+            <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl">Ingen installasjon, ingen ventetid. Bare resultater.</p>
           </motion.div>
 
-          <div className="grid lg:grid-cols-2 gap-8 items-start">
+          <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-start">
             {/* Left - Steps */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="space-y-3"
+              className="space-y-1.5 sm:space-y-3"
             >
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-green-600 mb-1.5 sm:mb-2 px-1">
+                <span>Klikk for å utforske</span>
+                <ChevronDown className="w-3 h-3 animate-bounce" />
+              </div>
               {[
                 { 
                   step: 1, 
@@ -1516,21 +1477,21 @@ export default function LandingPage() {
                 <button
                   key={item.step}
                   onClick={() => setSelectedStep(item.step)}
-                  className={`w-full text-left p-5 rounded-2xl border transition-all duration-200 cursor-pointer ${
+                  className={`w-full text-left p-3 sm:p-5 rounded-xl sm:rounded-2xl border transition-all duration-200 cursor-pointer ${
                     selectedStep === item.step
                       ? 'border-neutral-300 bg-white'
                       : 'border-transparent bg-white/50 hover:bg-white hover:border-neutral-200'
                   }`}
                 >
-                  <div className="flex items-start gap-4">
-                    <span className={`text-3xl font-light transition-colors ${
+                  <div className="flex items-start gap-2.5 sm:gap-4">
+                    <span className={`text-2xl sm:text-3xl font-light transition-colors ${
                       selectedStep === item.step ? 'text-neutral-900' : 'text-neutral-300'
                     }`}>{item.step}</span>
-                    <div className="pt-1">
-                      <h3 className={`font-semibold text-lg mb-1 transition-colors ${
+                    <div className="pt-0.5 sm:pt-1">
+                      <h3 className={`font-semibold text-sm sm:text-lg mb-0.5 sm:mb-1 transition-colors ${
                         selectedStep === item.step ? 'text-neutral-900' : 'text-neutral-600'
                       }`}>{item.title}</h3>
-                      <p className={`text-sm transition-colors ${
+                      <p className={`text-xs sm:text-sm transition-colors ${
                         selectedStep === item.step ? 'text-neutral-600' : 'text-neutral-400'
                       }`}>{item.desc}</p>
                     </div>
@@ -1538,8 +1499,8 @@ export default function LandingPage() {
                 </button>
               ))}
               
-              <div className="pt-4">
-                <Button className="bg-neutral-900 hover:bg-neutral-800" asChild>
+              <div className="pt-4 sm:pt-6 pb-2 sm:pb-0">
+                <Button className="bg-neutral-900 hover:bg-neutral-800 w-full sm:w-auto h-11 sm:h-10" asChild>
                   <Link href="/register">
                     Kom i gang gratis
                     <ArrowRight className="ml-2 w-4 h-4" />
@@ -1852,28 +1813,28 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA - Inline style */}
-      <section className="py-12">
-        <div className="max-w-6xl mx-auto px-6">
+      <section className="py-8 sm:py-12">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.5, ease: "easeOut" }}
-            className="bg-neutral-900 rounded-2xl relative overflow-hidden min-h-[320px]"
+            className="bg-neutral-900 rounded-xl sm:rounded-2xl relative overflow-hidden min-h-[280px] sm:min-h-[320px]"
           >
             {/* Content grid */}
             <div className="relative z-10 grid md:grid-cols-2 h-full">
               {/* Left column - Text and CTA */}
-              <div className="p-10 md:p-12 flex flex-col justify-center">
-                <h2 className="text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight text-white mb-4 leading-tight">
+              <div className="p-6 sm:p-10 md:p-12 flex flex-col justify-center relative z-20">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight text-white mb-3 sm:mb-4 leading-tight">
                   Prøv det selv<br />
                   <span className="text-neutral-400">- helt gratis.</span>
                 </h2>
-                <p className="text-neutral-400 mb-8 max-w-sm">
+                <p className="text-sm sm:text-base text-neutral-400 mb-6 sm:mb-8 max-w-sm">
                   Full analyse av nettsiden din på under ett minutt. SEO, sikkerhet, innhold og AI-anbefalinger.
                 </p>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
-                  <Button className="bg-white text-neutral-900 hover:bg-neutral-100 h-12 px-6" asChild>
+                  <Button className="bg-white text-neutral-900 hover:bg-neutral-100 h-10 sm:h-12 px-4 sm:px-6 text-sm sm:text-base" asChild>
                   <Link href="/register">
                     Kom i gang gratis
                     <ArrowRight className="ml-2 w-4 h-4" />
@@ -1882,8 +1843,8 @@ export default function LandingPage() {
               </motion.div>
               </div>
               
-              {/* Right column - Dashboard mockup */}
-              <div className="relative hidden md:block overflow-hidden">
+              {/* Right column - Dashboard mockup (visible as faded bg on mobile) */}
+              <div className="absolute md:relative inset-0 md:inset-auto overflow-hidden opacity-40 md:opacity-100">
                 {/* Gradient fade from left */}
                 <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-neutral-900 to-transparent z-10" />
                 
@@ -1952,6 +1913,8 @@ export default function LandingPage() {
                 {/* Gradient fades for smooth blending */}
                 <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-neutral-900 via-neutral-900/80 to-transparent z-10" />
                 <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-neutral-900 via-neutral-900/50 to-transparent z-10" />
+                {/* Extra left gradient on mobile for text readability */}
+                <div className="absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r from-neutral-900 via-neutral-900/70 to-transparent z-10 md:hidden" />
               </div>
             </div>
           </motion.div>

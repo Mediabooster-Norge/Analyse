@@ -98,6 +98,7 @@ export interface DashboardAnalysisResult {
       total: number;
       withAlt: number;
       withoutAlt: number;
+      missingAltImages?: string[];
       relevance?: {
         analyzed: {
           url: string;
@@ -202,6 +203,7 @@ export interface SelectedElement {
   name: string;
   value: string;
   status: 'good' | 'warning' | 'bad';
+  relatedUrls?: string[];
 }
 
 /**

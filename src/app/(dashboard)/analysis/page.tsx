@@ -498,16 +498,17 @@ export default function AnalysisPage() {
       ) : (
         <div className="space-y-3">
           {analyses.map((analysis) => (
-            <div key={analysis.id} className="rounded-2xl border border-neutral-200 bg-white p-5 hover:border-neutral-300 transition-all">
-              <div className="flex flex-col md:flex-row md:items-center gap-4">
-                {/* Score Circle */}
-                <div className="flex items-center gap-4">
-                  <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${
+            <div key={analysis.id} className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 hover:border-neutral-300 transition-all overflow-hidden">
+              <div className="flex flex-col gap-4">
+                {/* Top row: Score + URL */}
+                <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
+                  {/* Score Circle */}
+                  <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${
                     analysis.overall_score >= 90 ? 'bg-green-50' :
                     analysis.overall_score >= 70 ? 'bg-emerald-50' :
                     analysis.overall_score >= 50 ? 'bg-amber-50' : 'bg-red-50'
                   }`}>
-                    <span className={`text-xl font-bold ${
+                    <span className={`text-lg sm:text-xl font-bold ${
                       analysis.overall_score >= 90 ? 'text-green-600' :
                       analysis.overall_score >= 70 ? 'text-emerald-600' :
                       analysis.overall_score >= 50 ? 'text-amber-600' : 'text-red-600'
@@ -517,61 +518,66 @@ export default function AnalysisPage() {
                   </div>
                   
                   {/* URL and Date */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="flex items-center gap-2 min-w-0">
                       <Globe className="h-4 w-4 text-neutral-400 shrink-0" />
-                      <span className="font-medium text-neutral-900 truncate">{analysis.url}</span>
+                      <span className="font-medium text-neutral-900 truncate text-sm sm:text-base">{analysis.url}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-neutral-500 mt-0.5">
-                      <Clock className="h-3.5 w-3.5" />
-                      {formatDate(analysis.created_at)}
+                    <div className="flex items-center gap-2 text-xs sm:text-sm text-neutral-500 mt-0.5">
+                      <Clock className="h-3 sm:h-3.5 w-3 sm:w-3.5 shrink-0" />
+                      <span className="truncate">{formatDate(analysis.created_at)}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Individual Scores */}
-                <div className="flex items-center gap-2 md:ml-auto flex-wrap">
-                  <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${getScoreBadge(analysis.seo_score)}`}>
-                    SEO {analysis.seo_score}
-                  </span>
-                  <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${getScoreBadge(analysis.content_score)}`}>
-                    Innhold {analysis.content_score}
-                  </span>
-                  <span className={`px-3 py-1.5 rounded-full text-xs font-medium ${getScoreBadge(analysis.security_score)}`}>
-                    Sikkerhet {analysis.security_score}
-                  </span>
-                </div>
+                {/* Bottom row: Scores + Actions */}
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+                  {/* Individual Scores */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                    <span className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium ${getScoreBadge(analysis.seo_score)}`}>
+                      SEO {analysis.seo_score}
+                    </span>
+                    <span className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium ${getScoreBadge(analysis.content_score)}`}>
+                      Innhold {analysis.content_score}
+                    </span>
+                    <span className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium ${getScoreBadge(analysis.security_score)}`}>
+                      Sikkerhet {analysis.security_score}
+                    </span>
+                  </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-10 rounded-xl border-neutral-200 hover:bg-neutral-50 text-neutral-700"
-                    disabled={rerunningAnalysis?.id === analysis.id}
-                    onClick={() => handleRerunAnalysis(analysis)}
-                  >
-                    {rerunningAnalysis?.id === analysis.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                    ) : (
-                      <RefreshCw className="h-4 w-4 mr-2" />
-                    )}
-                    Kjør på nytt
-                  </Button>
-                  <Button variant="outline" className="h-10 rounded-xl border-neutral-200 hover:bg-neutral-50" asChild>
-                    <Link href={`/dashboard?analysisId=${analysis.id}`}>
-                      Se detaljer
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-10 w-10 p-0 rounded-xl border-neutral-200 hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-neutral-400"
-                    onClick={() => setDeleteConfirm({ id: analysis.id, url: analysis.url })}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 sm:ml-auto shrink-0">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 sm:h-10 rounded-xl border-neutral-200 hover:bg-neutral-50 text-neutral-700 text-xs sm:text-sm"
+                      disabled={rerunningAnalysis?.id === analysis.id}
+                      onClick={() => handleRerunAnalysis(analysis)}
+                    >
+                      {rerunningAnalysis?.id === analysis.id ? (
+                        <Loader2 className="h-3.5 sm:h-4 w-3.5 sm:w-4 animate-spin mr-1.5 sm:mr-2" />
+                      ) : (
+                        <RefreshCw className="h-3.5 sm:h-4 w-3.5 sm:w-4 mr-1.5 sm:mr-2" />
+                      )}
+                      <span className="hidden min-[400px]:inline">Kjør på nytt</span>
+                      <span className="min-[400px]:hidden">Kjør</span>
+                    </Button>
+                    <Button variant="outline" className="h-9 sm:h-10 rounded-xl border-neutral-200 hover:bg-neutral-50 text-xs sm:text-sm" asChild>
+                      <Link href={`/dashboard?analysisId=${analysis.id}`}>
+                        <span className="hidden min-[400px]:inline">Se detaljer</span>
+                        <span className="min-[400px]:hidden">Detaljer</span>
+                        <ArrowRight className="ml-1.5 sm:ml-2 h-3.5 sm:h-4 w-3.5 sm:w-4" />
+                      </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 sm:h-10 w-9 sm:w-10 p-0 rounded-xl border-neutral-200 hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-neutral-400"
+                      onClick={() => setDeleteConfirm({ id: analysis.id, url: analysis.url })}
+                    >
+                      <Trash2 className="h-3.5 sm:h-4 w-3.5 sm:w-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>

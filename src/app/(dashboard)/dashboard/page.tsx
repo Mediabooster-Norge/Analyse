@@ -108,6 +108,8 @@ function DashboardPageContent() {
     addCompetitor,
     removeCompetitor,
     runAnalysis,
+    openSubpageDialog,
+    subpageUrl,
     suggestKeywords,
     fetchAISuggestion,
     articleSuggestions,
@@ -256,8 +258,37 @@ function DashboardPageContent() {
           FREE_COMPETITOR_LIMIT={FREE_COMPETITOR_LIMIT}
           FREE_KEYWORD_LIMIT={FREE_KEYWORD_LIMIT}
           onRunAnalysis={runAnalysis}
+          isSubpageMode={!!subpageUrl}
         />
       </div>
+
+      {/* Inline analysis progress - shown when analyzing without dialog */}
+      {analyzing && !dialogOpen && (
+        <div className="rounded-2xl bg-white border border-neutral-200 p-6 sm:p-8">
+          <div className="flex flex-col items-center text-center">
+            <div className="relative w-12 h-12 rounded-xl bg-neutral-100 flex items-center justify-center mb-4">
+              <Loader2 className="h-6 w-6 text-neutral-600 animate-spin" />
+            </div>
+            <h3 className="font-semibold text-neutral-900 text-base mb-1">
+              Analyserer nettside
+            </h3>
+            <p className="text-sm text-neutral-500 mb-4">{url || '—'}</p>
+            <div className="flex items-center gap-2 text-xs text-neutral-400">
+              <span>Steg {analysisStep + 1} av {analysisSteps.length}</span>
+              <span>·</span>
+              <span>{analysisSteps[analysisStep]?.label || 'Forbereder...'}</span>
+            </div>
+            <div className="w-full max-w-xs mt-4">
+              <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-neutral-900 rounded-full transition-all duration-500"
+                  style={{ width: `${((analysisStep + 1) / analysisSteps.length) * 100}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Monthly Usage & Premium Banner - Combined */}
       {isPremium ? (
@@ -350,8 +381,7 @@ function DashboardPageContent() {
               result={result}
               isPremium={isPremium}
               url={url}
-              setUrl={setUrl}
-              setDialogOpen={setDialogOpen}
+              openSubpageDialog={openSubpageDialog}
               fetchAISuggestion={fetchAISuggestion}
               setActiveTab={setActiveTab}
               articleSuggestions={articleSuggestions}

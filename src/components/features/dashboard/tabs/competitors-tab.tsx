@@ -347,15 +347,17 @@ export function CompetitorsTab({
                     return allEntries.map((entry) => {
                       if (entry.type === 'user') {
                         return (
-                          <tr key="user" className="border-b border-neutral-100 bg-green-50/50 hover:bg-green-50 transition-colors">
+                          <tr key="user" className="border-b border-neutral-100 bg-green-50/50 hover:bg-green-50 transition-colors group">
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-2">
                                 <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
                                   <Globe className="h-4 w-4 text-green-600" />
                                 </div>
                                 <div className="min-w-0">
-                                  <p className="font-medium text-neutral-900 truncate">Du</p>
-                                  <p className="text-xs text-neutral-500 truncate">{entry.name}</p>
+                                  <p className="font-medium text-neutral-900 truncate">{entry.name}</p>
+                                  <a href={entry.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:text-blue-600 hover:underline flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    Besøk <ExternalLink className="w-3 h-3" />
+                                  </a>
                                 </div>
                               </div>
                             </td>

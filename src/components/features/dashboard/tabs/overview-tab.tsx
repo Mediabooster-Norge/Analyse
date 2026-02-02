@@ -58,13 +58,13 @@ export interface OverviewTabProps {
   result: DashboardAnalysisResult;
   isPremium: boolean;
   url: string;
-  setUrl: (url: string) => void;
-  setDialogOpen: (open: boolean) => void;
+  openSubpageDialog: (subpageUrl: string) => void;
   fetchAISuggestion: (
     element: string,
     currentValue: string,
     status: 'good' | 'warning' | 'bad',
-    issue?: string
+    issue?: string,
+    relatedUrls?: string[]
   ) => void;
   setActiveTab: (tab: 'overview' | 'competitors' | 'keywords' | 'ai' | 'ai-visibility') => void;
   articleSuggestions: ArticleSuggestion[] | null;
@@ -84,8 +84,7 @@ export function OverviewTab({
   result,
   isPremium,
   url,
-  setUrl,
-  setDialogOpen,
+  openSubpageDialog,
   fetchAISuggestion,
   setActiveTab,
   articleSuggestions,
@@ -136,6 +135,20 @@ export function OverviewTab({
 
   return (
     <>
+      {/* Current URL indicator */}
+      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 mb-4">
+        <Globe className="h-4 w-4 text-neutral-400 shrink-0" />
+        <span className="text-sm text-neutral-600 truncate">{url}</span>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-auto text-xs text-neutral-400 hover:text-neutral-600 transition-colors shrink-0"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+        </a>
+      </div>
+
       <SummaryCard score={result.overallScore} />
 
       {/* Score Grid + Priority Improvements - Side by side */}
@@ -334,7 +347,13 @@ export function OverviewTab({
                 value={result.seoResults.images.withoutAlt > 0 ? `${result.seoResults.images.withoutAlt} mangler alt` : 'Alle har alt-tekst'}
                 recommendation={result.seoResults.images.withoutAlt === 0 ? 'Bra' : 'Legg til alt-tekst på bilder'}
                 status={result.seoResults.images.withoutAlt === 0 ? 'good' : result.seoResults.images.withoutAlt > 3 ? 'bad' : 'warning'}
-                onClick={() => fetchAISuggestion('Bilder og alt-tekst', `${result.seoResults.images.withAlt} av ${result.seoResults.images.total} bilder har alt-tekst`, result.seoResults.images.withoutAlt === 0 ? 'good' : 'warning', result.seoResults.images.withoutAlt > 0 ? `${result.seoResults.images.withoutAlt} bilder mangler alt-tekst.` : undefined)}
+                onClick={() => fetchAISuggestion(
+                  'Bilder og alt-tekst',
+                  `${result.seoResults.images.withAlt} av ${result.seoResults.images.total} bilder har alt-tekst`,
+                  result.seoResults.images.withoutAlt === 0 ? 'good' : 'warning',
+                  result.seoResults.images.withoutAlt > 0 ? `${result.seoResults.images.withoutAlt} bilder mangler alt-tekst.` : undefined,
+                  result.seoResults.images.missingAltImages
+                )}
               />
               <MetricCard
                 icon={Globe}
@@ -493,21 +512,23 @@ export function OverviewTab({
               </h3>
             </div>
             <div className="p-3 sm:p-4 space-y-3">
-              {/* Custom URL input */}
+              {/* Custom URL input with locked domain */}
               <div className="flex flex-col sm:flex-row gap-2">
-                <div className="relative flex-1">
-                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <div className="relative flex-1 flex">
+                  <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-neutral-200 bg-neutral-50 text-neutral-500 text-sm select-none whitespace-nowrap">
+                    {baseUrl}
+                  </span>
                   <input
                     type="text"
-                    placeholder={`${baseUrl}/din-side`}
-                    className="w-full h-9 pl-10 pr-4 rounded-lg border border-neutral-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-transparent"
+                    placeholder="/din-side"
+                    className="flex-1 min-w-0 h-9 px-3 rounded-r-lg border border-neutral-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-transparent"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
-                        const input = e.currentTarget.value.trim();
-                        if (input) {
-                          const fullUrl = input.startsWith('http') ? input : `${baseUrl}${input.startsWith('/') ? '' : '/'}${input}`;
-                          setUrl(fullUrl);
-                          setDialogOpen(true);
+                        const pathInput = e.currentTarget.value.trim();
+                        if (pathInput) {
+                          const cleanPath = pathInput.startsWith('/') ? pathInput : `/${pathInput}`;
+                          const fullUrl = `${baseUrl}${cleanPath}`;
+                          openSubpageDialog(fullUrl);
                           e.currentTarget.value = '';
                         }
                       }
@@ -520,11 +541,14 @@ export function OverviewTab({
                   size="sm"
                   className="h-9 px-3 rounded-lg w-full sm:w-auto"
                   onClick={(e) => {
-                    const input = (e.currentTarget.previousElementSibling?.querySelector('input') as HTMLInputElement)?.value.trim();
-                    if (input) {
-                      const fullUrl = input.startsWith('http') ? input : `${baseUrl}${input.startsWith('/') ? '' : '/'}${input}`;
-                      setUrl(fullUrl);
-                      setDialogOpen(true);
+                    const container = e.currentTarget.parentElement;
+                    const input = container?.querySelector('input') as HTMLInputElement | null;
+                    const pathInput = input?.value.trim();
+                    if (pathInput) {
+                      const cleanPath = pathInput.startsWith('/') ? pathInput : `/${pathInput}`;
+                      const fullUrl = `${baseUrl}${cleanPath}`;
+                      openSubpageDialog(fullUrl);
+                      if (input) input.value = '';
                     }
                   }}
                 >
@@ -566,7 +590,7 @@ export function OverviewTab({
                         <button
                           key={pathname}
                           type="button"
-                          onClick={() => { setUrl(fullUrl); setDialogOpen(true); }}
+                          onClick={() => openSubpageDialog(fullUrl)}
                           className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-neutral-50 hover:bg-neutral-100 border border-transparent hover:border-neutral-200 transition-all text-left group cursor-pointer"
                           title={fullUrl}
                         >

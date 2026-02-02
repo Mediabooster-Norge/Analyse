@@ -45,6 +45,7 @@ interface DashboardState {
   
   // UI state
   dialogOpen: boolean;
+  subpageUrl: string | null; // When set, dialog is in subpage mode
   activeTab: DashboardTab;
   loading: boolean;
   
@@ -148,6 +149,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     analysisStep: 0,
     elapsedTime: 0,
     dialogOpen: showNewDialog,
+    subpageUrl: null,
     activeTab: 'overview',
     loading: true,
     remainingAnalyses: 2,
@@ -402,7 +404,18 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
 
   // Actions
   const setUrl = useCallback((url: string) => updateState({ url }), [updateState]);
-  const setDialogOpen = useCallback((open: boolean) => updateState({ dialogOpen: open }), [updateState]);
+  const setDialogOpen = useCallback((open: boolean) => {
+    // Clear subpageUrl when closing dialog
+    if (!open) {
+      updateState({ dialogOpen: false, subpageUrl: null });
+    } else {
+      updateState({ dialogOpen: true });
+    }
+  }, [updateState]);
+  const openSubpageDialog = useCallback((subpageUrl: string) => {
+    // Clear existing competitors when opening subpage dialog - user can add specific ones manually
+    updateState({ url: subpageUrl, subpageUrl, dialogOpen: true, competitorUrls: [], competitorInput: '' });
+  }, [updateState]);
   const setActiveTab = useCallback((tab: DashboardTab) => updateState({ activeTab: tab }), [updateState]);
   const setCompetitorInput = useCallback((input: string) => updateState({ competitorInput: input }), [updateState]);
   const setKeywordInput = useCallback((input: string) => updateState({ keywordInput: input }), [updateState]);
@@ -492,6 +505,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       return;
     }
 
+    const isSubpage = !!state.subpageUrl;
     updateState({ analyzing: true, analysisStep: 0, result: null });
 
     const stepTimings = [5000, 8000, 12000, 8000, 12000];
@@ -519,6 +533,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         body: JSON.stringify({
           url: state.url,
           websiteName,
+          // For subpage: send any manually added competitors (cleared by default in openSubpageDialog)
           competitorUrls: state.competitorUrls,
           keywords: state.keywords.length > 0 ? state.keywords : undefined,
           includeAI: true,
@@ -530,7 +545,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       if (!response.ok) {
         const errorData = await response.json();
         if (errorData.limitReached) {
-          updateState({ remainingAnalyses: 0, dialogOpen: false });
+          updateState({ remainingAnalyses: 0, dialogOpen: false, subpageUrl: null });
           toast.error(errorData.error || 'Du har brukt opp dine gratis analyser denne måneden');
           return;
         }
@@ -544,6 +559,9 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         companyName: websiteName,
         remainingAnalyses: Math.max(0, state.remainingAnalyses - 1),
         dialogOpen: false,
+        subpageUrl: null,
+        // Clear article suggestions for subpage (they were for previous page)
+        ...(isSubpage ? { articleSuggestions: null, articleSuggestionsSavedAt: null } : {}),
       });
       toast.success('Analyse fullført!');
     } catch (error) {
@@ -552,7 +570,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       clearTimeout(stepTimeout);
       updateState({ analyzing: false });
     }
-  }, [state.url, state.competitorUrls, state.keywords, state.remainingAnalyses, updateState]);
+  }, [state.url, state.subpageUrl, state.competitorUrls, state.keywords, state.remainingAnalyses, updateState]);
 
   const suggestKeywords = useCallback(async () => {
     // Use the URL from the dialog input (state.url) first, as that's what the user is currently editing
@@ -684,10 +702,11 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     element: string,
     currentValue: string,
     status: 'good' | 'warning' | 'bad',
-    issue?: string
+    issue?: string,
+    relatedUrls?: string[]
   ) => {
     updateState({
-      selectedElement: { name: element, value: currentValue, status },
+      selectedElement: { name: element, value: currentValue, status, relatedUrls },
       suggestionSheetOpen: true,
       loadingSuggestion: true,
       aiSuggestion: null,
@@ -897,6 +916,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     // Actions
     setUrl,
     setDialogOpen,
+    openSubpageDialog,
     setActiveTab,
     setCompetitorInput,
     setKeywordInput,

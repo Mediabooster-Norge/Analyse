@@ -55,6 +55,8 @@ export interface AnalysisDialogProps {
   FREE_COMPETITOR_LIMIT: number;
   FREE_KEYWORD_LIMIT: number;
   onRunAnalysis: () => void;
+  /** Subpage mode: hides competitors, shows simplified header */
+  isSubpageMode?: boolean;
 }
 
 export function AnalysisDialog({
@@ -87,6 +89,7 @@ export function AnalysisDialog({
   FREE_COMPETITOR_LIMIT,
   FREE_KEYWORD_LIMIT,
   onRunAnalysis,
+  isSubpageMode = false,
 }: AnalysisDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -104,7 +107,7 @@ export function AnalysisDialog({
                   <DialogHeader className="p-0 space-y-0">
                     <DialogTitle className="text-sm sm:text-base font-semibold text-neutral-900">Analyserer nettside</DialogTitle>
                     <DialogDescription className="text-xs text-neutral-500 truncate">
-                      {companyUrl || url || '—'}
+                      {url || companyUrl || '—'}
                     </DialogDescription>
                   </DialogHeader>
                 </div>
@@ -227,14 +230,18 @@ export function AnalysisDialog({
                 </div>
                 <div className="flex-1 min-w-0">
                   <DialogHeader className="p-0 space-y-0">
-                    <DialogTitle className="text-sm sm:text-base">Start nettside-analyse</DialogTitle>
-                    <DialogDescription className="text-xs">SEO, sikkerhet og innhold</DialogDescription>
+                    <DialogTitle className="text-sm sm:text-base">
+                      {isSubpageMode ? 'Analyser underside' : 'Start nettside-analyse'}
+                    </DialogTitle>
+                    <DialogDescription className="text-xs">
+                      {isSubpageMode ? 'SEO og innhold for denne siden' : 'SEO, sikkerhet og innhold'}
+                    </DialogDescription>
                   </DialogHeader>
                 </div>
               </div>
             </div>
             <div className="space-y-3 sm:space-y-4 px-4 sm:px-5 pb-4 sm:pb-5">
-              {/* URL input - compact */}
+              {/* URL input - compact (read-only in subpage mode) */}
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -246,7 +253,7 @@ export function AnalysisDialog({
                     className="pl-10 h-10 rounded-lg border-neutral-200 text-sm"
                   />
                 </div>
-                {companyUrl && url !== companyUrl && (
+                {!isSubpageMode && companyUrl && url !== companyUrl && (
                   <button
                     type="button"
                     onClick={() => setUrl(companyUrl)}
@@ -256,22 +263,27 @@ export function AnalysisDialog({
                   </button>
                 )}
               </div>
-              {/* Competitors section - compact */}
+              {/* Competitors section */}
               <div className="p-3 rounded-lg bg-neutral-50 space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="competitor" className="text-xs font-medium text-neutral-700">
-                    Sammenlign med konkurrenter
+                    {isSubpageMode ? 'Sammenlign med konkurrenters underside (valgfritt)' : 'Sammenlign med konkurrenter'}
                   </Label>
                   <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-neutral-900 text-[10px] font-medium">
                     {competitorUrls.length}/{FREE_COMPETITOR_LIMIT}
                   </span>
                 </div>
+                {isSubpageMode && (
+                  <p className="text-[10px] text-neutral-500">
+                    Legg til konkurrenters tilsvarende side for sammenligning (f.eks. konkurrent.no/tjenester)
+                  </p>
+                )}
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <BarChart3 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                     <Input
                       id="competitor"
-                      placeholder="konkurrent.no"
+                      placeholder={isSubpageMode ? "konkurrent.no/tjenester" : "konkurrent.no"}
                       value={competitorInput}
                       onChange={(e) => setCompetitorInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -304,7 +316,14 @@ export function AnalysisDialog({
                         className="px-2 py-1 rounded-md bg-white text-neutral-700 text-xs font-medium border border-neutral-200 cursor-pointer hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-colors group flex items-center gap-1"
                         onClick={() => removeCompetitor(competitor)}
                       >
-                        {new URL(competitor).hostname}
+                        {(() => {
+                          try {
+                            const parsed = new URL(competitor);
+                            return parsed.pathname !== '/' ? `${parsed.hostname}${parsed.pathname}` : parsed.hostname;
+                          } catch {
+                            return competitor;
+                          }
+                        })()}
                         <X className="h-3 w-3 opacity-50 group-hover:opacity-100" />
                       </span>
                     ))}
