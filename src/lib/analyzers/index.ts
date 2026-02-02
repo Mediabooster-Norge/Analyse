@@ -5,6 +5,10 @@ import { analyzeSecurity, analyzeSecurityQuick } from './security-analyzer';
 import { generateAIAnalysis, generateKeywordResearch, KeywordData, checkAIVisibility, AIVisibilityData } from '@/lib/services/openai';
 import type { SEOResults, ContentResults, SecurityResults, AISummary } from '@/types';
 
+// Feature flag: Disable AI visibility to reduce analysis time
+// Set to true when ready to enable AI visibility feature
+const AI_VISIBILITY_ENABLED = false;
+
 export interface FullAnalysisResult {
   seoResults: SEOResults;
   contentResults: ContentResults;
@@ -90,8 +94,9 @@ export async function runFullAnalysis(
     console.log('Generating AI analysis...');
     
     // Use cached AI visibility if available (same domain = same visibility)
-    const shouldRunVisibilityCheck = shouldCheckVisibility && isPremium && !cachedAiVisibility;
-    if (cachedAiVisibility) {
+    // AI_VISIBILITY_ENABLED flag controls whether this feature is active
+    const shouldRunVisibilityCheck = AI_VISIBILITY_ENABLED && shouldCheckVisibility && isPremium && !cachedAiVisibility;
+    if (cachedAiVisibility && AI_VISIBILITY_ENABLED) {
       console.log(`[AI Visibility] Using cached results for domain: ${domain}`);
     }
     
@@ -237,11 +242,12 @@ export async function runCompetitorAnalysis(
         const compScrapedData = await scrapeUrl(competitorUrl);
         const comp$ = parseHtml(compScrapedData.html);
         
-        // Use full security analysis for accurate comparison (same as main site)
+        // Use quick security scan for competitors to stay within timeout limits
+        // Main site gets full SSL Labs analysis, competitors get fast direct SSL check
         const [compSeoResults, compContentResults, compSecurityResults] = await Promise.all([
           analyzeSEO(comp$, competitorUrl),
           Promise.resolve(analyzeContent(comp$)),
-          analyzeSecurity(competitorUrl, compScrapedData.headers),
+          analyzeSecurityQuick(competitorUrl, compScrapedData.headers),
         ]);
 
         const compOverallScore = Math.round(
@@ -282,16 +288,19 @@ export async function runCompetitorAnalysis(
   // Extract domain for AI visibility check
   const domain = new URL(mainUrl).hostname.replace('www.', '');
   
-  // Check for cached AI visibility
-  const mainCachedVisibility = cachedAiVisibilityByDomain[domain] || cachedAiVisibilityByDomain[domain.replace('www.', '')];
-  const shouldCheckMainVisibility = isPremium && !mainCachedVisibility;
+  // Check for cached AI visibility (only if feature is enabled)
+  const mainCachedVisibility = AI_VISIBILITY_ENABLED 
+    ? (cachedAiVisibilityByDomain[domain] || cachedAiVisibilityByDomain[domain.replace('www.', '')])
+    : undefined;
+  const shouldCheckMainVisibility = AI_VISIBILITY_ENABLED && isPremium && !mainCachedVisibility;
   
-  if (mainCachedVisibility) {
+  if (mainCachedVisibility && AI_VISIBILITY_ENABLED) {
     console.log(`[AI Visibility] Using cached results for main domain: ${domain}`);
   }
 
   // AI-synlighet kun for premium - check cache first for each competitor
-  const competitorVisibilityPromises = isPremium
+  // Only run if AI_VISIBILITY_ENABLED feature flag is true
+  const competitorVisibilityPromises = (AI_VISIBILITY_ENABLED && isPremium)
     ? competitorResults.map((c) => {
         const compDomain = new URL(c.url).hostname.replace('www.', '');
         const cachedVisibility = cachedAiVisibilityByDomain[compDomain] || cachedAiVisibilityByDomain[`www.${compDomain}`];
@@ -444,11 +453,11 @@ export async function analyzeCompetitorsOnly(
         const compScrapedData = await scrapeUrl(competitorUrl);
         const comp$ = parseHtml(compScrapedData.html);
         
-        // Use full security analysis for accurate results
+        // Use quick security scan for competitors to stay within timeout limits
         const [compSeoResults, compContentResults, compSecurityResults] = await Promise.all([
           analyzeSEO(comp$, competitorUrl),
           Promise.resolve(analyzeContent(comp$)),
-          analyzeSecurity(competitorUrl, compScrapedData.headers),
+          analyzeSecurityQuick(competitorUrl, compScrapedData.headers),
         ]);
 
         const compOverallScore = Math.round(

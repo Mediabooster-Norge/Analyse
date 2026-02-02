@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "src/app/api/analyze/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/analyze/*/route.ts": {
+      "maxDuration": 60
+    },
+    "src/app/api/suggest-keywords/route.ts": {
+      "maxDuration": 30
+    },
+    "src/app/api/ai-suggestion/route.ts": {
+      "maxDuration": 30
+    }
+  }
+}

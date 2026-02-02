@@ -19,7 +19,11 @@ import {
   Sparkles,
   TrendingUp,
   Zap,
+  Clock,
 } from 'lucide-react';
+
+// Feature flag: Set to true when AI visibility is ready
+const AI_VISIBILITY_ENABLED = false;
 
 export interface CompetitorsTabProps {
   result: DashboardAnalysisResult;
@@ -279,13 +283,20 @@ export function CompetitorsTab({
                       </button>
                     </th>
                     <th className="text-center py-3 px-3 font-medium text-neutral-600">
-                      <button
-                        onClick={() => setCompetitorSort(competitorSort?.column === 'aiVisibility' ? { column: 'aiVisibility', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'aiVisibility', direction: 'desc' })}
-                        className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors cursor-pointer"
-                      >
-                        AI-søk
-                        {competitorSort?.column === 'aiVisibility' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />}
-                      </button>
+                      {AI_VISIBILITY_ENABLED ? (
+                        <button
+                          onClick={() => setCompetitorSort(competitorSort?.column === 'aiVisibility' ? { column: 'aiVisibility', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'aiVisibility', direction: 'desc' })}
+                          className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors cursor-pointer"
+                        >
+                          AI-søk
+                          {competitorSort?.column === 'aiVisibility' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />}
+                        </button>
+                      ) : (
+                        <span className="inline-flex flex-col items-center gap-0.5">
+                          AI-søk
+                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600 font-medium">Snart</span>
+                        </span>
+                      )}
                     </th>
                   </tr>
                 </thead>
@@ -375,10 +386,16 @@ export function CompetitorsTab({
                               </div>
                             </td>
                             <td className="text-center py-3 px-3">
-                              {result.aiVisibility?.score != null ? (
-                                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">{result.aiVisibility.score}</span>
+                              {AI_VISIBILITY_ENABLED ? (
+                                result.aiVisibility?.score != null ? (
+                                  <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">{result.aiVisibility.score}</span>
+                                ) : (
+                                  <span className="text-neutral-400 text-sm">–</span>
+                                )
                               ) : (
-                                <span className="text-neutral-400 text-sm">–</span>
+                                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-violet-50 text-violet-400">
+                                  <Clock className="w-4 h-4" />
+                                </span>
                               )}
                             </td>
                           </tr>
@@ -434,10 +451,16 @@ export function CompetitorsTab({
                             </div>
                           </td>
                           <td className="text-center py-3 px-3">
-                            {competitor.results.aiVisibility?.score != null ? (
-                              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">{competitor.results.aiVisibility.score}</span>
+                            {AI_VISIBILITY_ENABLED ? (
+                              competitor.results.aiVisibility?.score != null ? (
+                                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">{competitor.results.aiVisibility.score}</span>
+                              ) : (
+                                <span className="text-neutral-400 text-sm">–</span>
+                              )
                             ) : (
-                              <span className="text-neutral-400 text-sm">–</span>
+                              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-violet-50 text-violet-400">
+                                <Clock className="w-4 h-4" />
+                              </span>
                             )}
                           </td>
                         </tr>

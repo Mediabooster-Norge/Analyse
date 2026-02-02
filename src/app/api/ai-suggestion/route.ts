@@ -21,26 +21,43 @@ export async function POST(request: NextRequest) {
     const body: SuggestionRequest = await request.json();
     const { element, currentValue, status, issue, context } = body;
 
-    const statusText = status === 'good' ? 'optimalt' : status === 'warning' ? 'ok, men kan forbedres' : 'trenger forbedring';
+    const statusText = status === 'good' ? 'bra' : status === 'warning' ? 'ok, men kan forbedres' : 'trenger forbedring';
     
     // Different prompts based on status
     const isOptimal = status === 'good' && !issue;
     
     const systemPrompt = isOptimal
       ? `Du er en ekspert på SEO og nettside-optimalisering for norske bedrifter.
-Dette elementet er ALLEREDE optimalt. Gi positiv tilbakemelding og evt. tips for å vedlikeholde god praksis.
+Dette elementet er allerede BRA, men det finnes alltid rom for forbedring fra "bra" til "utmerket".
+
+Gi:
+1. Positiv anerkjennelse av det som er bra
+2. Konkrete tips for å gå fra "bra" til "utmerket" 
+3. Avanserte optimaliseringstips som skiller de beste fra resten
 
 Svar i JSON-format med følgende struktur:
 {
-  "summary": "Positiv bekreftelse på at dette er bra (1-2 setninger)",
+  "summary": "Anerkjenn det som er bra, men forklar hvordan det kan bli enda bedre (2-3 setninger)",
   "suggestions": [
     {
-      "title": "Tips for å opprettholde god praksis",
-      "description": "Kort beskrivelse av hva som gjør dette bra og hvordan beholde det",
+      "title": "Tittel på forbedring",
+      "description": "Hvordan gå fra bra til utmerket",
+      "priority": "medium",
+      "example": "Konkret eksempel hvis relevant"
+    },
+    {
+      "title": "Avansert optimalisering",
+      "description": "Pro-tips for de som vil ha det beste",
+      "priority": "lav",
+      "example": "Eksempel"
+    },
+    {
+      "title": "Vedlikeholdstips",
+      "description": "Slik holder du kvaliteten over tid",
       "priority": "lav"
     }
   ],
-  "quickWin": "En positiv bekreftelse eller vedlikeholdstips"
+  "quickWin": "Ett konkret tiltak for å løfte fra bra til utmerket"
 }`
       : `Du er en ekspert på SEO og nettside-optimalisering for norske bedrifter.
 Gi konkrete, handlingsrettede forslag på norsk. Vær spesifikk og praktisk.
@@ -63,14 +80,18 @@ Svar i JSON-format med følgende struktur:
 }`;
     
     const userPrompt = isOptimal
-      ? `Gi positiv tilbakemelding for følgende element som allerede er optimalt:
+      ? `Gi forbedringsforslag for følgende element som allerede er BRA:
 
 Element: ${element}
 Nåværende verdi/status: ${currentValue}
 Vurdering: ${statusText} ✓
 ${context?.url ? `Nettside: ${context.url}` : ''}
 
-VIKTIG: Dette er ALLEREDE bra! Gi ros og evt. tips for å opprettholde god praksis. IKKE foreslå forbedringer.`
+VIKTIG: 
+- Anerkjenn at dette er bra
+- Men gi 2-3 KONKRETE tips for å gå fra "bra" til "utmerket"
+- Inkluder avanserte tips som skiller profesjonelle sider fra resten
+- Gi minst ett konkret eksempel`
       : `Gi forslag for å forbedre følgende element på en nettside:
 
 Element: ${element}
@@ -88,7 +109,7 @@ VIKTIG: Fokuser forslagene på det spesifikke problemet som er nevnt. Gi 2-3 kon
         { role: 'user', content: userPrompt },
       ],
       temperature: 0.7,
-      max_tokens: 800,
+      max_tokens: 1000,
       response_format: { type: 'json_object' },
     });
 

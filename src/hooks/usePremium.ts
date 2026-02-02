@@ -144,7 +144,7 @@ export const PREMIUM_LIMITS = {
   },
   premium: {
     monthlyAnalyses: 999, // Unlimited
-    competitors: 10,
+    competitors: 5, // Reduced from 10 to stay within Vercel 60s timeout
     keywords: 50, // Max nøkkelord per analyse
     keywordUpdates: 999, // Unlimited
     competitorUpdates: 999, // Unlimited

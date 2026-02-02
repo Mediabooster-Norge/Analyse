@@ -316,7 +316,7 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
                     <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                    <span className="text-sm text-neutral-700">Opptil 10 konkurrenter</span>
+                    <span className="text-sm text-neutral-700">Opptil 5 konkurrenter</span>
                   </div>
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
                     <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
@@ -455,7 +455,7 @@ export default function SettingsPage() {
                   <h4 className="font-medium text-neutral-900">Flere konkurrenter</h4>
                 </div>
                 <p className="text-sm text-neutral-500">
-                  Sammenlign din nettside med opptil 10 konkurrenter samtidig.
+                  Sammenlign din nettside med opptil 5 konkurrenter samtidig.
                 </p>
               </div>
               <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-100">

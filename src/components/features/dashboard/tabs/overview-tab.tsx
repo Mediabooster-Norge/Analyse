@@ -22,6 +22,9 @@ import {
   Image,
 } from 'lucide-react';
 
+// Feature flag: Set to true when AI visibility is ready
+const AI_VISIBILITY_ENABLED = false;
+
 export interface OverviewTabProps {
   result: DashboardAnalysisResult;
   isPremium: boolean;
@@ -87,18 +90,32 @@ export function OverviewTab({
                 <p className="text-xs text-neutral-500 mt-1">Trygghet</p>
               </div>
               <div className="text-center">
-                <ScoreRing 
-                  score={result.aiVisibility?.score ?? 0} 
-                  label="AI" 
-                  size="md" 
-                  showStatus={isPremium} 
-                />
-                <p className="text-xs text-neutral-500 mt-1">AI-synlighet</p>
-                {!isPremium && (
-                  <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-neutral-100 text-[10px] font-medium text-neutral-500">
-                    <Lock className="h-2.5 w-2.5" />
-                    Premium
-                  </span>
+                {AI_VISIBILITY_ENABLED ? (
+                  <>
+                    <ScoreRing 
+                      score={result.aiVisibility?.score ?? 0} 
+                      label="AI" 
+                      size="md" 
+                      showStatus={isPremium} 
+                    />
+                    <p className="text-xs text-neutral-500 mt-1">AI-synlighet</p>
+                    {!isPremium && (
+                      <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-neutral-100 text-[10px] font-medium text-neutral-500">
+                        <Lock className="h-2.5 w-2.5" />
+                        Premium
+                      </span>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-violet-50 to-blue-50 border-4 border-violet-100 flex items-center justify-center">
+                      <Sparkles className="w-6 h-6 text-violet-400" />
+                    </div>
+                    <p className="text-xs text-neutral-500 mt-1">AI-synlighet</p>
+                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-violet-50 text-[10px] font-medium text-violet-600">
+                      Kommer snart
+                    </span>
+                  </>
                 )}
               </div>
             </div>
@@ -122,7 +139,8 @@ export function OverviewTab({
           if (result.securityResults.score < 60) issues.push({ label: 'Sikkerhet', desc: 'Lav sikkerhetsscore', priority: 'medium', category: 'security' });
           if (!result.securityResults.headers.strictTransportSecurity) issues.push({ label: 'HSTS', desc: 'Mangler HSTS-header', priority: 'medium', category: 'security' });
           if (!result.securityResults.headers.contentSecurityPolicy) issues.push({ label: 'CSP', desc: 'Mangler Content Security Policy', priority: 'low', category: 'security' });
-          if (result.aiVisibility && result.aiVisibility.score < 50) issues.push({ label: 'AI-synlighet', desc: 'Lav AI-synlighet', priority: 'medium', category: 'ai' });
+          // Only show AI visibility issues if feature is enabled
+          if (AI_VISIBILITY_ENABLED && result.aiVisibility && result.aiVisibility.score < 50) issues.push({ label: 'AI-synlighet', desc: 'Lav AI-synlighet', priority: 'medium', category: 'ai' });
 
           return issues.length > 0 ? (
             <div className="rounded-2xl border border-neutral-200 bg-white p-5 flex flex-col h-full">
@@ -346,8 +364,8 @@ export function OverviewTab({
             </div>
           </div>
 
-          {/* AI visibility (Premium) */}
-          {isPremium && result.aiVisibility != null && (
+          {/* AI visibility (Premium) - only show if feature is enabled */}
+          {AI_VISIBILITY_ENABLED && isPremium && result.aiVisibility != null && (
             <div>
               <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                 <Eye className="w-3.5 h-3.5" />

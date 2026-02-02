@@ -1,11 +1,22 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { AISuggestionData } from '@/types/dashboard';
 import { Lightbulb, CheckCircle2, AlertCircle, Sparkles, Zap, Loader2 } from 'lucide-react';
+
+const loadingMessages = [
+  'Analyserer innholdet ditt...',
+  'Sjekker beste praksis for SEO...',
+  'Finner forbedringsmuligheter...',
+  'Genererer konkrete forslag...',
+  'Tilpasser anbefalinger til din bransje...',
+  'Sammenligner med topp-rangerte sider...',
+  'Snart klar med forslag...',
+];
 
 export interface AISuggestionDialogProps {
   open: boolean;
@@ -22,6 +33,22 @@ export function AISuggestionDialog({
   aiSuggestion,
   loadingSuggestion,
 }: AISuggestionDialogProps) {
+  const [messageIndex, setMessageIndex] = useState(0);
+
+  // Cycle through loading messages
+  useEffect(() => {
+    if (!loadingSuggestion) {
+      setMessageIndex(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setMessageIndex((prev) => (prev + 1) % loadingMessages.length);
+    }, 2500);
+
+    return () => clearInterval(interval);
+  }, [loadingSuggestion]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl min-h-[70vh] max-h-[90vh] overflow-hidden flex flex-col p-0">
@@ -43,13 +70,31 @@ export function AISuggestionDialog({
 
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {loadingSuggestion ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-center gap-3 py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
-                <span className="text-sm text-neutral-600">Genererer AI-forslag...</span>
+            <div className="space-y-6">
+              <div className="flex flex-col items-center justify-center gap-4 py-10">
+                <div className="relative">
+                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-50 flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center">
+                    <Sparkles className="h-3 w-3 text-white" />
+                  </div>
+                </div>
+                <div className="text-center space-y-2">
+                  <p className="text-sm font-medium text-neutral-900">AI analyserer...</p>
+                  <p 
+                    key={messageIndex}
+                    className="text-sm text-neutral-500 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                  >
+                    {loadingMessages[messageIndex]}
+                  </p>
+                </div>
               </div>
-              <Skeleton className="h-20 w-full rounded-xl" />
-              <Skeleton className="h-24 w-full rounded-xl" />
+              <div className="space-y-3">
+                <Skeleton className="h-20 w-full rounded-xl" />
+                <Skeleton className="h-16 w-3/4 rounded-xl" />
+                <Skeleton className="h-24 w-full rounded-xl" />
+              </div>
             </div>
           ) : aiSuggestion ? (
             <div className="grid md:grid-cols-2 gap-5">
