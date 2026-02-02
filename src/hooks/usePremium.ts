@@ -141,6 +141,7 @@ export const PREMIUM_LIMITS = {
     keywordUpdates: 2,
     competitorUpdates: 2,
     aiVisibilityChecks: 1,
+    articleGenerationsPerMonth: 1, // Full artikkelgenerering per måned (free)
   },
   premium: {
     monthlyAnalyses: 999, // Unlimited
@@ -149,6 +150,7 @@ export const PREMIUM_LIMITS = {
     keywordUpdates: 999, // Unlimited
     competitorUpdates: 999, // Unlimited
     aiVisibilityChecks: 999, // Unlimited
+    articleGenerationsPerMonth: 30, // Full artikkelgenerering per måned (premium)
   },
 };
 

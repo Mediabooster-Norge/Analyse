@@ -91,19 +91,19 @@ export function AnalysisDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0">
+      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 mx-1 max-[400px]:mx-1 min-[401px]:mx-2 sm:mx-auto rounded-xl w-[calc(100vw-0.5rem)] max-[400px]:w-[calc(100vw-0.5rem)] min-[401px]:w-[calc(100vw-1rem)] sm:w-full max-w-[95vw]">
         {analyzing ? (
           <>
             {/* Header - simple */}
-            <div className="px-6 pt-6 pb-4">
+            <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
               <div className="flex items-center gap-3">
-                <div className="relative w-10 h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-                  <Loader2 className="h-5 w-5 text-neutral-600 animate-spin" />
+                <div className="relative w-9 sm:w-10 h-9 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
+                  <Loader2 className="h-4 sm:h-5 w-4 sm:w-5 text-neutral-600 animate-spin" />
                 </div>
-                <div className="flex-1">
+                <div className="flex-1 min-w-0">
                   <DialogHeader className="p-0 space-y-0">
-                    <DialogTitle className="text-base font-semibold text-neutral-900">Analyserer nettside</DialogTitle>
-                    <DialogDescription className="text-xs text-neutral-500">
+                    <DialogTitle className="text-sm sm:text-base font-semibold text-neutral-900">Analyserer nettside</DialogTitle>
+                    <DialogDescription className="text-xs text-neutral-500 truncate">
                       {companyUrl || url || '—'}
                     </DialogDescription>
                   </DialogHeader>
@@ -111,13 +111,13 @@ export function AnalysisDialog({
               </div>
             </div>
 
-            <div className="px-6 pb-6 space-y-4">
+            <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
               {/* Current step with timer - subtle styling */}
-              <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-4">
-                <div className="flex items-center gap-4">
+              <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-3 sm:p-4">
+                <div className="flex items-center gap-3 sm:gap-4">
                   {/* Progress ring - subtle */}
-                  <div className="relative w-14 h-14 shrink-0">
-                    <svg className="w-14 h-14 -rotate-90" viewBox="0 0 56 56">
+                  <div className="relative w-12 sm:w-14 h-12 sm:h-14 shrink-0">
+                    <svg className="w-12 sm:w-14 h-12 sm:h-14 -rotate-90" viewBox="0 0 56 56">
                       <circle cx="28" cy="28" r="24" fill="none" stroke="#e5e5e5" strokeWidth="3" />
                       <circle
                         cx="28"
@@ -132,13 +132,13 @@ export function AnalysisDialog({
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-neutral-700 text-sm font-semibold">{analysisStep + 1}/{analysisSteps.length}</span>
+                      <span className="text-neutral-700 text-xs sm:text-sm font-semibold">{analysisStep + 1}/{analysisSteps.length}</span>
                     </div>
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <p className="text-neutral-900 font-medium flex items-center gap-2">
+                      <p className="text-neutral-900 text-sm sm:text-base font-medium flex items-center gap-2">
                         {analysisSteps[analysisStep]?.label}
                         <span className="inline-flex gap-0.5">
                           <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '0ms' }} />
@@ -147,13 +147,13 @@ export function AnalysisDialog({
                         </span>
                       </p>
                     </div>
-                    <p className="text-neutral-500 text-sm">{analysisSteps[analysisStep]?.description}</p>
+                    <p className="text-neutral-500 text-xs sm:text-sm hidden sm:block">{analysisSteps[analysisStep]?.description}</p>
                   </div>
 
                   {/* Timer - subtle */}
-                  <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-neutral-200">
+                  <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-white border border-neutral-200">
                     <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-sm font-medium text-neutral-700 tabular-nums">
+                    <span className="text-xs sm:text-sm font-medium text-neutral-700 tabular-nums">
                       {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
                     </span>
                   </div>
@@ -220,20 +220,20 @@ export function AnalysisDialog({
           </>
         ) : (
           <>
-            <div className="px-5 pt-5 pb-3">
+            <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-2 sm:pb-3">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-neutral-900 to-neutral-700 flex items-center justify-center shrink-0">
-                  <Search className="h-4 w-4 text-white" />
+                <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-lg bg-gradient-to-br from-neutral-900 to-neutral-700 flex items-center justify-center shrink-0">
+                  <Search className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <DialogHeader className="p-0 space-y-0">
-                    <DialogTitle className="text-base">Start nettside-analyse</DialogTitle>
-                    <DialogDescription className="text-xs">SEO, sikkerhet, innhold og AI-synlighet</DialogDescription>
+                    <DialogTitle className="text-sm sm:text-base">Start nettside-analyse</DialogTitle>
+                    <DialogDescription className="text-xs">SEO, sikkerhet og innhold</DialogDescription>
                   </DialogHeader>
                 </div>
               </div>
             </div>
-            <div className="space-y-4 px-5 pb-5">
+            <div className="space-y-3 sm:space-y-4 px-4 sm:px-5 pb-4 sm:pb-5">
               {/* URL input - compact */}
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">

@@ -12,6 +12,7 @@ import type {
   KeywordSort,
   CompetitorSort,
   AIVisibilityData,
+  ArticleSuggestion,
 } from '@/types/dashboard';
 import { normalizeUrl } from '@/lib/utils/score-utils';
 
@@ -75,6 +76,17 @@ interface DashboardState {
   aiSuggestion: AISuggestionData | null;
   loadingSuggestion: boolean;
   
+  // Article suggestions (outranking)
+  articleSuggestions: ArticleSuggestion[] | null;
+  loadingArticleSuggestions: boolean;
+  articleSuggestionsSavedAt: string | null;
+  
+  // Full article generation (1 free / 30 premium per month)
+  remainingArticleGenerations: number;
+  articleGenerationsLimit: number;
+  generatedArticle: string | null;
+  generatingArticleIndex: number | null;
+  
   // Update states
   updatingCompetitors: boolean;
   updatingKeywords: boolean;
@@ -116,6 +128,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
   const FREE_KEYWORD_LIMIT = limits.keywords;
   const FREE_COMPETITOR_LIMIT = limits.competitors;
   const FREE_UPDATE_LIMIT = isPremium ? 999 : 2;
+  const ARTICLE_GENERATIONS_LIMIT = limits.articleGenerationsPerMonth ?? 1;
 
   // State
   const [state, setState] = useState<DashboardState>({
@@ -155,6 +168,13 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     selectedElement: null,
     aiSuggestion: null,
     loadingSuggestion: false,
+    articleSuggestions: null,
+    loadingArticleSuggestions: false,
+    articleSuggestionsSavedAt: null,
+    remainingArticleGenerations: 0,
+    articleGenerationsLimit: ARTICLE_GENERATIONS_LIMIT,
+    generatedArticle: null,
+    generatingArticleIndex: null,
     updatingCompetitors: false,
     updatingKeywords: false,
   });
@@ -166,16 +186,16 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     setState(prev => ({ ...prev, ...updates }));
   }, []);
 
-  // Load cached data
+  // Load cached data only when viewing a specific analysis and cache matches that analysis.
+  // When viewing "latest" (no analysisIdFromUrl), do not apply cache so Supabase fetch result is not overwritten.
   useEffect(() => {
-    if (!cacheKey) return;
-    
+    if (!cacheKey || !analysisIdFromUrl) return;
+
     try {
       const cached = sessionStorage.getItem(cacheKey);
       if (cached) {
         const data = JSON.parse(cached);
-        if (!analysisIdFromUrl || data.currentAnalysisId === analysisIdFromUrl) {
-          // Extract competitors and keywords from cached result
+        if (data.currentAnalysisId === analysisIdFromUrl) {
           const cachedCompetitors = data.result?.competitors?.map((c: { url: string }) => c.url) || [];
           const cachedKeywords = data.result?.keywordResearch?.map((k: { keyword: string }) => k.keyword) || [];
 
@@ -224,6 +244,14 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           .gte('created_at', firstDayOfMonth);
 
         const analysisCount = monthlyAnalyses?.length || 0;
+
+        const { count: articleGenCount } = await supabase
+          .from('article_generations')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', user.id)
+          .gte('created_at', firstDayOfMonth);
+
+        const remainingArticleGens = Math.max(0, ARTICLE_GENERATIONS_LIMIT - (articleGenCount ?? 0));
 
         // Fetch analysis
         let analysisQuery = supabase
@@ -276,6 +304,22 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             .map((k: { keyword: string }) => k.keyword)
             .slice(0, FREE_KEYWORD_LIMIT);
 
+          // Fetch saved article suggestions for this analysis
+          let savedArticleSuggestions: ArticleSuggestion[] | null = null;
+          let savedArticleSuggestionsAt: string | null = null;
+          try {
+            const suggestionsRes = await fetch(`/api/suggest-articles?analysisId=${analysis.id}`);
+            if (suggestionsRes.ok) {
+              const suggestionsData = await suggestionsRes.json();
+              if (suggestionsData.suggestions && Array.isArray(suggestionsData.suggestions)) {
+                savedArticleSuggestions = suggestionsData.suggestions;
+                savedArticleSuggestionsAt = suggestionsData.savedAt || null;
+              }
+            }
+          } catch {
+            // Ignore errors loading saved suggestions
+          }
+
           updateState({
             currentAnalysisId: analysis.id,
             companyUrl: analysis.website_url || null,
@@ -284,9 +328,13 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             remainingCompetitorUpdates: analysis.remaining_competitor_updates ?? 2,
             remainingKeywordUpdates: analysis.remaining_keyword_updates ?? 2,
             remainingAnalyses: Math.max(0, FREE_MONTHLY_LIMIT - analysisCount),
+            remainingArticleGenerations: remainingArticleGens,
+            articleGenerationsLimit: ARTICLE_GENERATIONS_LIMIT,
             userName: firstName || null,
             competitorUrls: loadedCompetitors,
             keywords: loadedKeywords,
+            articleSuggestions: savedArticleSuggestions,
+            articleSuggestionsSavedAt: savedArticleSuggestionsAt,
             result: {
               seoResults: mergedSeoResults,
               contentResults: analysis.content_results || { score: 0, wordCount: 0 },
@@ -302,6 +350,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           updateState({
             userName: firstName || null,
             remainingAnalyses: Math.max(0, FREE_MONTHLY_LIMIT - analysisCount),
+            remainingArticleGenerations: remainingArticleGens,
+            articleGenerationsLimit: ARTICLE_GENERATIONS_LIMIT,
           });
         }
       }
@@ -310,7 +360,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     }
     
     fetchData();
-  }, [analysisIdFromUrl, FREE_MONTHLY_LIMIT, updateState]);
+  }, [analysisIdFromUrl, FREE_MONTHLY_LIMIT, ARTICLE_GENERATIONS_LIMIT, isPremium, updateState]);
 
   // Save to cache when data changes
   useEffect(() => {
@@ -542,6 +592,94 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     }
   }, [state.companyUrl, state.url, state.suggestedKeywordCount, state.keywords, FREE_KEYWORD_LIMIT, updateState]);
 
+  const fetchArticleSuggestions = useCallback(async (withCompetitors: boolean) => {
+    const targetUrl = state.companyUrl || state.url;
+    if (!targetUrl) {
+      toast.error('Ingen analyse lastet. Kjør en analyse først.');
+      return;
+    }
+    updateState({ loadingArticleSuggestions: true, articleSuggestions: null, articleSuggestionsSavedAt: null });
+    try {
+      const competitorUrls =
+        withCompetitors && state.result?.competitors
+          ? state.result.competitors.map((c) => c.url)
+          : [];
+      const response = await fetch('/api/suggest-articles', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: targetUrl,
+          companyName: state.companyName,
+          keywords: state.keywords.length > 0 ? state.keywords : (state.result?.keywordResearch?.map((k) => k.keyword) ?? []),
+          competitorUrls,
+          withCompetitors: withCompetitors && competitorUrls.length > 0,
+          analysisId: state.currentAnalysisId,
+        }),
+      });
+      if (!response.ok) throw new Error('Kunne ikke hente artikkelforslag');
+      const data = await response.json();
+      if (data.suggestions && Array.isArray(data.suggestions)) {
+        updateState({
+          articleSuggestions: data.suggestions,
+          articleSuggestionsSavedAt: data.savedAt || null,
+        });
+      } else {
+        updateState({ articleSuggestions: [], articleSuggestionsSavedAt: null });
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Kunne ikke hente artikkelforslag');
+      updateState({ articleSuggestions: null, articleSuggestionsSavedAt: null });
+    } finally {
+      updateState({ loadingArticleSuggestions: false });
+    }
+  }, [state.companyUrl, state.url, state.companyName, state.keywords, state.result?.competitors, state.result?.keywordResearch, state.currentAnalysisId, updateState]);
+
+  const fetchGenerateArticle = useCallback(async (suggestion: { title: string; rationale?: string }, index: number) => {
+    if (state.remainingArticleGenerations <= 0) {
+      toast.error('Du har brukt opp artikkelgenereringer denne måneden.');
+      return;
+    }
+    updateState({ generatingArticleIndex: index, generatedArticle: null });
+    try {
+      const response = await fetch('/api/generate-article', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: suggestion.title,
+          rationale: suggestion.rationale,
+          companyName: state.companyName ?? undefined,
+          websiteUrl: state.companyUrl ?? undefined,
+          websiteName: state.companyName ?? undefined,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        if (response.status === 429) {
+          toast.error(data.error || 'Du har brukt opp artikkelgenereringer denne måneden.');
+          updateState({ remainingArticleGenerations: 0 });
+        } else {
+          toast.error(data.error || 'Kunne ikke generere artikkel');
+        }
+        return;
+      }
+      if (data.article) {
+        updateState({
+          generatedArticle: data.article,
+          remainingArticleGenerations: data.remaining ?? state.remainingArticleGenerations - 1,
+        });
+        toast.success('Artikkel generert!');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Kunne ikke generere artikkel');
+    } finally {
+      updateState({ generatingArticleIndex: null });
+    }
+  }, [state.remainingArticleGenerations, state.companyName, updateState]);
+
+  const setGeneratedArticle = useCallback((article: string | null) => {
+    updateState({ generatedArticle: article });
+  }, [updateState]);
+
   const fetchAISuggestion = useCallback(async (
     element: string,
     currentValue: string,
@@ -753,6 +891,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       keywords: FREE_KEYWORD_LIMIT,
       competitors: FREE_COMPETITOR_LIMIT,
       updates: FREE_UPDATE_LIMIT,
+      articleGenerationsPerMonth: ARTICLE_GENERATIONS_LIMIT,
     },
     
     // Actions
@@ -776,7 +915,18 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     removeCompetitor,
     runAnalysis,
     suggestKeywords,
+    suggestingKeywords: state.suggestingKeywords,
     fetchAISuggestion,
+    articleSuggestions: state.articleSuggestions,
+    loadingArticleSuggestions: state.loadingArticleSuggestions,
+    articleSuggestionsSavedAt: state.articleSuggestionsSavedAt,
+    fetchArticleSuggestions,
+    remainingArticleGenerations: state.remainingArticleGenerations,
+    articleGenerationsLimit: state.articleGenerationsLimit,
+    generatedArticle: state.generatedArticle,
+    generatingArticleIndex: state.generatingArticleIndex,
+    fetchGenerateArticle,
+    setGeneratedArticle,
     startEditingCompetitors,
     addEditCompetitor,
     removeEditCompetitor,

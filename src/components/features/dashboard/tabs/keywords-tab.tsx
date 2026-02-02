@@ -35,6 +35,8 @@ export interface KeywordsTabProps {
   removeEditKeyword: (keyword: string) => void;
   cancelEditingKeywords: () => void;
   updateKeywordAnalysis: () => void;
+  suggestKeywords: () => void;
+  suggestingKeywords: boolean;
 }
 
 export function KeywordsTab({
@@ -55,16 +57,18 @@ export function KeywordsTab({
   removeEditKeyword,
   cancelEditingKeywords,
   updateKeywordAnalysis,
+  suggestKeywords,
+  suggestingKeywords,
 }: KeywordsTabProps) {
   return (
     <>
       {/* Edit Keywords Panel */}
       {editingKeywords && (
-        <div className="rounded-2xl border border-purple-200 bg-purple-50/30 overflow-hidden mb-6">
-          <div className="flex items-center justify-between p-4 border-b border-purple-200 bg-purple-50/50">
-            <div className="flex items-center gap-3">
-              <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-100 text-neutral-900 text-sm font-medium">
-                <Tag className="h-4 w-4 text-purple-600" />
+        <div className="rounded-2xl max-[400px]:rounded-xl border border-purple-200 bg-purple-50/30 overflow-hidden mb-4 max-[400px]:mb-4 min-[401px]:mb-6 min-w-0">
+          <div className="flex items-center justify-between p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-4 border-b border-purple-200 bg-purple-50/50">
+            <div className="flex items-center gap-2 max-[400px]:gap-2 min-[401px]:gap-3 min-w-0">
+              <h3 className="inline-flex items-center gap-1.5 max-[400px]:gap-1.5 px-2 max-[400px]:px-2 min-[401px]:px-3 py-1 max-[400px]:py-1 min-[401px]:py-1.5 rounded-full bg-purple-100 text-neutral-900 text-xs max-[400px]:text-[11px] min-[401px]:text-sm font-medium">
+                <Tag className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-purple-600" />
                 Rediger nøkkelord
               </h3>
               {!isPremium && (
@@ -162,16 +166,16 @@ export function KeywordsTab({
 
       {result.keywordResearch && result.keywordResearch.length > 0 ? (
         <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-          <div className="p-6 border-b border-neutral-100">
-            <div className="flex items-center justify-between">
+          <div className="p-4 sm:p-6 border-b border-neutral-100">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-3">
+                <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-xs sm:text-sm font-medium mb-2 sm:mb-3">
                   <Tag className="h-4 w-4 text-neutral-600" />
                   Nøkkelordanalyse
                 </h3>
-                <p className="text-sm text-neutral-600">Estimert søkedata for det norske markedet</p>
+                <p className="text-xs sm:text-sm text-neutral-600">Estimert søkedata for norsk marked</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 {!editingKeywords && (
                   <Button
                     variant="outline"
@@ -196,20 +200,21 @@ export function KeywordsTab({
             </div>
           </div>
 
-          <div className="p-6">
-            <div className="mb-4 flex flex-wrap gap-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-100 text-xs text-amber-700">
+          <div className="p-4 sm:p-6">
+            <div className="mb-4 flex flex-col sm:flex-row gap-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-100 text-[10px] sm:text-xs text-amber-700">
                 <span className="font-medium">Om dataene:</span>
                 <span className="text-amber-600">AI-estimater for norsk marked</span>
               </div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-700">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-[10px] sm:text-xs text-blue-700">
                 <span className="font-medium">Tips:</span>
                 <span className="text-blue-600">Høyt volum + lav konkurranse = best ROI</span>
               </div>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <div className="overflow-x-auto -mx-3 max-[400px]:-mx-3 min-[401px]:-mx-4 sm:mx-0 scrollbar-hide touch-pan-x">
+              <div className="min-w-[620px] max-[400px]:min-w-[560px] px-3 max-[400px]:px-3 min-[401px]:px-4 sm:px-0">
+                <table className="w-full">
                 <thead>
                   <tr className="border-b border-neutral-100">
                     <th className="text-left py-3 px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wide">
@@ -455,30 +460,31 @@ export function KeywordsTab({
                     ))}
                 </tbody>
               </table>
+              </div>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-6 border-t border-neutral-100">
-              <div className="p-4 rounded-xl bg-neutral-50">
-                <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium">Est. total søkevolum</p>
-                <p className="text-xl font-bold text-neutral-900 mt-1">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-neutral-100">
+              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
+                <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Est. total søkevolum</p>
+                <p className="text-base sm:text-xl font-bold text-neutral-900 mt-1">
                   ~{result.keywordResearch.reduce((sum, kw) => sum + kw.searchVolume, 0).toLocaleString('nb-NO')}
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-neutral-50">
-                <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium">Est. gj.snitt CPC</p>
-                <p className="text-xl font-bold text-green-600 mt-1">
+              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
+                <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Est. gj.snitt CPC</p>
+                <p className="text-base sm:text-xl font-bold text-green-600 mt-1">
                   ~{(result.keywordResearch.reduce((sum, kw) => sum + kw.cpc, 0) / result.keywordResearch.length).toFixed(2)} kr
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-neutral-50">
-                <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium">Gj.snitt vanskelighet</p>
-                <p className="text-xl font-bold text-neutral-900 mt-1">
+              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
+                <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Gj.snitt vanskelighet</p>
+                <p className="text-base sm:text-xl font-bold text-neutral-900 mt-1">
                   {Math.round(result.keywordResearch.reduce((sum, kw) => sum + kw.difficulty, 0) / result.keywordResearch.length)}/100
                 </p>
               </div>
-              <div className="p-4 rounded-xl bg-neutral-50">
-                <p className="text-xs text-neutral-500 uppercase tracking-wide font-medium">Beste mulighet</p>
-                <p className="text-sm font-semibold text-purple-600 mt-1 truncate">
+              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
+                <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Beste mulighet</p>
+                <p className="text-xs sm:text-sm font-semibold text-purple-600 mt-1 truncate">
                   {result.keywordResearch.reduce(
                     (best, kw) => ((kw.searchVolume / (kw.difficulty + 1)) > (best.searchVolume / (best.difficulty + 1)) ? kw : best)
                   ).keyword}
@@ -585,15 +591,35 @@ export function KeywordsTab({
             Du la ikke til nøkkelord i den opprinnelige analysen.
           </p>
           {(isPremium || remainingKeywordUpdates > 0) && !editingKeywords && (
-            <Button variant="outline" onClick={startEditingKeywords} className="rounded-xl">
-              <Plus className="mr-2 h-4 w-4" />
-              Legg til nøkkelord
-              {!isPremium && (
-                <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
-                  {remainingKeywordUpdates}/{FREE_UPDATE_LIMIT}
-                </span>
-              )}
-            </Button>
+            <div className="flex items-center justify-center gap-3">
+              <Button 
+                variant="default" 
+                onClick={suggestKeywords}
+                disabled={suggestingKeywords}
+                className="rounded-xl"
+              >
+                {suggestingKeywords ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Analyserer...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    Foreslå nøkkelord
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" onClick={startEditingKeywords} className="rounded-xl">
+                <Plus className="mr-2 h-4 w-4" />
+                Legg til manuelt
+                {!isPremium && (
+                  <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
+                    {remainingKeywordUpdates}/{FREE_UPDATE_LIMIT}
+                  </span>
+                )}
+              </Button>
+            </div>
           )}
         </div>
       )}

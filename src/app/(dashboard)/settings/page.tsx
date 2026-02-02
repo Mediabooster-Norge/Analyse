@@ -22,7 +22,6 @@ import {
   Layers,
   Sparkles,
   LogOut,
-  Eye,
   Save,
   Loader2,
   CheckCircle2,
@@ -328,10 +327,6 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
                     <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                    <span className="text-sm text-neutral-700">AI-synlighetssjekk</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
-                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
                     <span className="text-sm text-neutral-700">Analyser flere nettsider</span>
                   </div>
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
@@ -440,15 +435,6 @@ export default function SettingsPage() {
           <CardContent className="space-y-4">
             {/* Premium Benefits */}
             <div className="grid gap-4 md:grid-cols-2">
-              <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-100">
-                <div className="flex items-center gap-2 mb-2">
-                  <Eye className="h-5 w-5 text-neutral-700" />
-                  <h4 className="font-medium text-neutral-900">AI-synlighetssjekk</h4>
-                </div>
-                <p className="text-sm text-neutral-500">
-                  Se hvor godt AI-modeller kjenner til bedriften din og få en score. Inkludert for deg og konkurrenter i konkurranseanalyser.
-                </p>
-              </div>
               <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-100">
                 <div className="flex items-center gap-2 mb-2">
                   <BarChart3 className="h-5 w-5 text-neutral-700" />

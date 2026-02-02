@@ -3,6 +3,9 @@ import type { User } from '@supabase/supabase-js';
 
 const PREMIUM_EMAILS = ['web@mediabooster.no'];
 
+/** Article generations per month: free 1, premium 30 */
+const ARTICLE_GENERATIONS = { free: 1, premium: 30 };
+
 /**
  * Server-side premium check. Use this in API routes and Server Components.
  * Do not import from usePremium (client hook) on the server.
@@ -10,13 +13,14 @@ const PREMIUM_EMAILS = ['web@mediabooster.no'];
 export async function getPremiumStatusServer(user: User | null): Promise<{
   isPremium: boolean;
   monthlyAnalysisLimit: number;
+  articleGenerationsPerMonth: number;
 }> {
   if (!user) {
-    return { isPremium: false, monthlyAnalysisLimit: 3 };
+    return { isPremium: false, monthlyAnalysisLimit: 3, articleGenerationsPerMonth: ARTICLE_GENERATIONS.free };
   }
 
   if (user.email && PREMIUM_EMAILS.includes(user.email)) {
-    return { isPremium: true, monthlyAnalysisLimit: 999 };
+    return { isPremium: true, monthlyAnalysisLimit: 999, articleGenerationsPerMonth: ARTICLE_GENERATIONS.premium };
   }
 
   const supabase = await createClient();
@@ -28,11 +32,13 @@ export async function getPremiumStatusServer(user: User | null): Promise<{
     .maybeSingle();
 
   if (error || !data) {
-    return { isPremium: false, monthlyAnalysisLimit: 3 };
+    return { isPremium: false, monthlyAnalysisLimit: 3, articleGenerationsPerMonth: ARTICLE_GENERATIONS.free };
   }
 
+  const isPremium = data.is_premium ?? false;
   return {
-    isPremium: data.is_premium ?? false,
+    isPremium,
     monthlyAnalysisLimit: data.monthly_analysis_limit ?? 3,
+    articleGenerationsPerMonth: isPremium ? ARTICLE_GENERATIONS.premium : ARTICLE_GENERATIONS.free,
   };
 }

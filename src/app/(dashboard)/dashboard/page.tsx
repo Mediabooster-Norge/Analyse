@@ -110,6 +110,16 @@ function DashboardPageContent() {
     runAnalysis,
     suggestKeywords,
     fetchAISuggestion,
+    articleSuggestions,
+    loadingArticleSuggestions,
+    articleSuggestionsSavedAt,
+    fetchArticleSuggestions,
+    remainingArticleGenerations,
+    articleGenerationsLimit,
+    generatedArticle,
+    generatingArticleIndex,
+    fetchGenerateArticle,
+    setGeneratedArticle,
     checkAiVisibility,
     startEditingCompetitors,
     addEditCompetitor,
@@ -132,7 +142,6 @@ function DashboardPageContent() {
     { label: 'Henter nettside', description: 'Laster inn innhold fra nettsiden', duration: '~5s', icon: Globe },
     { label: 'Analyserer SEO', description: 'Sjekker meta-tags, overskrifter og lenker', duration: '~10s', icon: Search },
     { label: 'Sjekker sikkerhet', description: 'Analyserer SSL-sertifikat og headers', duration: '~15s', icon: Shield },
-    { label: 'AI-synlighet', description: 'Sjekker om AI kjenner til bedriften din', duration: '~10s', icon: Eye },
     { label: 'Genererer rapport', description: 'AI analyserer funnene og lager anbefalinger', duration: '~20s', icon: Sparkles },
   ];
 
@@ -193,14 +202,14 @@ function DashboardPageContent() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 max-[400px]:space-y-4 min-[401px]:space-y-6 sm:space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-neutral-900">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 max-[400px]:gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl max-[400px]:text-lg min-[450px]:text-2xl font-semibold text-neutral-900 truncate">
             {userName ? `Hei, ${userName}` : 'Dashboard'}
           </h1>
-          <p className="text-neutral-500">
+          <p className="text-neutral-500 text-sm max-[400px]:text-xs truncate">
             {result ? 'Se din analyse og anbefalinger' : 'Start en analyse for å komme i gang'}
           </p>
         </div>
@@ -209,13 +218,13 @@ function DashboardPageContent() {
           onOpenChange={setDialogOpen}
           trigger={
             <Button
-              className="bg-neutral-900 hover:bg-neutral-800 text-white"
+              className="bg-neutral-900 hover:bg-neutral-800 text-white w-full sm:w-auto text-sm max-[400px]:text-xs max-[400px]:h-9"
               disabled={!isPremium && remainingAnalyses === 0}
             >
-              <Plus className="mr-2 h-4 w-4" />
+              <Plus className="mr-1.5 max-[400px]:mr-1 h-4 w-4 max-[400px]:h-3.5 max-[400px]:w-3.5" />
               Ny analyse
               {!isPremium && remainingAnalyses < FREE_MONTHLY_LIMIT && (
-                <span className="ml-2 px-2 py-0.5 rounded-full bg-white/20 text-xs">
+                <span className="ml-1.5 max-[400px]:ml-1 px-1.5 max-[400px]:px-1 py-0.5 rounded-full bg-white/20 text-[10px] max-[400px]:text-[9px]">
                   {remainingAnalyses} igjen
                 </span>
               )}
@@ -254,46 +263,43 @@ function DashboardPageContent() {
       {isPremium ? (
         // Premium user - subtle inline indicator
         result ? (
-          <div className="rounded-2xl bg-white border border-neutral-200 p-4">
+          <div className="rounded-2xl bg-white border border-neutral-200 p-3 sm:p-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-amber-500" />
-                <span className="text-sm font-medium text-neutral-900">Premium</span>
-                <span className="text-sm text-neutral-500">· Ubegrenset analyser</span>
+                <span className="text-xs sm:text-sm font-medium text-neutral-900">Premium</span>
+                <span className="text-xs sm:text-sm text-neutral-500 hidden sm:inline">· Ubegrenset analyser</span>
               </div>
             </div>
           </div>
         ) : null
       ) : remainingAnalyses === 0 ? (
-        <div className="rounded-2xl bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 p-5">
+        <div className="rounded-2xl bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 p-4 sm:p-5">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                <AlertCircle className="w-6 h-6 text-red-600" />
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
+              <div className="w-10 sm:w-12 h-10 sm:h-12 bg-red-100 rounded-xl flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 sm:w-6 h-5 sm:h-6 text-red-600" />
               </div>
               <div>
-                <h3 className="font-semibold text-neutral-900">Analyser brukt opp</h3>
-                <p className="text-sm text-neutral-500">
+                <h3 className="font-semibold text-neutral-900 text-sm sm:text-base">Analyser brukt opp</h3>
+                <p className="text-xs sm:text-sm text-neutral-500">
                   Du har brukt {FREE_MONTHLY_LIMIT}/{FREE_MONTHLY_LIMIT} analyser denne måneden.
                 </p>
-                <div className="flex flex-wrap gap-3 mt-2">
-                  <span className="text-xs text-neutral-500">Premium gir deg:</span>
-                  <span className="inline-flex items-center gap-1 text-xs text-neutral-600">
+                <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3 mt-2">
+                  <span className="text-[10px] sm:text-xs text-neutral-500">Premium gir:</span>
+                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600">
                     <CheckCircle2 className="h-3 w-3 text-green-500" />Ubegrenset
                   </span>
-                  <span className="inline-flex items-center gap-1 text-xs text-neutral-600">
-                    <CheckCircle2 className="h-3 w-3 text-green-500" />Flere sider
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-xs text-neutral-600">
+                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600">
                     <CheckCircle2 className="h-3 w-3 text-green-500" />Flere konkurrenter
                   </span>
-                  <span className="inline-flex items-center gap-1 text-xs text-neutral-600">
-                    <CheckCircle2 className="h-3 w-3 text-green-500" />AI-synlighet
+                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600 hidden sm:inline-flex">
+                    <Clock className="h-3 w-3 text-violet-500" />AI-synlighet (snart)
                   </span>
                 </div>
               </div>
             </div>
-            <Button asChild className="bg-neutral-900 hover:bg-neutral-800 text-white">
+            <Button asChild className="bg-neutral-900 hover:bg-neutral-800 text-white w-full sm:w-auto">
               <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
                 Oppgrader til Premium
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -302,14 +308,14 @@ function DashboardPageContent() {
           </div>
         </div>
       ) : result ? (
-        <div className="rounded-2xl bg-white border border-neutral-200 p-4">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
+        <div className="rounded-2xl bg-white border border-neutral-200 p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+            <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-neutral-900">{remainingAnalyses}</span>
-                <span className="text-sm text-neutral-500">av {FREE_MONTHLY_LIMIT} analyser igjen</span>
+                <span className="text-xs sm:text-sm font-medium text-neutral-900">{remainingAnalyses}</span>
+                <span className="text-xs sm:text-sm text-neutral-500">av {FREE_MONTHLY_LIMIT} igjen</span>
               </div>
-              <div className="w-24 h-2 bg-neutral-100 rounded-full overflow-hidden">
+              <div className="flex-1 sm:flex-none sm:w-24 h-2 bg-neutral-100 rounded-full overflow-hidden">
                 <div 
                   className={`h-full rounded-full transition-all ${remainingAnalyses <= 1 ? 'bg-amber-500' : 'bg-neutral-900'}`}
                   style={{ width: `${(remainingAnalyses / FREE_MONTHLY_LIMIT) * 100}%` }}
@@ -320,7 +326,7 @@ function DashboardPageContent() {
               href="https://mediabooster.no/kontakt" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-sm text-neutral-500 hover:text-neutral-900 transition-colors"
+              className="text-xs sm:text-sm text-neutral-500 hover:text-neutral-900 transition-colors"
             >
               Oppgrader til ubegrenset →
             </a>
@@ -348,6 +354,17 @@ function DashboardPageContent() {
               setDialogOpen={setDialogOpen}
               fetchAISuggestion={fetchAISuggestion}
               setActiveTab={setActiveTab}
+              articleSuggestions={articleSuggestions}
+              loadingArticleSuggestions={loadingArticleSuggestions}
+              articleSuggestionsSavedAt={articleSuggestionsSavedAt}
+              fetchArticleSuggestions={fetchArticleSuggestions}
+              hasCompetitors={Boolean(result?.competitors?.length)}
+              remainingArticleGenerations={remainingArticleGenerations}
+              articleGenerationsLimit={articleGenerationsLimit}
+              generatedArticle={generatedArticle}
+              generatingArticleIndex={generatingArticleIndex}
+              fetchGenerateArticle={fetchGenerateArticle}
+              setGeneratedArticle={setGeneratedArticle}
             />
           )}
 
@@ -395,6 +412,8 @@ function DashboardPageContent() {
               removeEditKeyword={removeEditKeyword}
               cancelEditingKeywords={cancelEditingKeywords}
               updateKeywordAnalysis={updateKeywordAnalysis}
+              suggestKeywords={suggestKeywords}
+              suggestingKeywords={suggestingKeywords}
             />
           )}
 

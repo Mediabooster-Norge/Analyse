@@ -74,11 +74,11 @@ export function CompetitorsTab({
     <>
       {/* Edit Competitors Panel */}
       {editingCompetitors && (
-        <div className="rounded-2xl border border-neutral-200 bg-neutral-50/50 overflow-hidden mb-6">
-          <div className="flex items-center justify-between p-4 border-b border-neutral-200 bg-neutral-50">
-            <div className="flex items-center gap-3">
-              <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium">
-                <BarChart3 className="h-4 w-4 text-neutral-600" />
+        <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-neutral-50/50 overflow-hidden mb-4 max-[400px]:mb-4 min-[401px]:mb-6 min-w-0">
+          <div className="flex items-center justify-between p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-4 border-b border-neutral-200 bg-neutral-50">
+            <div className="flex items-center gap-2 max-[400px]:gap-2 min-[401px]:gap-3 min-w-0">
+              <h3 className="inline-flex items-center gap-1.5 max-[400px]:gap-1.5 px-2 max-[400px]:px-2 min-[401px]:px-3 py-1 max-[400px]:py-1 min-[401px]:py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-xs max-[400px]:text-[11px] min-[401px]:text-sm font-medium">
+                <BarChart3 className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-neutral-600" />
                 Rediger konkurrenter
               </h3>
               {!isPremium && (
@@ -176,14 +176,14 @@ export function CompetitorsTab({
 
       {result.competitors && result.competitors.length > 0 ? (
         <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-          <div className="p-6 border-b border-neutral-100">
-            <div className="flex items-center justify-between">
+          <div className="p-4 sm:p-6 border-b border-neutral-100">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <div>
-                <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-3">
+                <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-xs sm:text-sm font-medium mb-2 sm:mb-3">
                   <BarChart3 className="h-4 w-4 text-neutral-600" />
-                  Konkurrentsammenligning ({result.competitors.length} {result.competitors.length === 1 ? 'konkurrent' : 'konkurrenter'})
+                  Konkurrenter ({result.competitors.length})
                 </h3>
-                <p className="text-sm text-neutral-600">Sammenlign din nettside med konkurrentene dine</p>
+                <p className="text-xs sm:text-sm text-neutral-600">Sammenlign din nettside med konkurrentene</p>
               </div>
               {!editingCompetitors && (
                 <Button
@@ -191,7 +191,7 @@ export function CompetitorsTab({
                   size="sm"
                   onClick={startEditingCompetitors}
                   disabled={!isPremium && remainingCompetitorUpdates <= 0}
-                  className="rounded-lg text-xs"
+                  className="rounded-lg text-xs w-full sm:w-auto"
                 >
                   <Plus className="mr-1 h-3.5 w-3.5" />
                   Endre konkurrenter
@@ -205,7 +205,7 @@ export function CompetitorsTab({
             </div>
           </div>
 
-          <div className="p-6 space-y-6">
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
             {/* Comparison Summary */}
             {(() => {
               const avgTotal = Math.round(result.competitors!.reduce((sum, c) => sum + c.results.overallScore, 0) / result.competitors!.length);
@@ -241,48 +241,50 @@ export function CompetitorsTab({
               );
             })()}
 
-            <div className="overflow-hidden rounded-xl border border-neutral-200">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-neutral-50 border-b border-neutral-200">
-                    <th className="text-left py-3 px-4 font-medium text-neutral-600">Nettside</th>
-                    <th className="text-center py-3 px-3 font-medium text-neutral-600">
-                      <button
-                        onClick={() => setCompetitorSort(competitorSort?.column === 'total' ? { column: 'total', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'total', direction: 'desc' })}
-                        className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors cursor-pointer"
-                      >
-                        Total
-                        {competitorSort?.column === 'total' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />}
-                      </button>
-                    </th>
-                    <th className="text-center py-3 px-3 font-medium text-neutral-600">
-                      <button
-                        onClick={() => setCompetitorSort(competitorSort?.column === 'seo' ? { column: 'seo', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'seo', direction: 'desc' })}
-                        className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors cursor-pointer"
-                      >
-                        SEO
-                        {competitorSort?.column === 'seo' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />}
-                      </button>
-                    </th>
-                    <th className="text-center py-3 px-3 font-medium text-neutral-600">
-                      <button
-                        onClick={() => setCompetitorSort(competitorSort?.column === 'content' ? { column: 'content', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'content', direction: 'desc' })}
-                        className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors cursor-pointer"
-                      >
-                        Innhold
-                        {competitorSort?.column === 'content' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />}
-                      </button>
-                    </th>
-                    <th className="text-center py-3 px-3 font-medium text-neutral-600">
-                      <button
-                        onClick={() => setCompetitorSort(competitorSort?.column === 'security' ? { column: 'security', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'security', direction: 'desc' })}
-                        className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors cursor-pointer"
-                      >
-                        Sikkerhet
-                        {competitorSort?.column === 'security' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />}
-                      </button>
-                    </th>
-                    <th className="text-center py-3 px-3 font-medium text-neutral-600">
+            <div className="overflow-x-auto -mx-3 max-[400px]:-mx-3 min-[401px]:-mx-4 sm:mx-0 scrollbar-hide touch-pan-x">
+              <div className="min-w-[580px] max-[400px]:min-w-[520px] px-3 max-[400px]:px-3 min-[401px]:px-4 sm:px-0">
+                <div className="overflow-hidden rounded-xl border border-neutral-200">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-neutral-50 border-b border-neutral-200">
+                        <th className="text-left py-3 px-3 sm:px-4 font-medium text-neutral-600 text-xs sm:text-sm">Nettside</th>
+                        <th className="text-center py-3 px-2 sm:px-3 font-medium text-neutral-600 text-xs sm:text-sm">
+                          <button
+                            onClick={() => setCompetitorSort(competitorSort?.column === 'total' ? { column: 'total', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'total', direction: 'desc' })}
+                            className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors cursor-pointer"
+                          >
+                            Total
+                            {competitorSort?.column === 'total' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-neutral-300" />}
+                          </button>
+                        </th>
+                        <th className="text-center py-3 px-2 sm:px-3 font-medium text-neutral-600 text-xs sm:text-sm">
+                          <button
+                            onClick={() => setCompetitorSort(competitorSort?.column === 'seo' ? { column: 'seo', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'seo', direction: 'desc' })}
+                            className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors cursor-pointer"
+                          >
+                            SEO
+                            {competitorSort?.column === 'seo' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-neutral-300" />}
+                          </button>
+                        </th>
+                        <th className="text-center py-3 px-2 sm:px-3 font-medium text-neutral-600 text-xs sm:text-sm">
+                          <button
+                            onClick={() => setCompetitorSort(competitorSort?.column === 'content' ? { column: 'content', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'content', direction: 'desc' })}
+                            className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors cursor-pointer"
+                          >
+                            Innhold
+                            {competitorSort?.column === 'content' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-neutral-300" />}
+                          </button>
+                        </th>
+                        <th className="text-center py-3 px-2 sm:px-3 font-medium text-neutral-600 text-xs sm:text-sm">
+                          <button
+                            onClick={() => setCompetitorSort(competitorSort?.column === 'security' ? { column: 'security', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'security', direction: 'desc' })}
+                            className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors cursor-pointer"
+                          >
+                            Sikkerhet
+                            {competitorSort?.column === 'security' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-neutral-300" />}
+                          </button>
+                        </th>
+                        <th className="text-center py-3 px-2 sm:px-3 font-medium text-neutral-600 text-xs sm:text-sm">
                       {AI_VISIBILITY_ENABLED ? (
                         <button
                           onClick={() => setCompetitorSort(competitorSort?.column === 'aiVisibility' ? { column: 'aiVisibility', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'aiVisibility', direction: 'desc' })}
@@ -467,75 +469,77 @@ export function CompetitorsTab({
                       );
                     });
                   })()}
-                </tbody>
-              </table>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
 
             {result.aiSummary?.competitorComparison && (
               <>
-                <div className="p-5 rounded-xl bg-white border border-neutral-200">
-                  <h5 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 text-neutral-900 text-sm font-medium mb-4">
-                    <Sparkles className="h-4 w-4 text-blue-600" />
+                <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
+                  <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-blue-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                    <Sparkles className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-blue-600" />
                     AI-vurdering
                   </h5>
-                  <p className="text-sm text-neutral-700">{result.aiSummary.competitorComparison.summary}</p>
+                  <p className="text-xs sm:text-sm text-neutral-700">{result.aiSummary.competitorComparison.summary}</p>
                   {result.aiSummary.competitorComparison.scoreAnalysis && (
-                    <p className="text-sm text-neutral-500 mt-2">{result.aiSummary.competitorComparison.scoreAnalysis}</p>
+                    <p className="text-xs sm:text-sm text-neutral-500 mt-2">{result.aiSummary.competitorComparison.scoreAnalysis}</p>
                   )}
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   {result.aiSummary.competitorComparison.yourStrengths.length > 0 && (
-                    <div className="p-5 rounded-xl bg-white border border-neutral-200">
-                      <h5 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-green-100 text-neutral-900 text-sm font-medium mb-4">
-                        <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
+                      <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-green-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                        <CheckCircle2 className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-green-600" />
                         Dine styrker
                       </h5>
                       <ul className="space-y-2">
                         {result.aiSummary.competitorComparison.yourStrengths.map((s, i) => (
-                          <li key={i} className="text-sm text-neutral-700">{s}</li>
+                          <li key={i} className="text-xs sm:text-sm text-neutral-700">{s}</li>
                         ))}
                       </ul>
                     </div>
                   )}
                   {result.aiSummary.competitorComparison.competitorStrengths.length > 0 && (
-                    <div className="p-5 rounded-xl bg-white border border-neutral-200">
-                      <h5 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-100 text-neutral-900 text-sm font-medium mb-4">
-                        <AlertCircle className="h-4 w-4 text-red-600" />
+                    <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
+                      <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-red-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                        <AlertCircle className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-red-600" />
                         Konkurrentens styrker
                       </h5>
                       <ul className="space-y-2">
                         {result.aiSummary.competitorComparison.competitorStrengths.map((s, i) => (
-                          <li key={i} className="text-sm text-neutral-700">{s}</li>
+                          <li key={i} className="text-xs sm:text-sm text-neutral-700">{s}</li>
                         ))}
                       </ul>
                     </div>
                   )}
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   {result.aiSummary.competitorComparison.opportunities.length > 0 && (
-                    <div className="p-5 rounded-xl bg-white border border-neutral-200">
-                      <h5 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-100 text-neutral-900 text-sm font-medium mb-4">
-                        <TrendingUp className="h-4 w-4 text-amber-600" />
+                    <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
+                      <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-amber-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                        <TrendingUp className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-amber-600" />
                         Muligheter
                       </h5>
                       <ul className="space-y-2">
                         {result.aiSummary.competitorComparison.opportunities.map((o, i) => (
-                          <li key={i} className="text-sm text-neutral-700">{o}</li>
+                          <li key={i} className="text-xs sm:text-sm text-neutral-700">{o}</li>
                         ))}
                       </ul>
                     </div>
                   )}
                   {result.aiSummary.competitorComparison.quickWins && result.aiSummary.competitorComparison.quickWins.length > 0 && (
-                    <div className="p-5 rounded-xl bg-white border border-neutral-200">
-                      <h5 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-100 text-neutral-900 text-sm font-medium mb-4">
-                        <Zap className="h-4 w-4 text-purple-600" />
+                    <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
+                      <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-purple-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                        <Zap className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-purple-600" />
                         Raske forbedringer
                       </h5>
                       <ul className="space-y-2">
                         {result.aiSummary.competitorComparison.quickWins.map((q, i) => (
-                          <li key={i} className="text-sm text-neutral-700">{q}</li>
+                          <li key={i} className="text-xs sm:text-sm text-neutral-700">{q}</li>
                         ))}
                       </ul>
                     </div>

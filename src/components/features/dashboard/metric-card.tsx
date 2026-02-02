@@ -50,15 +50,15 @@ export function MetricCard({
   return (
     <div
       onClick={onClick}
-      className={`p-3 rounded-lg border cursor-pointer hover:shadow-sm transition-all group ${colors.bg} ${colors.border}`}
+      className={`p-2 max-[400px]:p-2 min-[401px]:p-3 rounded-lg border cursor-pointer hover:shadow-sm transition-all group min-w-0 ${colors.bg} ${colors.border}`}
     >
       {/* Header row */}
-      <div className="flex items-center justify-between gap-2 mb-1.5">
-        <div className="flex items-center gap-1.5 min-w-0">
+      <div className="flex items-center justify-between gap-1 max-[400px]:gap-1 min-[401px]:gap-2 mb-1 max-[400px]:mb-1 min-[401px]:mb-1.5">
+        <div className="flex items-center gap-1 max-[400px]:gap-1 min-[401px]:gap-1.5 min-w-0">
           <div className={`w-5 h-5 rounded flex items-center justify-center shrink-0 bg-white/80`}>
             <Icon className={`w-3 h-3 ${colors.icon}`} />
           </div>
-          <span className="font-medium text-xs text-neutral-900 truncate">{title}</span>
+          <span className="font-medium text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-900 truncate">{title}</span>
         </div>
         <div className="flex items-center gap-0.5 text-neutral-400 group-hover:text-amber-500 transition-colors shrink-0">
           <Lightbulb className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -67,14 +67,14 @@ export function MetricCard({
       </div>
 
       {/* Value */}
-      <p className="text-xs text-neutral-700 line-clamp-1 mb-1.5" title={value}>
+      <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-700 line-clamp-1 mb-1 max-[400px]:mb-1 min-[401px]:mb-1.5" title={value}>
         {value}
       </p>
 
       {/* Footer */}
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] text-neutral-500 truncate">{description}</span>
-        <span className={`text-[10px] px-1.5 py-0.5 rounded-full shrink-0 ${colors.badge}`}>
+      <div className="flex items-center justify-between gap-1 max-[400px]:gap-1 min-[401px]:gap-2">
+        <span className="text-[9px] max-[400px]:text-[8px] min-[401px]:text-[10px] text-neutral-500 truncate">{description}</span>
+        <span className={`text-[9px] max-[400px]:text-[8px] min-[401px]:text-[10px] px-1 max-[400px]:px-1 min-[401px]:px-1.5 py-0.5 rounded-full shrink-0 ${colors.badge}`}>
           {recommendation}
         </span>
       </div>

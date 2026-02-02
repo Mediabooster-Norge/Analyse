@@ -139,6 +139,14 @@ export interface HeadingsAnalysis {
   issues: string[];
 }
 
+export interface ImageRelevanceResult {
+  url: string;
+  isRelevant: boolean;
+  relevanceScore: number; // 0-100
+  description: string; // What the AI sees in the image
+  feedback: string; // Relevance feedback
+}
+
 export interface ImagesAnalysis {
   total: number;
   withAlt: number;
@@ -146,7 +154,13 @@ export interface ImagesAnalysis {
   withLazyLoading: number;
   largeImages: string[];
   missingAltImages: string[];
+  allImageUrls?: string[]; // Full URLs for relevance analysis
   score: number;
+  relevance?: {
+    analyzed: ImageRelevanceResult[];
+    averageScore: number;
+    summary: string;
+  };
 }
 
 export interface LinksAnalysis {

@@ -119,8 +119,14 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+  }
   body {
     @apply bg-background text-foreground antialiased;
+    overflow-x: hidden;
+    min-width: 0;
   }
 }
 
@@ -150,6 +156,15 @@
   .body-lg {
     @apply text-lg md:text-xl text-neutral-500 leading-relaxed;
   }
+}
+
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }
 
 /* Custom scrollbar for improvements list */

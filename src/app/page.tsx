@@ -51,6 +51,7 @@ import {
   ChevronDown,
   Eye,
   Lightbulb,
+  Clock,
 } from 'lucide-react';
 
 
@@ -356,31 +357,31 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-100">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex flex-col gap-1">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+          <Link href="/" className="flex flex-col gap-0.5 min-w-0 flex-shrink">
             <img
               src="/mediabooster-logo-darkgrey.avif"
               alt="Mediabooster"
-              className="h-5 w-auto"
+              className="h-4 sm:h-5 w-auto"
             />
-            <span className="text-neutral-500 text-xs hidden sm:inline">Din digitale CMO - og AI-kollega!</span>
+            <span className="text-neutral-500 text-[10px] sm:text-xs hidden sm:inline truncate">Din digitale CMO</span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {loading ? (
-              <div className="w-24 h-9 bg-neutral-100 rounded-lg animate-pulse" />
+              <div className="w-20 sm:w-24 h-8 sm:h-9 bg-neutral-100 rounded-lg animate-pulse" />
             ) : user ? (
-              <Button size="sm" className="bg-neutral-900 hover:bg-neutral-800" asChild>
+              <Button size="sm" className="bg-neutral-900 hover:bg-neutral-800 text-xs sm:text-sm h-8 sm:h-9 px-3 sm:px-4" asChild>
                 <Link href="/dashboard">
-                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  <LayoutDashboard className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   Dashboard
                 </Link>
               </Button>
             ) : (
               <>
-                <Button variant="ghost" size="sm" asChild>
+                <Button variant="ghost" size="sm" className="text-xs sm:text-sm h-8 sm:h-9 px-2 sm:px-3" asChild>
                   <Link href="/login">Logg inn</Link>
                 </Button>
-                <Button size="sm" className="bg-neutral-900 hover:bg-neutral-800" asChild>
+                <Button size="sm" className="bg-neutral-900 hover:bg-neutral-800 text-xs sm:text-sm h-8 sm:h-9 px-3 sm:px-4" asChild>
                   <Link href="/register">Kom i gang</Link>
                 </Button>
               </>
@@ -390,35 +391,34 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section - Centered with Dashboard Demo */}
-      <section className="pt-24 pb-8 md:pt-32 md:pb-12 relative overflow-hidden">
+      <section className="pt-20 pb-6 sm:pt-24 sm:pb-8 md:pt-32 md:pb-12 relative overflow-hidden">
         {/* Background elements */}
         <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-gradient-to-br from-purple-100/40 via-transparent to-transparent blur-[100px]" />
-          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full bg-gradient-to-br from-cyan-100/30 via-transparent to-transparent blur-[80px]" />
+          <div className="absolute top-0 right-0 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] rounded-full bg-gradient-to-br from-purple-100/40 via-transparent to-transparent blur-[80px] sm:blur-[100px]" />
+          <div className="absolute bottom-0 left-0 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] rounded-full bg-gradient-to-br from-cyan-100/30 via-transparent to-transparent blur-[60px] sm:blur-[80px]" />
         </div>
 
-        <div className="max-w-6xl mx-auto px-6">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
           {/* Hero Text - Centered */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-            className="text-center max-w-3xl mx-auto mb-12"
+            className="text-center max-w-3xl mx-auto mb-8 sm:mb-12"
             >
-              <Badge variant="outline" className="mb-6 text-neutral-600 border-neutral-300">
+              <Badge variant="outline" className="mb-4 sm:mb-6 text-xs sm:text-sm text-neutral-600 border-neutral-300">
               AI-drevet nettside-analyse
               </Badge>
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-6">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-4 sm:mb-6">
               Din digitale CMO<br />
               <span className="text-neutral-400">- og AI-kollega.</span>
               </h1>
-            <p className="text-lg text-neutral-500 mb-8 max-w-xl mx-auto">
-                Få en fullstendig helsesjekk av nettsiden med SEO, sikkerhet, innhold, 
-                AI-søk synlighet og AI-anbefalinger - alt i én rapport.
+            <p className="text-base sm:text-lg text-neutral-500 mb-6 sm:mb-8 max-w-xl mx-auto px-1">
+                Få en fullstendig helsesjekk av nettsiden med SEO, sikkerhet, innhold og AI-anbefalinger – alt i én rapport.
               </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
                 {user ? (
-                  <Button size="lg" className="h-12 px-8 bg-neutral-900 hover:bg-neutral-800" asChild>
+                  <Button size="lg" className="h-10 sm:h-12 px-6 sm:px-8 w-full sm:w-auto bg-neutral-900 hover:bg-neutral-800 text-sm sm:text-base" asChild>
                     <Link href="/dashboard">
                       <LayoutDashboard className="mr-2 w-4 h-4" />
                       Gå til Dashboard
@@ -426,13 +426,13 @@ export default function LandingPage() {
                   </Button>
                 ) : (
                   <>
-                    <Button size="lg" className="h-12 px-8 bg-neutral-900 hover:bg-neutral-800" asChild>
+                    <Button size="lg" className="h-10 sm:h-12 px-6 sm:px-8 w-full sm:w-auto bg-neutral-900 hover:bg-neutral-800 text-sm sm:text-base" asChild>
                       <Link href="/register">
                         Kom i gang gratis
                         <ArrowRight className="ml-2 w-4 h-4" />
                       </Link>
                     </Button>
-                    <Button size="lg" variant="outline" className="h-12 px-8" asChild>
+                    <Button size="lg" variant="outline" className="h-10 sm:h-12 px-6 sm:px-8 w-full sm:w-auto text-sm sm:text-base" asChild>
                       <Link href="/login">Logg inn</Link>
                     </Button>
                   </>
@@ -445,60 +445,64 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative"
+            className="relative overflow-hidden"
           >
             {/* Top part with border and shadow */}
-            <div className="rounded-t-3xl border border-b-0 border-neutral-200 shadow-2xl shadow-neutral-200/50 overflow-hidden bg-white">
+            <div className="rounded-t-2xl sm:rounded-t-3xl border border-b-0 border-neutral-200 shadow-xl sm:shadow-2xl shadow-neutral-200/50 overflow-hidden bg-white min-w-0">
               {/* Dashboard Header */}
-              <div className="border-b border-neutral-100 p-4 flex items-center justify-between bg-neutral-50">
-                <div className="flex items-center gap-3">
-                  <div className="flex gap-1.5">
-                    <div className="w-3 h-3 rounded-full bg-red-400" />
-                    <div className="w-3 h-3 rounded-full bg-yellow-400" />
-                    <div className="w-3 h-3 rounded-full bg-green-400" />
+              <div className="border-b border-neutral-100 p-3 sm:p-4 flex items-center justify-between gap-2 bg-neutral-50 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <div className="flex gap-1 sm:gap-1.5 shrink-0">
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-red-400" />
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-yellow-400" />
+                    <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-green-400" />
+                  </div>
+                  <span className="text-xs sm:text-sm text-neutral-500 font-medium truncate">eksempel.no - Analyse</span>
+                </div>
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                  <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-[10px] sm:text-xs text-neutral-400 hidden sm:inline">Oppdatert i dag</span>
+                </div>
               </div>
-                  <span className="text-sm text-neutral-500 font-medium">eksempel.no - Analyse</span>
-              </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-xs text-neutral-400">Oppdatert i dag</span>
-              </div>
-            </div>
 
-              {/* Tabs */}
-              <div className="border-b border-neutral-100 px-6 pt-3 bg-white">
-                <div className="flex items-center gap-1.5 text-xs text-green-600 mb-2">
+              {/* Tabs - scrollable on mobile */}
+              <div className="border-b border-neutral-100 px-3 sm:px-6 pt-2 sm:pt-3 bg-white overflow-x-auto scrollbar-hide">
+                <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-green-600 mb-1.5 sm:mb-2">
                   <span>Klikk for å utforske</span>
                   <ChevronDown className="w-3 h-3 animate-bounce" />
                 </div>
-                <div className="flex gap-1">
+                <div className="flex gap-0.5 sm:gap-1 w-max pb-px">
                   {[
                     { id: 'oversikt', label: 'Oversikt', icon: BarChart3 },
                     { id: 'konkurrenter', label: 'Konkurrenter', icon: Globe },
                     { id: 'nokkelord', label: 'Nøkkelord', icon: Tag },
                     { id: 'ai', label: 'AI-analyse', icon: Sparkles },
-                    { id: 'ai-sok', label: 'AI-synlighet', icon: Eye },
                   ].map((tab) => (
                     <button
                       key={tab.id}
                       onClick={() => setDemoTab(tab.id as typeof demoTab)}
-                      className={`flex items-center gap-2 px-4 py-3 text-sm font-medium rounded-t-lg transition-all cursor-pointer ${
+                      className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-t-lg transition-all cursor-pointer shrink-0 ${
                         demoTab === tab.id
                           ? 'bg-white text-neutral-900 border-t border-l border-r border-neutral-200 -mb-px'
                           : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
                       }`}
                     >
-                      <tab.icon className="w-4 h-4" />
+                      <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       {tab.label}
                     </button>
                   ))}
+                  {/* AI-synlighet - Coming soon, not clickable */}
+                  <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium text-neutral-400 cursor-not-allowed shrink-0">
+                    <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                    AI-synlighet
+                    <span className="text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-600 font-medium">Snart</span>
+                  </div>
                 </div>
-          </div>
-        </div>
+              </div>
         
             {/* Tab Content - fades out at bottom */}
             <div 
-              className="p-6 max-h-[440px] overflow-hidden relative border-l border-r border-neutral-200 bg-white" 
+              className="p-3 sm:p-4 md:p-6 max-h-[320px] sm:max-h-[380px] md:max-h-[440px] overflow-hidden relative border-l border-r border-neutral-200 bg-white min-w-0" 
               style={{ 
                 maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)', 
                 WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)' 
@@ -514,36 +518,36 @@ export default function LandingPage() {
                   className="space-y-4"
                 >
                   {/* Summary Card */}
-                  <div className="rounded-2xl p-5 bg-amber-50 border border-amber-200">
-                    <div className="flex items-start gap-4">
-                      <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-amber-100">
-                        <AlertCircle className="h-6 w-6 text-amber-600" />
+                  <div className="rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-amber-50 border border-amber-200">
+                    <div className="flex items-start gap-2 sm:gap-4">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 bg-amber-100">
+                        <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
                       </div>
-                      <div className="flex-1">
-                        <h3 className="text-base font-semibold text-amber-900">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-sm sm:text-base font-semibold text-amber-900">
                           Nettsiden har forbedringspotensial
                         </h3>
-                        <p className="text-sm text-amber-700 mt-0.5">
+                        <p className="text-xs sm:text-sm text-amber-700 mt-0.5 line-clamp-2">
                           Vi har funnet noen områder som kan forbedres for bedre synlighet i Google.
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="text-3xl font-bold text-amber-600">78</div>
-                        <p className="text-xs text-neutral-500">av 100 poeng</p>
+                        <div className="text-2xl sm:text-3xl font-bold text-amber-600">78</div>
+                        <p className="text-[10px] sm:text-xs text-neutral-500">av 100</p>
                       </div>
                     </div>
                   </div>
 
                   {/* Score Grid + Improvements Side by Side */}
-                  <div className="grid lg:grid-cols-3 gap-4">
+                  <div className="grid lg:grid-cols-3 gap-2 sm:gap-4">
                     {/* Score Grid Section */}
-                    <div className="lg:col-span-2 rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-                      <div className="p-4 border-b border-neutral-100">
-                        <h3 className="font-semibold text-neutral-900 text-sm">Poengoversikt</h3>
-                        <p className="text-xs text-neutral-500">Høyere poeng = bedre synlighet i Google</p>
+                    <div className="lg:col-span-2 rounded-xl sm:rounded-2xl border border-neutral-200 bg-white overflow-hidden min-w-0">
+                      <div className="p-2 sm:p-4 border-b border-neutral-100">
+                        <h3 className="font-semibold text-neutral-900 text-xs sm:text-sm">Poengoversikt</h3>
+                        <p className="text-[10px] sm:text-xs text-neutral-500">Høyere poeng = bedre synlighet</p>
                       </div>
-                      <div className="p-4">
-                        <div className="grid grid-cols-5 gap-3">
+                      <div className="p-2 sm:p-4">
+                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-3">
                           <div className="text-center">
                             <ScoreRing score={78} label="Totalt" size="sm" />
                             <p className="text-[10px] text-neutral-500 mt-1">Samlet</p>
@@ -569,15 +573,15 @@ export default function LandingPage() {
                     </div>
 
                     {/* Priority Improvements */}
-                    <div className="rounded-2xl border border-neutral-200 bg-white p-4">
-                      <div className="flex items-center justify-between mb-3">
-                        <h3 className="font-semibold text-neutral-900 flex items-center gap-2 text-sm">
-                          <TrendingUp className="h-4 w-4 text-amber-500" />
+                    <div className="rounded-xl sm:rounded-2xl border border-neutral-200 bg-white p-2 sm:p-4 min-w-0">
+                      <div className="flex items-center justify-between mb-2 sm:mb-3">
+                        <h3 className="font-semibold text-neutral-900 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
+                          <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
                           Forbedringer
                         </h3>
-                        <span className="text-xs text-neutral-400">4 funn</span>
+                        <span className="text-[10px] sm:text-xs text-neutral-400">4 funn</span>
                       </div>
-                      <div className="space-y-1.5">
+                      <div className="space-y-1 sm:space-y-1.5">
                         {[
                           { label: 'Meta-beskrivelse', desc: 'Mangler beskrivelse', priority: 'high' },
                           { label: 'Innhold', desc: 'For lite tekst', priority: 'medium' },
@@ -621,8 +625,8 @@ export default function LandingPage() {
                   </div>
 
                   {/* Score Comparison Table */}
-                  <div className="overflow-hidden rounded-xl border border-neutral-200">
-                    <table className="w-full text-sm">
+                  <div className="overflow-x-auto rounded-xl border border-neutral-200 -mx-1 sm:mx-0">
+                    <table className="w-full text-sm min-w-[400px]">
                       <thead>
                         <tr className="bg-neutral-50 border-b border-neutral-200">
                           <th className="text-left py-2.5 px-3 font-medium text-neutral-600 text-xs">Nettside</th>
@@ -741,11 +745,11 @@ export default function LandingPage() {
                   transition={{ duration: 0.3 }}
                   className="space-y-4"
                 >
-                  <div className="overflow-x-auto rounded-xl border border-neutral-200">
-                    <table className="w-full">
+                  <div className="overflow-x-auto rounded-xl border border-neutral-200 -mx-1 sm:mx-0">
+                    <table className="w-full min-w-[320px]">
                       <thead className="bg-neutral-50">
                         <tr>
-                          <th className="text-left py-3 px-4 text-xs font-semibold text-neutral-500">Nøkkelord</th>
+                          <th className="text-left py-2 sm:py-3 px-2 sm:px-4 text-[10px] sm:text-xs font-semibold text-neutral-500">Nøkkelord</th>
                           <th className="text-right py-3 px-4 text-xs font-semibold text-neutral-500">Volum</th>
                           <th className="text-right py-3 px-4 text-xs font-semibold text-neutral-500">CPC</th>
                           <th className="text-center py-3 px-4 text-xs font-semibold text-neutral-500">Konkurranse</th>
@@ -774,10 +778,10 @@ export default function LandingPage() {
                       </tbody>
                     </table>
                   </div>
-                  <div className="grid grid-cols-4 gap-3">
-                    <div className="p-3 rounded-xl bg-neutral-50">
-                      <p className="text-xs text-neutral-500 font-medium">Total volum</p>
-                      <p className="text-lg font-bold text-neutral-900">~5.8K</p>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+                    <div className="p-2 sm:p-3 rounded-xl bg-neutral-50">
+                      <p className="text-[10px] sm:text-xs text-neutral-500 font-medium">Total volum</p>
+                      <p className="text-base sm:text-lg font-bold text-neutral-900">~5.8K</p>
                     </div>
                     <div className="p-3 rounded-xl bg-neutral-50">
                       <p className="text-xs text-neutral-500 font-medium">Snitt CPC</p>
@@ -880,126 +884,26 @@ export default function LandingPage() {
                 </motion.div>
               )}
 
-              {/* AI-søk Tab */}
-              {demoTab === 'ai-sok' && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="grid grid-cols-3 gap-5"
-                >
-                  {/* Left Column - Score & Stats */}
-                  <div className="col-span-1 space-y-4">
-                    {/* Score Card */}
-                    <div className="text-center">
-                      <div className="w-24 h-24 mx-auto rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center mb-3">
-                        <div className="text-center">
-                          <span className="text-3xl font-bold text-amber-600">72</span>
-                          <p className="text-[10px] text-neutral-500">av 100</p>
-                        </div>
-                      </div>
-                      <h4 className="font-semibold text-amber-700 text-sm">Moderat AI-synlighet</h4>
-                      <p className="text-xs text-neutral-500 mt-1">AI kjenner delvis til bedriften</p>
-                    </div>
-
-                    {/* Stats Grid */}
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <div className="p-2 rounded-lg bg-neutral-50 text-center">
-                        <p className="text-lg font-bold text-neutral-900">4</p>
-                        <p className="text-[9px] text-neutral-500 uppercase">Testet</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-green-50 text-center">
-                        <p className="text-lg font-bold text-green-600">3</p>
-                        <p className="text-[9px] text-neutral-500 uppercase">Kjent</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-amber-50 text-center">
-                        <p className="text-lg font-bold text-amber-600">1</p>
-                        <p className="text-[9px] text-neutral-500 uppercase">Delvis</p>
-                      </div>
-                    </div>
-
-                    {/* Recommendations */}
-                    <div className="p-3 rounded-xl bg-amber-50 border border-amber-100">
-                      <h5 className="font-medium text-amber-800 text-xs mb-2 flex items-center gap-1.5">
-                        <Lightbulb className="w-3.5 h-3.5" />
-                        Forbedringer
-                      </h5>
-                      <ul className="space-y-1.5">
-                        <li className="text-[11px] text-amber-700 flex items-start gap-1.5">
-                          <span className="w-3.5 h-3.5 rounded-full bg-amber-200 flex items-center justify-center shrink-0 text-[9px] font-medium text-amber-800">1</span>
-                          <span>Publiser mer faginnhold</span>
-                        </li>
-                        <li className="text-[11px] text-amber-700 flex items-start gap-1.5">
-                          <span className="w-3.5 h-3.5 rounded-full bg-amber-200 flex items-center justify-center shrink-0 text-[9px] font-medium text-amber-800">2</span>
-                          <span>Bli mer synlig i media</span>
-                        </li>
-                      </ul>
-                    </div>
-                  </div>
-
-                  {/* Right Column - Query Results */}
-                  <div className="col-span-2">
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-medium text-neutral-900 text-sm">AI-svar på spørsmål</h4>
-                      <span className="text-[10px] text-neutral-400">GPT-4o mini</span>
-                    </div>
-                    <div className="space-y-2">
-                      {[
-                        { query: 'Hva vet du om Mediabooster?', status: 'known', response: 'Ja, Mediabooster er et norsk teknologi- og markedsføringsbyrå...' },
-                        { query: 'Kan du anbefale Mediabooster?', status: 'known', response: 'Basert på min kunnskap kan jeg anbefale dem for digitale tjenester...' },
-                        { query: 'Beste SEO-byrå i Norge?', status: 'partial', response: 'Det finnes flere gode alternativer, inkludert...' },
-                        { query: 'Hvem lager nettsider i Oslo?', status: 'known', response: 'Mediabooster er blant selskapene som tilbyr webutvikling...' },
-                      ].map((item, i) => (
-                        <div key={i} className={`p-3 rounded-xl border ${
-                          item.status === 'known' ? 'bg-green-50/50 border-green-200' : 'bg-blue-50/50 border-blue-200'
-                        }`}>
-                          <div className="flex items-start gap-2">
-                            <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 ${
-                              item.status === 'known' ? 'bg-green-100' : 'bg-blue-100'
-                            }`}>
-                              {item.status === 'known' ? (
-                                <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
-                              ) : (
-                                <Search className="w-3 h-3 text-blue-600" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 mb-0.5">
-                                <p className="text-xs font-medium text-neutral-800">{item.query}</p>
-                                <span className={`text-[9px] px-1.5 py-0.5 rounded-full shrink-0 font-medium ${
-                                  item.status === 'known' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                                }`}>
-                                  {item.status === 'known' ? 'Kjent' : 'Delvis'}
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-neutral-600 leading-relaxed">{item.response}</p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </motion.div>
-              )}
+            </div>
             </div>
           </motion.div>
         </div>
       </section>
 
       {/* Trusted by - Scrolling Logo Carousel */}
-      <section className="py-12 overflow-hidden relative">
+      <section className="py-8 sm:py-12 overflow-hidden relative">
         <motion.p 
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="text-center text-xs uppercase tracking-widest text-neutral-400 mb-8"
+          className="text-center text-[10px] sm:text-xs uppercase tracking-widest text-neutral-400 mb-4 sm:mb-8 px-4"
         >
           Brukes av innovative bedrifter
         </motion.p>
         
         {/* Fade edges */}
-        <div className="absolute left-0 top-0 bottom-0 w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
-        <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
+        <div className="absolute left-0 top-0 bottom-0 w-16 sm:w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
+        <div className="absolute right-0 top-0 bottom-0 w-16 sm:w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
         
         {/* Row 1 - scrolling left */}
         <div className="relative mb-4">
@@ -1066,26 +970,26 @@ export default function LandingPage() {
       </section>
 
       {/* Bento Grid Features */}
-      <section className="py-24">
-        <div className="max-w-6xl mx-auto px-6">
+      <section className="py-12 sm:py-16 md:py-24">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center mb-8 sm:mb-12 md:mb-16"
           >
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-4">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-3 sm:mb-4">
               Komplett analyse<br />
               <span className="text-neutral-400">av hele nettsiden.</span>
             </h2>
-            <p className="text-lg text-neutral-500 max-w-xl mx-auto">
-              SEO, sikkerhet, innhold, AI-søk synlighet og nøkkelord - med AI-anbefalinger.
+            <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl mx-auto px-2">
+              SEO, sikkerhet, innhold og nøkkelord – med AI-anbefalinger.
             </p>
           </motion.div>
 
           {/* Bento Grid */}
           <motion.div 
-            className="grid md:grid-cols-3 gap-4"
+            className="grid md:grid-cols-3 gap-3 sm:gap-4"
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
@@ -1095,7 +999,7 @@ export default function LandingPage() {
             <motion.div 
               variants={itemVariants}
               whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className="md:col-span-2 relative rounded-3xl p-8 overflow-hidden group"
+              className="md:col-span-2 relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 overflow-hidden group"
             >
               {/* Animated background */}
               <motion.div 
@@ -1134,7 +1038,7 @@ export default function LandingPage() {
             <motion.div 
               variants={itemVariants}
               whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className="relative rounded-3xl p-8 group overflow-hidden"
+              className="relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 group overflow-hidden"
             >
               {/* Animated gradient background */}
               <motion.div 
@@ -1167,7 +1071,7 @@ export default function LandingPage() {
             <motion.div 
               variants={itemVariants}
               whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className="relative rounded-3xl p-8 group overflow-hidden"
+              className="relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 group overflow-hidden"
             >
               {/* Animated gradient background */}
               <motion.div 
@@ -1202,7 +1106,7 @@ export default function LandingPage() {
             <motion.div 
               variants={itemVariants}
               whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className="md:col-span-2 relative rounded-3xl p-8 group overflow-hidden"
+              className="md:col-span-2 relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 group overflow-hidden"
             >
               {/* Animated gradient background */}
               <motion.div 
@@ -1260,15 +1164,15 @@ export default function LandingPage() {
               </div>
             </motion.div>
 
-            {/* AI Search Visibility - Full width card */}
+            {/* AI Articles - Full width card */}
             <motion.div 
               variants={itemVariants}
               whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className="md:col-span-3 relative rounded-3xl p-8 group overflow-hidden"
+              className="md:col-span-3 relative rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-8 group overflow-hidden"
             >
               {/* Animated gradient background */}
               <motion.div 
-                className="absolute inset-0 bg-gradient-to-br from-violet-50 via-blue-50 to-cyan-50 group-hover:from-violet-100 group-hover:via-blue-100 group-hover:to-cyan-100 transition-colors duration-300"
+                className="absolute inset-0 bg-gradient-to-br from-violet-50 via-purple-50 to-fuchsia-50 group-hover:from-violet-100 group-hover:via-purple-100 group-hover:to-fuchsia-100 transition-colors duration-300"
                 initial={{ opacity: 0, scale: 1.1 }}
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true, amount: 0.5 }}
@@ -1276,115 +1180,92 @@ export default function LandingPage() {
               />
               <div className="relative z-10">
                 <div className="flex items-start justify-between mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-blue-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-lg shadow-violet-500/20">
-                      <Eye className="w-7 h-7 text-white" />
+                  <div>
+                    <div className="w-12 h-12 rounded-2xl bg-white shadow-sm flex items-center justify-center mb-4 group-hover:shadow-md group-hover:scale-110 transition-all">
+                      <Sparkles className="w-6 h-6 text-violet-600" />
                     </div>
-                    <div>
-                      <h3 className="text-xl font-semibold mb-1">AI-søk synlighet</h3>
-                      <p className="text-neutral-500">
-                        Finn ut om AI-modeller kjenner til bedriften din
-                      </p>
-                    </div>
+                    <h3 className="text-xl font-semibold mb-2">AI-genererte artikler</h3>
+                    <p className="text-neutral-500 max-w-md">
+                      Få artikkelideer basert på analysen og generer fullstendige artikler med ett klikk
+                    </p>
                   </div>
-                  <Badge className="bg-gradient-to-r from-violet-100 to-blue-100 text-violet-700 group-hover:from-violet-200 group-hover:to-blue-200 transition-colors border-0">Ny</Badge>
+                  <Badge className="bg-violet-100 text-violet-700 group-hover:bg-violet-200 transition-colors">Ny</Badge>
                 </div>
                 
-                <div className="grid md:grid-cols-3 gap-4">
-                  {/* Left - Score & Stats */}
-                  <div className="bg-white/80 backdrop-blur rounded-2xl p-5 group-hover:shadow-md transition-all">
-                    <div className="text-center mb-4">
-                      <div className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center mb-2">
-                        <div className="text-center">
-                          <span className="text-2xl font-bold text-amber-600">72</span>
-                          <p className="text-[9px] text-neutral-500">av 100</p>
+                <div className="grid md:grid-cols-2 gap-4">
+                  {/* Left - Article suggestions */}
+                  <div className="bg-white rounded-2xl p-4 group-hover:shadow-md transition-all">
+                    <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide mb-3">Artikkelideer</p>
+                    <div className="space-y-2">
+                      {[
+                        { title: '10 strategier for digital markedsføring i 2026', priority: 'høy' },
+                        { title: 'Hvordan velge riktig SEO-byrå', priority: 'høy' },
+                        { title: 'AI og automatisering: En komplett guide', priority: 'medium' },
+                      ].map((article, i) => (
+                        <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-neutral-50 hover:bg-violet-50 transition-colors">
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 mt-0.5 ${
+                            article.priority === 'høy' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                          }`}>{article.priority}</span>
+                          <span className="text-sm text-neutral-700 line-clamp-1">{article.title}</span>
                         </div>
-                      </div>
-                      <p className="font-medium text-amber-700 text-sm">Moderat synlighet</p>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1.5">
-                      <div className="p-2 rounded-lg bg-neutral-50 text-center">
-                        <p className="text-sm font-bold text-neutral-900">4</p>
-                        <p className="text-[8px] text-neutral-500 uppercase">Testet</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-green-50 text-center">
-                        <p className="text-sm font-bold text-green-600">3</p>
-                        <p className="text-[8px] text-neutral-500 uppercase">Kjent</p>
-                      </div>
-                      <div className="p-2 rounded-lg bg-amber-50 text-center">
-                        <p className="text-sm font-bold text-amber-600">1</p>
-                        <p className="text-[8px] text-neutral-500 uppercase">Delvis</p>
-                      </div>
+                      ))}
                     </div>
                   </div>
                   
-                  {/* Right - AI Responses */}
-                  <div className="md:col-span-2 bg-white/80 backdrop-blur rounded-2xl p-5 group-hover:shadow-md transition-all">
+                  {/* Right - Generated article preview */}
+                  <div className="bg-white rounded-2xl p-4 group-hover:shadow-md transition-all">
                     <div className="flex items-center justify-between mb-3">
-                      <p className="font-medium text-sm text-neutral-900">AI-svar på spørsmål</p>
-                      <span className="text-[10px] text-neutral-400">GPT-4o mini</span>
+                      <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Generert artikkel</p>
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        <span className="text-[10px] text-neutral-400">600-1200 ord</span>
+                      </div>
                     </div>
                     <div className="space-y-2">
-                      {[
-                        { query: 'Hva vet du om bedriften?', status: 'known', response: 'Ja, jeg kjenner til denne bedriften. De tilbyr digitale tjenester...' },
-                        { query: 'Kan du anbefale dem?', status: 'known', response: 'Basert på min kunnskap kan jeg anbefale dem...' },
-                        { query: 'Beste i bransjen?', status: 'partial', response: 'Det finnes flere gode alternativer...' },
-                      ].map((item, i) => (
-                        <div key={i} className={`p-2.5 rounded-xl border ${
-                          item.status === 'known' ? 'bg-green-50/50 border-green-200' : 'bg-blue-50/50 border-blue-200'
-                        }`}>
-                          <div className="flex items-start gap-2">
-                            <div className={`w-5 h-5 rounded-md flex items-center justify-center shrink-0 ${
-                              item.status === 'known' ? 'bg-green-100' : 'bg-blue-100'
-                            }`}>
-                              {item.status === 'known' ? (
-                                <CheckCircle2 className="w-3 h-3 text-green-600" />
-                              ) : (
-                                <Search className="w-2.5 h-2.5 text-blue-600" />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5">
-                                <p className="text-xs font-medium text-neutral-800">{item.query}</p>
-                                <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-medium ${
-                                  item.status === 'known' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
-                                }`}>
-                                  {item.status === 'known' ? 'Kjent' : 'Delvis'}
-                                </span>
-                              </div>
-                              <p className="text-[11px] text-neutral-500">{item.response}</p>
-                            </div>
+                      <div className="h-5 bg-neutral-100 rounded w-3/4 group-hover:bg-violet-100 transition-colors" />
+                      <div className="h-3 bg-neutral-50 rounded w-full" />
+                      <div className="h-3 bg-neutral-50 rounded w-full" />
+                      <div className="h-3 bg-neutral-50 rounded w-5/6" />
+                      <div className="h-4 bg-neutral-100 rounded w-1/2 mt-3 group-hover:bg-violet-100 transition-colors" />
+                      <div className="h-3 bg-neutral-50 rounded w-full" />
+                      <div className="h-3 bg-neutral-50 rounded w-4/5" />
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <div className="px-3 py-1.5 rounded-lg bg-violet-100 text-violet-700 text-xs font-medium group-hover:bg-violet-200 transition-colors">
+                        Kopier artikkel
+                      </div>
+                      <div className="px-3 py-1.5 rounded-lg bg-neutral-100 text-neutral-600 text-xs font-medium">
+                        Lagret i Mine artikler
+                      </div>
                     </div>
                   </div>
-                ))}
-              </div>
-          </div>
                 </div>
               </div>
             </motion.div>
+
             </motion.div>
         </div>
       </section>
 
       {/* AI Suggestions Interactive Section */}
-      <section className="py-20">
-        <div className="max-w-6xl mx-auto px-6">
+      <section className="py-12 sm:py-16 md:py-20">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-            className="text-center mb-12"
+            className="text-center mb-8 sm:mb-12"
           >
-            <h2 className="text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-3">
+            <h2 className="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-2 sm:mb-3">
               Fra problem<br />
               <span className="text-neutral-400">til løsning.</span>
               </h2>
-            <p className="text-lg text-neutral-500 max-w-xl mx-auto">
+            <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl mx-auto px-2">
               AI analyserer funnene og gir deg konkrete forslag du kan implementere med én gang.
             </p>
             </motion.div>
 
-          <div className="grid lg:grid-cols-5 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 sm:gap-6">
             {/* Problem cards - narrower */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -1461,7 +1342,7 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="lg:col-span-3"
             >
-              <div className="bg-neutral-50 rounded-2xl p-6 min-h-[320px]">
+              <div className="bg-neutral-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 min-h-[280px] sm:min-h-[320px]">
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-4 h-4 text-neutral-500" />
                   <span className="text-sm font-medium text-neutral-600">AI-forslag</span>
@@ -2078,9 +1959,9 @@ export default function LandingPage() {
       </section>
 
       {/* Footer - Modern minimal */}
-      <footer className="py-8">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-6 border-t border-neutral-100">
+      <footer className="py-6 sm:py-8">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-4 sm:py-6 border-t border-neutral-100">
             <motion.div 
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
@@ -2101,7 +1982,7 @@ export default function LandingPage() {
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
-              className="flex items-center gap-6 text-xs text-neutral-400"
+              className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 text-[10px] sm:text-xs text-neutral-400"
             >
               {[
                 { href: 'https://mediabooster.no', label: 'Mediabooster' },

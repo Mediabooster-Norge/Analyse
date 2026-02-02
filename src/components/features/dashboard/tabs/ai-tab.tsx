@@ -1,6 +1,7 @@
 'use client';
 
 import { Sparkles, CheckCircle2, AlertCircle, Lightbulb, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { ActionPlanTabs } from '@/components/features/dashboard';
 import type { DashboardAnalysisResult } from '@/types/dashboard';
 
@@ -15,31 +16,30 @@ export interface AiTabProps {
 }
 
 export function AiTab({ result, fetchAISuggestion }: AiTabProps) {
+
   return (
     <>
       {result.aiSummary ? (
-        <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-          <div className="p-6 border-b border-neutral-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-3">
-                  <Sparkles className="h-4 w-4 text-neutral-600" />
-                  AI-analyse
-                </h3>
-                <p className="text-sm text-neutral-600">AI-genererte innsikter og anbefalinger basert på analysen</p>
-              </div>
+        <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
+          <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6 border-b border-neutral-100">
+            <div className="min-w-0">
+              <h3 className="inline-flex items-center gap-1.5 max-[400px]:gap-1.5 px-2 max-[400px]:px-2 min-[401px]:px-3 py-1 max-[400px]:py-1 min-[401px]:py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-[11px] max-[400px]:text-[10px] min-[401px]:text-xs sm:text-sm font-medium mb-1 max-[400px]:mb-1 min-[401px]:mb-2 sm:mb-3">
+                <Sparkles className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-neutral-600" />
+                AI-analyse
+              </h3>
+              <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs sm:text-sm text-neutral-600">AI-innsikter og anbefalinger</p>
             </div>
           </div>
-          <div className="p-6">
-            <div className="grid md:grid-cols-2 gap-8">
+          <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-[400px]:gap-4 min-[401px]:gap-5 sm:gap-8">
               {/* Left Column - AI Summary & Key Findings */}
               <div>
-                <h4 className="text-sm font-semibold text-neutral-700 mb-3">AI-vurdering</h4>
-                <p className="text-sm text-neutral-600 leading-relaxed mb-6">
+                <h4 className="text-xs sm:text-sm font-semibold text-neutral-700 mb-3">AI-vurdering</h4>
+                <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed mb-4 sm:mb-6">
                   {result.aiSummary.overallAssessment}
                 </p>
 
-                <h5 className="text-sm font-medium text-neutral-700 mb-3">Viktigste funn</h5>
+                <h5 className="text-xs sm:text-sm font-medium text-neutral-700 mb-3">Viktigste funn</h5>
                 <div className="space-y-2">
                   {result.aiSummary.keyFindings.slice(0, 5).map((finding, i) => {
                     const isObject = typeof finding === 'object' && finding !== null;
@@ -83,13 +83,13 @@ export function AiTab({ result, fetchAISuggestion }: AiTabProps) {
               {/* Right Column - Recommendations & Action Plan */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h5 className="text-sm font-medium text-neutral-700">Anbefalinger</h5>
-                  <span className="text-xs text-neutral-400 flex items-center gap-1">
+                  <h5 className="text-xs sm:text-sm font-medium text-neutral-700">Anbefalinger</h5>
+                  <span className="text-[10px] sm:text-xs text-neutral-400 flex items-center gap-1">
                     <Sparkles className="w-3 h-3" />
                     Klikk for AI-forslag
                   </span>
                 </div>
-                <div className="space-y-2 mb-6">
+                <div className="space-y-2 mb-4 sm:mb-6">
                   {result.aiSummary.recommendations.slice(0, 4).map((rec, i) => (
                     <div
                       key={i}
@@ -135,6 +135,7 @@ export function AiTab({ result, fetchAISuggestion }: AiTabProps) {
               </div>
             </div>
           </div>
+
         </div>
       ) : (
         <div className="text-center py-12">

@@ -67,7 +67,6 @@ export default function AnalysisPage() {
     { label: 'Henter nettside', description: 'Laster inn innhold fra nettsiden', duration: '~5s', icon: Globe },
     { label: 'Analyserer SEO', description: 'Sjekker meta-tags, overskrifter og lenker', duration: '~10s', icon: Search },
     { label: 'Sjekker sikkerhet', description: 'Analyserer SSL-sertifikat og headers', duration: '~15s', icon: Shield },
-    { label: 'AI-synlighet', description: 'Sjekker om AI kjenner til bedriften din', duration: '~10s', icon: Eye },
     { label: 'Genererer rapport', description: 'AI analyserer funnene og lager anbefalinger', duration: '~20s', icon: Sparkles },
   ];
 
@@ -308,7 +307,7 @@ export default function AnalysisPage() {
                     <DialogHeader className="p-0 space-y-0">
                       <DialogTitle className="text-lg">Kjører analyse på nytt</DialogTitle>
                       <DialogDescription className="text-sm">
-                        {RERUN_STEPS[rerunStep]?.label} · SEO, sikkerhet, innhold og AI-synlighet
+                        {RERUN_STEPS[rerunStep]?.label} · SEO, sikkerhet, innhold og bilderelevans
                       </DialogDescription>
                     </DialogHeader>
                   </div>

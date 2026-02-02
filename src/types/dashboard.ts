@@ -98,6 +98,17 @@ export interface DashboardAnalysisResult {
       total: number;
       withAlt: number;
       withoutAlt: number;
+      relevance?: {
+        analyzed: {
+          url: string;
+          isRelevant: boolean;
+          relevanceScore: number;
+          description: string;
+          feedback: string;
+        }[];
+        averageScore: number;
+        summary: string;
+      };
     };
     links: {
       internal: { count: number; urls?: string[] };
@@ -207,4 +218,13 @@ export interface KeywordSort {
 export interface CompetitorSort {
   column: 'total' | 'seo' | 'content' | 'security' | 'aiVisibility';
   direction: 'asc' | 'desc';
+}
+
+/**
+ * Article suggestion for content/outranking
+ */
+export interface ArticleSuggestion {
+  title: string;
+  rationale: string;
+  priority?: 'high' | 'medium' | 'low';
 }

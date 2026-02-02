@@ -29,10 +29,14 @@ export async function updateSession(request: NextRequest) {
     }
   );
 
-  // Refresh session if expired
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  // Refresh session if expired (catch fetch errors in Edge, e.g. Supabase unreachable)
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data?.user ?? null;
+  } catch {
+    // Supabase unreachable (network/DNS/Edge) – treat as no session, continue without crashing
+  }
 
   // Protected routes
   const protectedRoutes = ['/dashboard', '/analysis', '/settings'];

@@ -15,7 +15,7 @@ export default function AuthLayout({
             alt="Mediabooster" 
             className="h-8 w-auto"
           />
-          <span className="font-bold text-xl">Nettsjekk</span>
+          <span className="font-bold text-xl">Din digitale CMO</span>
         </Link>
       </header>
 
@@ -26,7 +26,7 @@ export default function AuthLayout({
 
       {/* Footer */}
       <footer className="p-4 text-center text-sm text-muted-foreground">
-        <p>&copy; {new Date().getFullYear()} Nettsjekk. Utviklet av Mediabooster.</p>
+        <p>&copy; {new Date().getFullYear()} Mediabooster.</p>
       </footer>
     </div>
   );

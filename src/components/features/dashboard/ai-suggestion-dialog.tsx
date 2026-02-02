@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { AISuggestionData } from '@/types/dashboard';
-import { Lightbulb, CheckCircle2, AlertCircle, Sparkles, Zap, Loader2 } from 'lucide-react';
+import { Lightbulb, CheckCircle2, AlertCircle, Sparkles, Zap, Loader2, Copy, Check } from 'lucide-react';
+import { toast } from 'sonner';
 
 const loadingMessages = [
   'Analyserer innholdet ditt...',
@@ -34,6 +35,7 @@ export function AISuggestionDialog({
   loadingSuggestion,
 }: AISuggestionDialogProps) {
   const [messageIndex, setMessageIndex] = useState(0);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Cycle through loading messages
   useEffect(() => {
@@ -48,6 +50,17 @@ export function AISuggestionDialog({
 
     return () => clearInterval(interval);
   }, [loadingSuggestion]);
+
+  const copyToClipboard = useCallback(async (text: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(id);
+      toast.success('Kopiert til utklippstavle');
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      toast.error('Kunne ikke kopiere');
+    }
+  }, []);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -154,8 +167,21 @@ export function AISuggestionDialog({
                 <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
                   <div className="flex gap-2">
                     <Zap className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium text-xs text-amber-900 mb-1">Rask forbedring</p>
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-1">
+                        <p className="font-medium text-xs text-amber-900">Rask forbedring</p>
+                        <button
+                          onClick={() => copyToClipboard(aiSuggestion.quickWin, 'quickwin')}
+                          className="p-1 rounded hover:bg-amber-100 transition-colors"
+                          title="Kopier"
+                        >
+                          {copiedId === 'quickwin' ? (
+                            <Check className="h-3 w-3 text-green-600" />
+                          ) : (
+                            <Copy className="h-3 w-3 text-amber-500 hover:text-amber-700" />
+                          )}
+                        </button>
+                      </div>
                       <p className="text-sm text-amber-800 leading-relaxed">{aiSuggestion.quickWin}</p>
                     </div>
                   </div>
@@ -196,7 +222,20 @@ export function AISuggestionDialog({
                           <p className="text-xs text-neutral-600 leading-relaxed">{suggestion.description}</p>
                           {suggestion.example && (
                             <div className="mt-2 p-2 rounded-lg bg-neutral-50 border border-neutral-100">
-                              <p className="text-[10px] text-neutral-500 mb-0.5">Eksempel:</p>
+                              <div className="flex items-center justify-between mb-0.5">
+                                <p className="text-[10px] text-neutral-500">Eksempel:</p>
+                                <button
+                                  onClick={() => copyToClipboard(suggestion.example!, `example-${i}`)}
+                                  className="p-1 rounded hover:bg-neutral-200 transition-colors"
+                                  title="Kopier"
+                                >
+                                  {copiedId === `example-${i}` ? (
+                                    <Check className="h-3 w-3 text-green-600" />
+                                  ) : (
+                                    <Copy className="h-3 w-3 text-neutral-400 hover:text-neutral-600" />
+                                  )}
+                                </button>
+                              </div>
                               <p className="text-xs text-neutral-800 font-mono break-all">{suggestion.example}</p>
                             </div>
                           )}

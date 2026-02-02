@@ -6,7 +6,7 @@ export async function analyzeSEO($: CheerioAPI, url: string): Promise<SEOResults
   const [meta, headings, images, links, mobile, technical] = await Promise.all([
     analyzeMetaTags($),
     analyzeHeadings($),
-    analyzeImages($),
+    analyzeImages($, url),
     analyzeLinks($, url),
     analyzeMobile($),
     analyzeTechnicalSEO($, url),
@@ -112,7 +112,7 @@ function analyzeHeadings($: CheerioAPI): HeadingsAnalysis {
   };
 }
 
-function analyzeImages($: CheerioAPI): ImagesAnalysis {
+function analyzeImages($: CheerioAPI, pageUrl: string): ImagesAnalysis {
   const images = $('img');
   const total = images.length;
 
@@ -121,19 +121,43 @@ function analyzeImages($: CheerioAPI): ImagesAnalysis {
   let withLazyLoading = 0;
   const missingAltImages: string[] = [];
   const largeImages: string[] = [];
+  const allImageUrls: string[] = [];
+
+  // Helper to resolve relative URLs
+  const resolveUrl = (src: string): string => {
+    if (!src) return '';
+    if (src.startsWith('data:')) return ''; // Skip data URIs
+    if (src.startsWith('http://') || src.startsWith('https://')) return src;
+    try {
+      return new URL(src, pageUrl).href;
+    } catch {
+      return '';
+    }
+  };
 
   images.each((_, el) => {
     const $img = $(el);
     const alt = $img.attr('alt');
     const src = $img.attr('src') || $img.attr('data-src') || '';
     const loading = $img.attr('loading');
+    const resolvedSrc = resolveUrl(src);
+
+    // Collect valid image URLs for relevance analysis (max 5)
+    if (resolvedSrc && allImageUrls.length < 5) {
+      // Skip tiny images (likely icons/trackers)
+      const width = parseInt($img.attr('width') || '0', 10);
+      const height = parseInt($img.attr('height') || '0', 10);
+      if (!(width > 0 && width < 50) && !(height > 0 && height < 50)) {
+        allImageUrls.push(resolvedSrc);
+      }
+    }
 
     if (alt && alt.trim().length > 0) {
       withAlt++;
     } else {
       withoutAlt++;
-      if (src && missingAltImages.length < 5) {
-        missingAltImages.push(src);
+      if (resolvedSrc && missingAltImages.length < 5) {
+        missingAltImages.push(resolvedSrc);
       }
     }
 
@@ -142,8 +166,8 @@ function analyzeImages($: CheerioAPI): ImagesAnalysis {
     }
 
     // Check for potentially large images (no lazy loading on images that aren't first few)
-    if (!loading && src && largeImages.length < 5) {
-      largeImages.push(src);
+    if (!loading && resolvedSrc && largeImages.length < 5) {
+      largeImages.push(resolvedSrc);
     }
   });
 
@@ -162,6 +186,7 @@ function analyzeImages($: CheerioAPI): ImagesAnalysis {
     withLazyLoading,
     largeImages,
     missingAltImages,
+    allImageUrls, // Add this for relevance analysis
     score,
   };
 }

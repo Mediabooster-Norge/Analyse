@@ -22,12 +22,14 @@ import {
   LogOut,
   Menu,
   ChevronRight,
+  FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Analyser', href: '/analysis', icon: BarChart3 },
+  { name: 'Mine artikler', href: '/dashboard/articles', icon: FileText },
   { name: 'Innstillinger', href: '/settings', icon: Settings },
 ];
 
@@ -120,24 +122,24 @@ export default function DashboardLayout({
   return (
     <div className="min-h-screen bg-[#FAFAFA]">
       {/* Mobile header */}
-      <header className="lg:hidden sticky top-0 z-50 flex h-16 items-center gap-4 border-b border-neutral-100 bg-white px-4">
+      <header className="lg:hidden sticky top-0 z-50 flex h-14 min-[450px]:h-16 items-center gap-2 min-[450px]:gap-4 border-b border-neutral-100 bg-white px-3 min-[450px]:px-4">
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="hover:bg-neutral-100 rounded-xl">
+            <Button variant="ghost" size="icon" className="hover:bg-neutral-100 rounded-xl h-9 w-9 min-[450px]:h-10 min-[450px]:w-10">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent side="left" className="w-64 p-0">
+          <SheetContent side="left" className="w-[min(280px,100vw-2rem)] p-0">
             <SidebarContent />
           </SheetContent>
         </Sheet>
-        <Link href="/" className="flex flex-col">
+        <Link href="/" className="flex flex-col min-w-0 flex-1">
           <img 
             src="/mediabooster-logo-darkgrey.avif" 
             alt="Mediabooster" 
-            className="w-28 object-contain"
+            className="w-20 max-[400px]:w-16 min-[450px]:w-28 object-contain"
           />
-          <span className="text-neutral-400 text-xs">Din digitale CMO - og AI-kollega!</span>
+          <span className="text-neutral-400 text-[10px] max-[400px]:hidden min-[450px]:text-xs">Din digitale CMO</span>
         </Link>
       </header>
 
@@ -148,9 +150,9 @@ export default function DashboardLayout({
         </aside>
 
         {/* Main content */}
-        <main className="flex-1 lg:pl-64">
-          <div className="p-6 lg:p-10">
-            <div className="max-w-5xl mx-auto">{children}</div>
+        <main className="flex-1 lg:pl-64 min-w-0">
+          <div className="p-3 max-[400px]:p-3 min-[401px]:p-4 min-[450px]:p-5 sm:p-6 lg:p-10">
+            <div className="max-w-5xl mx-auto w-full min-w-0">{children}</div>
           </div>
         </main>
       </div>

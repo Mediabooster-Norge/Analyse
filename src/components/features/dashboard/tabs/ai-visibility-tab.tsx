@@ -43,36 +43,33 @@ export function AiVisibilityTab({
   // Show "Coming soon" when feature is disabled
   if (!AI_VISIBILITY_ENABLED) {
     return (
-      <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-        <div className="p-6 border-b border-neutral-100">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-3">
-                <Eye className="h-4 w-4 text-neutral-600" />
-                AI-synlighet
-                <span className="px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-xs font-medium">
-                  Kommer snart
-                </span>
-              </h3>
-              <p className="text-sm text-neutral-600">Hvor godt AI-modeller kjenner til bedriften din</p>
-            </div>
+      <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
+        <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6 border-b border-neutral-100">
+          <div className="min-w-0">
+            <h3 className="inline-flex items-center gap-1.5 max-[400px]:gap-1.5 px-2 max-[400px]:px-2 min-[401px]:px-3 py-1 max-[400px]:py-1 min-[401px]:py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-xs max-[400px]:text-[11px] min-[401px]:text-sm font-medium mb-2 max-[400px]:mb-2">
+              <Eye className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-neutral-600" />
+              AI-synlighet
+              <span className="px-1.5 max-[400px]:px-1 min-[401px]:px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs font-medium">
+                Kommer snart
+              </span>
+            </h3>
+            <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs sm:text-sm text-neutral-600">Hvor godt AI kjenner bedriften din</p>
           </div>
         </div>
-        <div className="p-8">
-          <div className="max-w-lg mx-auto text-center space-y-6">
-            <div className="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-violet-100 to-blue-100 flex items-center justify-center">
-              <Sparkles className="w-7 h-7 text-violet-600" />
+        <div className="p-4 max-[400px]:p-3 min-[401px]:p-5 sm:p-8">
+          <div className="max-w-lg mx-auto text-center space-y-4 max-[400px]:space-y-4 min-[401px]:space-y-5 sm:space-y-6">
+            <div className="w-12 h-12 max-[400px]:w-10 max-[400px]:h-10 min-[401px]:w-12 min-[401px]:h-12 sm:w-14 sm:h-14 mx-auto rounded-xl bg-gradient-to-br from-violet-100 to-blue-100 flex items-center justify-center">
+              <Sparkles className="w-6 h-6 max-[400px]:w-5 max-[400px]:h-5 min-[401px]:w-6 sm:w-7 sm:h-7 text-violet-600" />
             </div>
             
-            <div className="space-y-2">
-              <h4 className="text-xl font-semibold text-neutral-900">AI-synlighet kommer snart!</h4>
-              <p className="text-neutral-600">
-                Vi jobber med å ferdigstille AI-synlighet. Snart kan du se om ChatGPT, Perplexity 
-                og andre AI-verktøy kjenner til og anbefaler bedriften din.
+            <div className="space-y-1.5 max-[400px]:space-y-1.5">
+              <h4 className="text-base max-[400px]:text-sm min-[401px]:text-lg sm:text-xl font-semibold text-neutral-900">AI-synlighet kommer snart!</h4>
+              <p className="text-xs max-[400px]:text-[11px] min-[401px]:text-sm sm:text-base text-neutral-600">
+                Vi jobber med AI-synlighet. Snart kan du se om ChatGPT, Perplexity og andre AI-verktøy kjenner til bedriften din.
               </p>
             </div>
 
-            <div className="grid sm:grid-cols-3 gap-4 pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-[400px]:gap-2 min-[401px]:gap-4 pt-3 sm:pt-4">
               <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
                 <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-green-100 flex items-center justify-center">
                   <Search className="w-5 h-5 text-green-600" />

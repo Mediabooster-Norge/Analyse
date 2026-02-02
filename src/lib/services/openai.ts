@@ -512,3 +512,167 @@ export async function checkAIVisibility(
     costUsd: totalCost,
   };
 }
+
+// ============================================================================
+// Image Relevance Analysis
+// ============================================================================
+
+interface ImageRelevanceInput {
+  imageUrl: string;
+  pageTitle: string;
+  pageDescription: string;
+  pageContent: string; // First ~500 chars of main content
+}
+
+interface ImageRelevanceOutput {
+  url: string;
+  isRelevant: boolean;
+  relevanceScore: number;
+  description: string;
+  feedback: string;
+}
+
+export async function analyzeImageRelevance(
+  images: ImageRelevanceInput[]
+): Promise<{
+  results: ImageRelevanceOutput[];
+  averageScore: number;
+  summary: string;
+  tokensUsed: number;
+  costUsd: number;
+}> {
+  if (images.length === 0) {
+    return {
+      results: [],
+      averageScore: 0,
+      summary: 'Ingen bilder å analysere',
+      tokensUsed: 0,
+      costUsd: 0,
+    };
+  }
+
+  const results: ImageRelevanceOutput[] = [];
+  let totalTokens = 0;
+  let totalCost = 0;
+
+  // Analyze up to 3 images to keep costs and time reasonable
+  const imagesToAnalyze = images.slice(0, 3);
+
+  for (const image of imagesToAnalyze) {
+    try {
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `Du er en SEO-ekspert som vurderer om bilder er relevante for innholdet på en nettside.
+Analyser bildet og vurder hvor relevant det er for sidens innhold.
+
+Svar i JSON-format:
+{
+  "description": "Kort beskrivelse av hva bildet viser (maks 50 ord)",
+  "isRelevant": true/false,
+  "relevanceScore": 0-100,
+  "feedback": "Kort tilbakemelding på norsk om bildets relevans og eventuelle forbedringer (maks 30 ord)"
+}
+
+Vurderingskriterier:
+- Er bildet relatert til sidens tema/innhold?
+- Støtter bildet budskapet på siden?
+- Er det et generisk stockbilde eller spesifikt for innholdet?
+- Ville bildet hjelpe brukeren forstå innholdet bedre?`
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `Sidetittel: ${image.pageTitle}
+Sidebeskrivelse: ${image.pageDescription}
+Innholdsutdrag: ${image.pageContent.slice(0, 300)}
+
+Vurder om dette bildet er relevant for innholdet:`
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: image.imageUrl,
+                  detail: 'low' // Use low detail to reduce costs
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 200,
+        temperature: 0.3,
+      });
+
+      const content = response.choices[0]?.message?.content || '{}';
+      
+      // Track tokens
+      const inputTokens = response.usage?.prompt_tokens || 0;
+      const outputTokens = response.usage?.completion_tokens || 0;
+      totalTokens += inputTokens + outputTokens;
+      totalCost += calculateCost('gpt-4o-mini', inputTokens, outputTokens);
+
+      // Parse response
+      try {
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          results.push({
+            url: image.imageUrl,
+            isRelevant: parsed.isRelevant ?? true,
+            relevanceScore: Math.min(100, Math.max(0, parsed.relevanceScore ?? 50)),
+            description: parsed.description || 'Kunne ikke analysere bildet',
+            feedback: parsed.feedback || 'Ingen tilbakemelding',
+          });
+        } else {
+          throw new Error('No JSON found');
+        }
+      } catch {
+        results.push({
+          url: image.imageUrl,
+          isRelevant: true,
+          relevanceScore: 50,
+          description: 'Kunne ikke analysere bildet',
+          feedback: 'Analyse feilet',
+        });
+      }
+    } catch (error) {
+      console.error(`Failed to analyze image ${image.imageUrl}:`, error);
+      results.push({
+        url: image.imageUrl,
+        isRelevant: true,
+        relevanceScore: 50,
+        description: 'Kunne ikke laste bildet',
+        feedback: 'Bildet kunne ikke analyseres (mulig CORS eller ugyldig URL)',
+      });
+    }
+  }
+
+  // Calculate average score
+  const averageScore = results.length > 0
+    ? Math.round(results.reduce((sum, r) => sum + r.relevanceScore, 0) / results.length)
+    : 0;
+
+  // Generate summary
+  let summary: string;
+  if (averageScore >= 80) {
+    summary = 'Bildene er godt tilpasset innholdet på siden.';
+  } else if (averageScore >= 60) {
+    summary = 'De fleste bildene er relevante, men noen kan forbedres.';
+  } else if (averageScore >= 40) {
+    summary = 'Flere bilder virker generiske eller lite relevante for innholdet.';
+  } else {
+    summary = 'Bildene bør byttes ut med mer relevante alternativer.';
+  }
+
+  return {
+    results,
+    averageScore,
+    summary,
+    tokensUsed: totalTokens,
+    costUsd: totalCost,
+  };
+}
