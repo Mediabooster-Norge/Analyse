@@ -269,6 +269,7 @@ export interface CompetitorResults {
       contentResults: { score: number; wordCount: number };
       securityResults: { score: number };
       overallScore: number;
+      pageSpeedResults?: PageSpeedResults;
     };
   }[];
   strengths: string[];

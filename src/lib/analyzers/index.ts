@@ -129,7 +129,7 @@ export async function runFullAnalysis(
           seoResults,
           contentResults,
           securityResults,
-          pageSpeedResults,
+          pageSpeedResults: pageSpeedResults ?? undefined,
           industry,
           targetKeywords,
         },
