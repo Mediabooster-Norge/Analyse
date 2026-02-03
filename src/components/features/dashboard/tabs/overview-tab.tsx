@@ -232,8 +232,8 @@ export function OverviewTab({
                       <Zap className="w-5 h-5 max-[400px]:w-4 max-[400px]:h-4 min-[401px]:w-5 sm:w-6 sm:h-6 text-neutral-400" />
                     </div>
                     <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Hastighet</p>
-                    <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-100 font-medium text-neutral-500">
-                      Kjør ny analyse
+                    <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium" title="Hastighet ble ikke målt denne gangen (tidsbegrensning eller feil). Resten av analysen er fullført.">
+                      Ikke målt
                     </span>
                   </>
                 )}

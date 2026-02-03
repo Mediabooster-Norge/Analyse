@@ -62,8 +62,9 @@ export async function runFullAnalysis(
 
   // Step 2: Run analyses in parallel
   // Security is domain-level, so reuse cached results if available (same domain)
-  // PageSpeed is also run in parallel (async API call)
+  // PageSpeed: cap at 22s so we stay under Vercel 60s limit (scrape + analyses ~15s, AI ~20s, buffer ~3s)
   console.log('Running analyses...');
+  const PAGE_SPEED_MAX_MS = 22_000;
   const [seoResults, contentResults, securityResults, pageSpeedResults] = await Promise.all([
     analyzeSEO($, url),
     Promise.resolve(analyzeContent($)),
@@ -72,8 +73,8 @@ export async function runFullAnalysis(
       : quickSecurityScan
         ? analyzeSecurityQuick(url, scrapedData.headers)
         : analyzeSecurity(url, scrapedData.headers),
-    analyzePageSpeed(url).catch((err) => {
-      console.error('PageSpeed analysis failed:', err);
+    analyzePageSpeed(url, { timeout: PAGE_SPEED_MAX_MS }).catch((err) => {
+      console.error('PageSpeed analysis failed or timed out:', err);
       return null;
     }),
   ]);
