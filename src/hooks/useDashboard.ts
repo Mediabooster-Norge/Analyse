@@ -11,6 +11,7 @@ import type {
   SelectedElement,
   KeywordSort,
   CompetitorSort,
+  CompetitorAnalysis,
   AIVisibilityData,
   ArticleSuggestion,
   GeneratedArticleResult,
@@ -682,7 +683,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
 
         if (willFetchCompetitors) {
           (async () => {
-            let competitors: Array<{ url: string; results: unknown }> = data.competitors ?? [];
+            let competitors: CompetitorAnalysis[] = data.competitors ?? [];
             for (let i = 0; i < competitorUrlsToFetch.length; i++) {
               try {
                 const res = await fetch('/api/analyze/competitor', {
@@ -692,7 +693,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
                 });
                 const body = res.ok ? await res.json() : null;
                 if (body?.competitor) {
-                  competitors = [...competitors, body.competitor];
+                  competitors = [...competitors, body.competitor as CompetitorAnalysis];
                   setState((prev) => ({
                     ...prev,
                     result: prev.result ? { ...prev.result, competitors } : null,

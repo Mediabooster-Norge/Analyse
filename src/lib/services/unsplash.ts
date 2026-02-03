@@ -123,7 +123,7 @@ export async function fetchFeaturedImage(suggestion: string): Promise<UnsplashPh
     const photo = data.results?.[0];
     const displayUrl = photo?.urls?.regular ?? photo?.urls?.small;
     const downloadUrl = photo?.urls?.full ?? photo?.urls?.regular ?? photo?.urls?.small;
-    if (!displayUrl || !photo.user) {
+    if (!displayUrl || !photo?.user) {
       if (process.env.NODE_ENV === 'development') {
         console.warn('[Unsplash] No results for query:', query, 'results count:', data.results?.length ?? 0);
       }
