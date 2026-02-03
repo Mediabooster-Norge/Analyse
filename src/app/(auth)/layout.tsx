@@ -8,14 +8,14 @@ export default function AuthLayout({
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col">
       {/* Header */}
-      <header className="p-4">
-        <Link href="/" className="flex items-center gap-3 w-fit">
+      <header className="p-4 sm:p-6">
+        <Link href="/" className="flex flex-col gap-0.5 w-fit">
           <img 
             src="/mediabooster-logo-darkgrey.avif" 
             alt="Mediabooster" 
-            className="h-8 w-auto"
+            className="h-5 sm:h-6 w-auto"
           />
-          <span className="font-bold text-xl">Din digitale CMO</span>
+          <span className="text-neutral-500 text-xs">Din digitale CMO</span>
         </Link>
       </header>
 

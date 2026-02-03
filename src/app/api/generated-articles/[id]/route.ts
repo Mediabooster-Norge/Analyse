@@ -21,7 +21,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from('generated_articles')
-    .select('id, title, content, website_url, website_name, created_at')
+    .select('id, title, content, website_url, website_name, meta_title, meta_description, featured_image_suggestion, featured_image_url, featured_image_attribution, created_at')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();

@@ -136,7 +136,7 @@ export async function checkPremiumStatus(user: User | null): Promise<{
 export const PREMIUM_LIMITS = {
   free: {
     monthlyAnalyses: 3,
-    competitors: 2,
+    competitors: 1,
     keywords: 10, // Max nøkkelord per analyse
     keywordUpdates: 2,
     competitorUpdates: 2,
@@ -145,7 +145,7 @@ export const PREMIUM_LIMITS = {
   },
   premium: {
     monthlyAnalyses: 999, // Unlimited
-    competitors: 5, // Reduced from 10 to stay within Vercel 60s timeout
+    competitors: 5, // Quick performance estimate for competitors (no PageSpeed API) keeps within 60s
     keywords: 50, // Max nøkkelord per analyse
     keywordUpdates: 999, // Unlimited
     competitorUpdates: 999, // Unlimited

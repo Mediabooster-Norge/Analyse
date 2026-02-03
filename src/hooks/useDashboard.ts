@@ -13,6 +13,7 @@ import type {
   CompetitorSort,
   AIVisibilityData,
   ArticleSuggestion,
+  GeneratedArticleResult,
 } from '@/types/dashboard';
 import { normalizeUrl } from '@/lib/utils/score-utils';
 
@@ -85,8 +86,19 @@ interface DashboardState {
   // Full article generation (1 free / 30 premium per month)
   remainingArticleGenerations: number;
   articleGenerationsLimit: number;
-  generatedArticle: string | null;
+  generatedArticleResult: GeneratedArticleResult | null;
   generatingArticleIndex: number | null;
+  
+  // Analysis history for trends
+  analysisHistory: Array<{
+    id: string;
+    createdAt: string;
+    overallScore: number;
+    seoScore: number;
+    contentScore: number;
+    securityScore: number;
+    performanceScore: number | null;
+  }>;
   
   // Update states
   updatingCompetitors: boolean;
@@ -175,8 +187,9 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     articleSuggestionsSavedAt: null,
     remainingArticleGenerations: 0,
     articleGenerationsLimit: ARTICLE_GENERATIONS_LIMIT,
-    generatedArticle: null,
+    generatedArticleResult: null,
     generatingArticleIndex: null,
+    analysisHistory: [],
     updatingCompetitors: false,
     updatingKeywords: false,
   });
@@ -322,6 +335,35 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             // Ignore errors loading saved suggestions
           }
 
+          // Fetch analysis history for trends (same website URL, up to last 10 analyses)
+          let analysisHistory: DashboardState['analysisHistory'] = [];
+          if (analysis.website_url) {
+            try {
+              const { data: historyData } = await supabase
+                .from('analyses')
+                .select('id, created_at, overall_score, seo_results, content_results, security_results, pagespeed_results')
+                .eq('user_id', user.id)
+                .eq('website_url', analysis.website_url)
+                .eq('status', 'completed')
+                .order('created_at', { ascending: false })
+                .limit(10);
+              
+              if (historyData && historyData.length > 0) {
+                analysisHistory = historyData.map((h) => ({
+                  id: h.id,
+                  createdAt: h.created_at,
+                  overallScore: h.overall_score || 0,
+                  seoScore: h.seo_results?.score || 0,
+                  contentScore: h.content_results?.score || 0,
+                  securityScore: h.security_results?.score || 0,
+                  performanceScore: h.pagespeed_results?.performance ?? null,
+                })).reverse(); // Reverse to show oldest first (for chart)
+              }
+            } catch {
+              // Ignore history fetch errors
+            }
+          }
+
           updateState({
             currentAnalysisId: analysis.id,
             companyUrl: analysis.website_url || null,
@@ -337,10 +379,12 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             keywords: loadedKeywords,
             articleSuggestions: savedArticleSuggestions,
             articleSuggestionsSavedAt: savedArticleSuggestionsAt,
+            analysisHistory,
             result: {
               seoResults: mergedSeoResults,
               contentResults: analysis.content_results || { score: 0, wordCount: 0 },
               securityResults: mergedSecurityResults,
+              pageSpeedResults: analysis.pagespeed_results || undefined,
               overallScore: analysis.overall_score || 0,
               competitors: analysis.competitor_results || undefined,
               aiSummary: analysis.ai_summary || undefined,
@@ -543,13 +587,27 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       clearTimeout(stepTimeout);
 
       if (!response.ok) {
-        const errorData = await response.json();
-        if (errorData.limitReached) {
-          updateState({ remainingAnalyses: 0, dialogOpen: false, subpageUrl: null });
-          toast.error(errorData.error || 'Du har brukt opp dine gratis analyser denne måneden');
+        const isTimeout = response.status === 504 || response.status === 503;
+        let errorMessage = 'Analyse feilet';
+        try {
+          const errorData = await response.json();
+          if (errorData.limitReached) {
+            updateState({ remainingAnalyses: 0, dialogOpen: false, subpageUrl: null });
+            toast.error(errorData.error || 'Du har brukt opp dine gratis analyser denne måneden');
+            return;
+          }
+          if (typeof errorData.error === 'string') errorMessage = errorData.error;
+        } catch {
+          // 502/504 often return HTML; use timeout message when appropriate
+          if (isTimeout) errorMessage = 'timeout';
+        }
+        if (isTimeout || errorMessage.toLowerCase().includes('timeout')) {
+          toast.error('Analysen tok for lang tid og ble avbrutt', {
+            description: 'Prøv å kjøre analysen på nytt. Ved mange konkurrenter kan du prøve med færre.',
+          });
           return;
         }
-        throw new Error(errorData.error || 'Analyse feilet');
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -565,7 +623,16 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       });
       toast.success('Analyse fullført!');
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'En feil oppstod');
+      const msg = error instanceof Error ? error.message : '';
+      const isTimeoutOrNetwork =
+        /timeout|timed out|network|failed to fetch|load failed/i.test(msg) || msg === '';
+      if (isTimeoutOrNetwork) {
+        toast.error('Analysen tok for lang tid eller ble avbrutt', {
+          description: 'Prøv å kjøre analysen på nytt. Ved mange konkurrenter kan du prøve med færre.',
+        });
+      } else {
+        toast.error(msg || 'En feil oppstod');
+      }
     } finally {
       clearTimeout(stepTimeout);
       updateState({ analyzing: false });
@@ -657,7 +724,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       toast.error('Du har brukt opp artikkelgenereringer denne måneden.');
       return;
     }
-    updateState({ generatingArticleIndex: index, generatedArticle: null });
+    updateState({ generatingArticleIndex: index, generatedArticleResult: null });
     try {
       const response = await fetch('/api/generate-article', {
         method: 'POST',
@@ -682,7 +749,16 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       }
       if (data.article) {
         updateState({
-          generatedArticle: data.article,
+          generatedArticleResult: {
+            title: data.title ?? suggestion.title.trim(),
+            article: data.article,
+            metaTitle: data.metaTitle,
+            metaDescription: data.metaDescription,
+            featuredImageSuggestion: data.featuredImageSuggestion,
+            featuredImageUrl: data.featuredImageUrl,
+            featuredImageAttribution: data.featuredImageAttribution,
+            featuredImageProfileUrl: data.featuredImageProfileUrl,
+          },
           remainingArticleGenerations: data.remaining ?? state.remainingArticleGenerations - 1,
         });
         toast.success('Artikkel generert!');
@@ -694,8 +770,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     }
   }, [state.remainingArticleGenerations, state.companyName, updateState]);
 
-  const setGeneratedArticle = useCallback((article: string | null) => {
-    updateState({ generatedArticle: article });
+  const setGeneratedArticle = useCallback((result: GeneratedArticleResult | null) => {
+    updateState({ generatedArticleResult: result });
   }, [updateState]);
 
   const fetchAISuggestion = useCallback(async (
@@ -943,10 +1019,11 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     fetchArticleSuggestions,
     remainingArticleGenerations: state.remainingArticleGenerations,
     articleGenerationsLimit: state.articleGenerationsLimit,
-    generatedArticle: state.generatedArticle,
+    generatedArticleResult: state.generatedArticleResult,
     generatingArticleIndex: state.generatingArticleIndex,
     fetchGenerateArticle,
     setGeneratedArticle,
+    analysisHistory: state.analysisHistory,
     startEditingCompetitors,
     addEditCompetitor,
     removeEditCompetitor,

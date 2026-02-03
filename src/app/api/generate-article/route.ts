@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 import { getPremiumStatusServer } from '@/lib/premium-server';
+import { fetchFeaturedImage } from '@/lib/services/unsplash';
 
 export const maxDuration = 45;
 
@@ -78,16 +79,13 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: 'system',
-          content: `Du er en erfaren innholdsforfatter og SEO-ekspert for norske nettsider. Skriv en fullstendig, publiseringsklar artikkel på norsk basert på tittel og begrunnelse.
+          content: `Du er en erfaren innholdsforfatter og SEO-ekspert for norske nettsider. Du svarer ALLTID med ett gyldig JSON-objekt, ingen annen tekst.
 
-VIKTIG: Vi er i år ${currentYear}. Bruk alltid ${currentYear} (ikke tidligere år) når du nevner år, trender, strategier eller «år X». Ikke skriv «2024» eller andre gamle år med mindre det er historisk kontekst.
-
-Krav:
-- Artikkelen skal være 600–1200 ord.
-- Bruk markdown: overskrifter (##, ###), avsnitt, lister der det passer.
-- Tone: profesjonell og leservennlig.
-- Inkluder et kort innledningsavsnitt og en avslutning med oppsummering eller call-to-action.
-- Ingen plassholdere eller [XXX] – skriv ferdig innhold.`,
+Returner et JSON-objekt med nøyaktig disse nøklene (alle strenger):
+- "article": Hele artikkelen i markdown (600–1200 ord). Bruk ##, ###, avsnitt, lister. Profesjonell tone. Innledning og avslutning med oppsummering/CTA. Vi er i år ${currentYear} – bruk ${currentYear}, ikke tidligere år. Ingen plassholdere.
+- "metaTitle": Forslått SEO-tittel (ca. 50–60 tegn).
+- "metaDescription": Forslått meta-beskrivelse (ca. 150–160 tegn, leservennlig og oppsummerende).
+- "featuredImageSuggestion": Kort beskrivelse for featured image – enten søkeord for stock (f.eks. "team meeting office") eller en setning som beskriver bildet (f.eks. "Bilde som viser person som arbeider på laptop"). Ett kort uttrykk eller én setning.`,
         },
         {
           role: 'user',
@@ -97,19 +95,55 @@ Tittel på artikkelen: ${title.trim()}
 
 Begrunnelse/mål med artikkelen: ${(rationale ?? '').trim() || 'Ingen begrunnelse oppgitt.'}
 
-Skriv hele artikkelen i markdown. Bruk ${currentYear} for år og trender.`,
+Returner JSON med article, metaTitle, metaDescription og featuredImageSuggestion.`,
         },
       ],
       temperature: 0.6,
-      max_tokens: 2500,
+      max_tokens: 2800,
+      response_format: { type: 'json_object' },
     });
 
-    const article = response.choices[0]?.message?.content?.trim();
-    if (!article) {
+    const raw = response.choices[0]?.message?.content?.trim();
+    if (!raw) {
       return NextResponse.json(
         { error: 'Kunne ikke generere artikkel' },
         { status: 500 }
       );
+    }
+
+    let article: string;
+    let metaTitle: string | undefined;
+    let metaDescription: string | undefined;
+    let featuredImageSuggestion: string | undefined;
+    try {
+      const parsed = JSON.parse(raw) as {
+        article?: string;
+        metaTitle?: string;
+        metaDescription?: string;
+        featuredImageSuggestion?: string;
+      };
+      article = typeof parsed.article === 'string' ? parsed.article.trim() : '';
+      if (!article) throw new Error('Mangler article');
+      metaTitle = typeof parsed.metaTitle === 'string' ? parsed.metaTitle.trim() : undefined;
+      metaDescription = typeof parsed.metaDescription === 'string' ? parsed.metaDescription.trim() : undefined;
+      featuredImageSuggestion = typeof parsed.featuredImageSuggestion === 'string' ? parsed.featuredImageSuggestion.trim() : undefined;
+    } catch {
+      return NextResponse.json(
+        { error: 'Kunne ikke tolke artikkeldata' },
+        { status: 500 }
+      );
+    }
+
+    let featuredImageUrl: string | undefined;
+    let featuredImageAttribution: string | undefined;
+    let featuredImageProfileUrl: string | undefined;
+    if (featuredImageSuggestion) {
+      const unsplash = await fetchFeaturedImage(featuredImageSuggestion);
+      if (unsplash) {
+        featuredImageUrl = unsplash.url;
+        featuredImageAttribution = unsplash.attribution;
+        featuredImageProfileUrl = unsplash.profileUrl;
+      }
     }
 
     const { error: insertError } = await supabase
@@ -132,6 +166,11 @@ Skriv hele artikkelen i markdown. Bruk ${currentYear} for år og trender.`,
         content: article,
         website_url: websiteUrl?.trim() || null,
         website_name: websiteName?.trim() || companyName?.trim() || null,
+        meta_title: metaTitle || null,
+        meta_description: metaDescription || null,
+        featured_image_suggestion: featuredImageSuggestion || null,
+        featured_image_url: featuredImageUrl || null,
+        featured_image_attribution: featuredImageAttribution || null,
       });
 
     if (articleInsertError) {
@@ -143,7 +182,14 @@ Skriv hele artikkelen i markdown. Bruk ${currentYear} for år og trender.`,
 
     return NextResponse.json({
       success: true,
+      title: title.trim(),
       article,
+      metaTitle: metaTitle || undefined,
+      metaDescription: metaDescription || undefined,
+      featuredImageSuggestion: featuredImageSuggestion || undefined,
+      featuredImageUrl: featuredImageUrl || undefined,
+      featuredImageAttribution: featuredImageAttribution || undefined,
+      featuredImageProfileUrl: featuredImageProfileUrl || undefined,
       remaining,
       limit,
     });

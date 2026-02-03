@@ -8,8 +8,14 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ScoreRing, SummaryCard, MetricCard } from '@/components/features/dashboard';
-import type { DashboardAnalysisResult, ArticleSuggestion } from '@/types/dashboard';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { ScoreRing, SummaryCard, MetricCard, ScoreTrendChart, SocialPreview } from '@/components/features/dashboard';
+import type { DashboardAnalysisResult, ArticleSuggestion, GeneratedArticleResult } from '@/types/dashboard';
 import {
   Search,
   TrendingUp,
@@ -31,6 +37,11 @@ import {
   Copy,
   PenLine,
   Loader2,
+  Zap,
+  Gauge,
+  Activity,
+  Share2,
+  Download,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
@@ -74,10 +85,19 @@ export interface OverviewTabProps {
   hasCompetitors: boolean;
   remainingArticleGenerations: number;
   articleGenerationsLimit: number;
-  generatedArticle: string | null;
+  generatedArticleResult: GeneratedArticleResult | null;
   generatingArticleIndex: number | null;
   fetchGenerateArticle: (suggestion: { title: string; rationale?: string }, index: number) => void;
-  setGeneratedArticle: (article: string | null) => void;
+  setGeneratedArticle: (result: GeneratedArticleResult | null) => void;
+  analysisHistory: Array<{
+    id: string;
+    createdAt: string;
+    overallScore: number;
+    seoScore: number;
+    contentScore: number;
+    securityScore: number;
+    performanceScore: number | null;
+  }>;
 }
 
 export function OverviewTab({
@@ -94,10 +114,11 @@ export function OverviewTab({
   hasCompetitors,
   remainingArticleGenerations,
   articleGenerationsLimit,
-  generatedArticle,
+  generatedArticleResult,
   generatingArticleIndex,
   fetchGenerateArticle,
   setGeneratedArticle,
+  analysisHistory,
 }: OverviewTabProps) {
   const copyTitle = (title: string) => {
     navigator.clipboard.writeText(title).then(
@@ -106,9 +127,16 @@ export function OverviewTab({
     );
   };
   const copyArticle = () => {
-    if (!generatedArticle) return;
-    navigator.clipboard.writeText(generatedArticle).then(
+    if (!generatedArticleResult?.article) return;
+    navigator.clipboard.writeText(generatedArticleResult.article).then(
       () => toast.success('Artikkel kopiert'),
+      () => toast.error('Kunne ikke kopiere')
+    );
+  };
+  const copyMeta = (label: string, text: string) => {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(
+      () => toast.success(`${label} kopiert`),
       () => toast.error('Kunne ikke kopiere')
     );
   };
@@ -170,7 +198,7 @@ export function OverviewTab({
             </div>
           </div>
           <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-5">
-            <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 max-[400px]:gap-1 min-[401px]:gap-2 sm:gap-4 max-[400px]:scale-[0.85] max-[400px]:origin-center">
+            <div className={`grid grid-cols-3 ${AI_VISIBILITY_ENABLED ? 'sm:grid-cols-6' : 'sm:grid-cols-5'} gap-1 max-[400px]:gap-1 min-[401px]:gap-2 sm:gap-3 max-[400px]:scale-[0.85] max-[400px]:origin-center`}>
               <div className="text-center min-w-0">
                 <ScoreRing score={result.overallScore} label="Totalt" size="md" showStatus />
                 <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Samlet</p>
@@ -188,34 +216,46 @@ export function OverviewTab({
                 <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Trygghet</p>
               </div>
               <div className="text-center min-w-0">
-                {AI_VISIBILITY_ENABLED ? (
+                {result.pageSpeedResults && result.pageSpeedResults.performance > 0 ? (
                   <>
-                    <ScoreRing 
-                      score={result.aiVisibility?.score ?? 0} 
-                      label="AI" 
-                      size="md" 
-                      showStatus={isPremium} 
-                    />
-                    <p className="text-xs text-neutral-500 mt-1">AI-synlighet</p>
-                    {!isPremium && (
-                      <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-neutral-100 text-[10px] font-medium text-neutral-500">
-                        <Lock className="h-2.5 w-2.5" />
-                        Premium
+                    <ScoreRing score={result.pageSpeedResults.performance} label="Speed" size="md" showStatus />
+                    <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Hastighet</p>
+                    {!result.pageSpeedResults.isEstimate && (
+                      <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[8px] min-[401px]:text-[9px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+                        Full PageSpeed
                       </span>
                     )}
                   </>
                 ) : (
                   <>
-                    <div className="w-12 h-12 max-[400px]:w-10 max-[400px]:h-10 min-[401px]:w-14 min-[401px]:h-14 sm:w-16 sm:h-16 mx-auto rounded-full bg-gradient-to-br from-violet-50 to-blue-50 border-2 max-[400px]:border-2 min-[401px]:border-4 border-violet-100 flex items-center justify-center">
-                      <Sparkles className="w-5 h-5 max-[400px]:w-4 max-[400px]:h-4 min-[401px]:w-5 sm:w-6 sm:h-6 text-violet-400" />
+                    <div className="w-12 h-12 max-[400px]:w-10 max-[400px]:h-10 min-[401px]:w-14 min-[401px]:h-14 sm:w-16 sm:h-16 mx-auto rounded-full bg-neutral-100 border-2 max-[400px]:border-2 min-[401px]:border-4 border-neutral-200 flex items-center justify-center">
+                      <Zap className="w-5 h-5 max-[400px]:w-4 max-[400px]:h-4 min-[401px]:w-5 sm:w-6 sm:h-6 text-neutral-400" />
                     </div>
-                    <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">AI-synlighet</p>
-                    <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-violet-50 font-medium text-violet-600">
-                      Kommer snart
+                    <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Hastighet</p>
+                    <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-neutral-100 font-medium text-neutral-500">
+                      Kjør ny analyse
                     </span>
                   </>
                 )}
               </div>
+              {/* AI-synlighet - only show when feature is enabled */}
+              {AI_VISIBILITY_ENABLED && (
+                <div className="text-center min-w-0">
+                  <ScoreRing 
+                    score={result.aiVisibility?.score ?? 0} 
+                    label="AI" 
+                    size="md" 
+                    showStatus={isPremium} 
+                  />
+                  <p className="text-xs text-neutral-500 mt-1">AI-synlighet</p>
+                  {!isPremium && (
+                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-neutral-100 text-[10px] font-medium text-neutral-500">
+                      <Lock className="h-2.5 w-2.5" />
+                      Premium
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -232,11 +272,40 @@ export function OverviewTab({
           if (!result.seoResults.meta.ogTags.description) issues.push({ label: 'Open Graph', desc: 'Mangler OG-beskrivelse', priority: 'low', category: 'seo' });
           if (!result.seoResults.meta.canonical) issues.push({ label: 'Canonical URL', desc: 'Mangler canonical tag', priority: 'medium', category: 'seo' });
           if (result.contentResults.wordCount < 300) issues.push({ label: 'Innhold', desc: 'For lite tekst', priority: 'medium', category: 'content' });
+          if (result.contentResults.readability && result.contentResults.readability.lixScore > 44) {
+            // LIX levels: <25 very easy, 25-34 easy, 35-44 moderate, 45-54 difficult (faglitteratur), >55 very difficult
+            const lixScore = result.contentResults.readability.lixScore;
+            if (lixScore > 55) {
+              issues.push({ label: 'Lesbarhet', desc: 'Meget vanskelig tekst', priority: 'high', category: 'content' });
+            } else {
+              issues.push({ label: 'Lesbarhet', desc: 'Vanskelig tekst (faglitteratur)', priority: 'medium', category: 'content' });
+            }
+          }
           if (result.seoResults.headings.h2.count === 0) issues.push({ label: 'H2-overskrifter', desc: 'Mangler underoverskrifter', priority: 'low', category: 'content' });
           if (result.seoResults.images.withoutAlt > 0) issues.push({ label: 'Bilder', desc: `${result.seoResults.images.withoutAlt} mangler alt-tekst`, priority: 'low', category: 'seo' });
           if (result.securityResults.score < 60) issues.push({ label: 'Sikkerhet', desc: 'Lav sikkerhetsscore', priority: 'medium', category: 'security' });
           if (!result.securityResults.headers.strictTransportSecurity) issues.push({ label: 'HSTS', desc: 'Mangler HSTS-header', priority: 'medium', category: 'security' });
           if (!result.securityResults.headers.contentSecurityPolicy) issues.push({ label: 'CSP', desc: 'Mangler Content Security Policy', priority: 'low', category: 'security' });
+          // Performance / PageSpeed issues (only LCP/CLS when full analysis, not estimate)
+          if (result.pageSpeedResults) {
+            if (result.pageSpeedResults.performance < 50) {
+              issues.push({ label: 'Ytelse', desc: `Kritisk lav score (${result.pageSpeedResults.performance}/100)`, priority: 'high', category: 'performance' });
+            } else if (result.pageSpeedResults.performance < 90) {
+              issues.push({ label: 'Ytelse', desc: `Kan forbedres (${result.pageSpeedResults.performance}/100)`, priority: 'medium', category: 'performance' });
+            }
+            if (!result.pageSpeedResults.isEstimate) {
+              if (result.pageSpeedResults.coreWebVitals.lcp > 4000) {
+                issues.push({ label: 'LCP', desc: 'Treg innlasting av hovedinnhold', priority: 'high', category: 'performance' });
+              } else if (result.pageSpeedResults.coreWebVitals.lcp > 2500) {
+                issues.push({ label: 'LCP', desc: 'Moderat innlastingstid', priority: 'medium', category: 'performance' });
+              }
+              if (result.pageSpeedResults.coreWebVitals.cls > 0.25) {
+                issues.push({ label: 'CLS', desc: 'Ustabilt layout', priority: 'high', category: 'performance' });
+              } else if (result.pageSpeedResults.coreWebVitals.cls > 0.1) {
+                issues.push({ label: 'CLS', desc: 'Noe layoutforskyvning', priority: 'medium', category: 'performance' });
+              }
+            }
+          }
           // Only show AI visibility issues if feature is enabled
           if (AI_VISIBILITY_ENABLED && result.aiVisibility && result.aiVisibility.score < 50) issues.push({ label: 'AI-synlighet', desc: 'Lav AI-synlighet', priority: 'medium', category: 'ai' });
 
@@ -282,6 +351,30 @@ export function OverviewTab({
         })()}
       </div>
 
+      {/* Score Trend Chart - Accordion, closed by default */}
+      {analysisHistory.length > 0 && (
+        <Accordion type="single" collapsible className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
+          <AccordionItem value="trend" className="border-none">
+            <AccordionTrigger className="px-3 max-[400px]:px-2 min-[401px]:px-4 sm:px-5 py-3 hover:no-underline hover:bg-neutral-50">
+              <div className="flex items-center gap-2 text-left">
+                <TrendingUp className="h-4 w-4 text-neutral-500 shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-neutral-900 text-sm max-[400px]:text-xs min-[401px]:text-base">
+                    Score-utvikling over tid
+                  </h3>
+                  <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs sm:text-sm text-neutral-500 font-normal">
+                    {analysisHistory.length} analyse{analysisHistory.length !== 1 ? 'r' : ''} registrert
+                  </p>
+                </div>
+              </div>
+            </AccordionTrigger>
+            <AccordionContent className="px-3 max-[400px]:px-2 min-[401px]:px-4 sm:px-6 pb-4">
+              <ScoreTrendChart history={analysisHistory} currentScore={result.overallScore} />
+            </AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      )}
+
       {/* Detailed Metrics */}
       <div data-section="detailed-metrics" className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
         <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6 border-b border-neutral-100">
@@ -325,11 +418,28 @@ export function OverviewTab({
               <MetricCard
                 icon={Type}
                 title="H1-overskrift"
-                description={result.seoResults.headings.h1.count === 1 ? 'Én H1' : result.seoResults.headings.h1.count === 0 ? 'Mangler' : 'Flere H1'}
-                value={result.seoResults.headings.h1.contents[0] ?? (result.seoResults.headings.h1.count > 1 ? `${result.seoResults.headings.h1.count} H1-er` : '—')}
+                description={result.seoResults.headings.h1.count === 1 ? 'Én H1' : result.seoResults.headings.h1.count === 0 ? 'Mangler' : `${result.seoResults.headings.h1.count} H1-er funnet`}
+                value={
+                  result.seoResults.headings.h1.count === 0 
+                    ? '—' 
+                    : result.seoResults.headings.h1.count === 1
+                      ? result.seoResults.headings.h1.contents[0]
+                      : result.seoResults.headings.h1.contents.slice(0, 3).map((h1, i) => `${i + 1}. ${h1}`).join(' • ') + (result.seoResults.headings.h1.count > 3 ? ` (+${result.seoResults.headings.h1.count - 3} til)` : '')
+                }
                 recommendation={result.seoResults.headings.h1.count === 1 ? 'Bra' : result.seoResults.headings.h1.count === 0 ? 'Bruk én H1 på siden' : 'Bruk kun én H1'}
                 status={result.seoResults.headings.h1.count === 1 ? 'good' : result.seoResults.headings.h1.count === 0 ? 'bad' : 'warning'}
-                onClick={() => fetchAISuggestion('H1-overskrift', result.seoResults.headings.h1.contents[0] ?? 'Mangler', result.seoResults.headings.h1.count === 1 ? 'good' : 'bad', result.seoResults.headings.h1.count === 0 ? 'Mangler H1.' : result.seoResults.headings.h1.count > 1 ? 'Flere H1-er funnet.' : undefined)}
+                onClick={() => fetchAISuggestion(
+                  'H1-overskrift',
+                  result.seoResults.headings.h1.count > 1
+                    ? result.seoResults.headings.h1.contents.map((h1, i) => `${i + 1}. "${h1}"`).join('\n')
+                    : result.seoResults.headings.h1.contents[0] ?? 'Mangler',
+                  result.seoResults.headings.h1.count === 1 ? 'good' : 'bad',
+                  result.seoResults.headings.h1.count === 0 
+                    ? 'Mangler H1-overskrift på siden.' 
+                    : result.seoResults.headings.h1.count > 1 
+                      ? `Siden har ${result.seoResults.headings.h1.count} H1-overskrifter. Det bør kun være én H1 per side for optimal SEO.`
+                      : undefined
+                )}
               />
               <MetricCard
                 icon={Type}
@@ -384,6 +494,40 @@ export function OverviewTab({
                 onClick={() => fetchAISuggestion('Ordtelling', `${result.contentResults.wordCount} ord`, result.contentResults.wordCount >= 300 ? 'good' : 'warning', result.contentResults.wordCount < 300 ? 'Under 300 ord kan begrense SEO-potensialet.' : undefined)}
               />
               <MetricCard
+                icon={BarChart3}
+                title="Lesbarhet (LIX)"
+                description={result.contentResults.readability ? `LIX ${result.contentResults.readability.lixScore}` : 'Ikke beregnet'}
+                value={result.contentResults.readability?.lixLevel ?? 'Ikke nok tekst'}
+                recommendation={
+                  result.contentResults.readability 
+                    ? result.contentResults.readability.lixScore >= 30 && result.contentResults.readability.lixScore <= 50 
+                      ? 'God lesbarhet' 
+                      : result.contentResults.readability.lixScore < 30 
+                        ? 'Veldig enkel tekst'
+                        : 'Kan forenkles'
+                    : 'Mer tekst trengs'
+                }
+                status={
+                  result.contentResults.readability 
+                    ? result.contentResults.readability.lixScore >= 30 && result.contentResults.readability.lixScore <= 50 
+                      ? 'good' 
+                      : result.contentResults.readability.lixScore >= 25 && result.contentResults.readability.lixScore <= 55 
+                        ? 'warning'
+                        : 'bad'
+                    : 'warning'
+                }
+                onClick={() => fetchAISuggestion(
+                  'Lesbarhet (LIX)',
+                  result.contentResults.readability 
+                    ? `LIX ${result.contentResults.readability.lixScore} – ${result.contentResults.readability.lixLevel}` 
+                    : 'Ikke beregnet',
+                  result.contentResults.readability && result.contentResults.readability.lixScore >= 30 && result.contentResults.readability.lixScore <= 50 ? 'good' : 'warning',
+                  result.contentResults.readability 
+                    ? `Gjennomsnittlig ${result.contentResults.readability.avgWordsPerSentence} ord per setning. Gjennomsnittlig ordlengde: ${result.contentResults.readability.avgWordLength} tegn.`
+                    : 'Ikke nok tekst til å beregne lesbarhet.'
+                )}
+              />
+              <MetricCard
                 icon={Link2}
                 title="Interne lenker"
                 description={`${result.seoResults.links.internal.count} lenker`}
@@ -400,6 +544,36 @@ export function OverviewTab({
                 recommendation={result.seoResults.links.external.count > 0 ? 'Bra' : 'Vurder kilder'}
                 status={result.seoResults.links.external.count > 0 ? 'good' : 'warning'}
                 onClick={() => fetchAISuggestion('Eksterne lenker', `${result.seoResults.links.external.count} eksterne lenker`, result.seoResults.links.external.count > 0 ? 'good' : 'warning', result.seoResults.links.external.count === 0 ? 'Eksterne lenker til troverdige kilder kan styrke innholdet.' : undefined)}
+              />
+            </div>
+          </div>
+
+          {/* Social Preview */}
+          <div>
+            <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Share2 className="w-3.5 h-3.5" />
+              Social Media Forhåndsvisning
+            </h4>
+            <div className="rounded-xl border border-neutral-200 bg-white p-4">
+              <SocialPreview
+                url={url}
+                pageTitle={result.seoResults.meta.title.content}
+                pageDescription={result.seoResults.meta.description.content}
+                ogTags={result.seoResults.meta.ogTags}
+                onGetTips={() => {
+                  const missing = [
+                    !result.seoResults.meta.ogTags.title && 'og:title',
+                    !result.seoResults.meta.ogTags.description && 'og:description',
+                    !result.seoResults.meta.ogTags.image && 'og:image'
+                  ].filter(Boolean);
+                  const allSet = missing.length === 0;
+                  fetchAISuggestion(
+                    'Open Graph / Social Media',
+                    allSet ? 'Alle OG-tagger er satt' : `Mangler: ${missing.join(', ')}`,
+                    allSet ? 'good' : 'warning',
+                    `URL: ${url}. OG-title: ${result.seoResults.meta.ogTags.title || 'ikke satt'}. OG-description: ${result.seoResults.meta.ogTags.description || 'ikke satt'}. OG-image: ${result.seoResults.meta.ogTags.image ? 'satt' : 'ikke satt'}. Gi konkrete tips for å forbedre deling på sosiale medier.`
+                  );
+                }}
               />
             </div>
           </div>
@@ -465,6 +639,115 @@ export function OverviewTab({
                 status={result.securityResults.headers.referrerPolicy ? 'good' : 'warning'}
                 onClick={() => fetchAISuggestion('Referrer-Policy', result.securityResults.headers.referrerPolicy ? 'Satt' : 'Mangler', result.securityResults.headers.referrerPolicy ? 'good' : 'warning', !result.securityResults.headers.referrerPolicy ? 'Mangler Referrer-Policy header.' : undefined)}
               />
+            </div>
+          </div>
+
+          {/* Performance / Core Web Vitals */}
+          <div>
+            <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2 flex items-center gap-2">
+              <Zap className="w-3.5 h-3.5" />
+              Ytelse (Core Web Vitals)
+            </h4>
+            <p className="text-[10px] sm:text-xs text-neutral-500 mb-3">
+              Din nettside måles med full PageSpeed-analyse. Konkurrenter får et raskt ytelsesestimat (responstid + ressurser).
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+              <MetricCard
+                icon={Gauge}
+                title={result.pageSpeedResults?.isEstimate ? 'Ytelsesestimat' : 'Performance (PageSpeed)'}
+                description={result.pageSpeedResults ? `${result.pageSpeedResults.performance}/100` : 'Ikke målt'}
+                value={
+                  result.pageSpeedResults 
+                    ? result.pageSpeedResults.performance >= 90 
+                      ? 'Utmerket ytelse' 
+                      : result.pageSpeedResults.performance >= 50 
+                        ? 'Trenger forbedring'
+                        : 'Dårlig ytelse'
+                    : 'Kjør ny analyse for å måle'
+                }
+                recommendation={
+                  result.pageSpeedResults
+                    ? result.pageSpeedResults.performance >= 90 ? 'Utmerket' : result.pageSpeedResults.performance >= 50 ? 'Kan forbedres' : 'Kritisk'
+                    : 'Ikke tilgjengelig'
+                }
+                status={
+                  result.pageSpeedResults
+                    ? result.pageSpeedResults.performance >= 90 ? 'good' : result.pageSpeedResults.performance >= 50 ? 'warning' : 'bad'
+                    : 'warning'
+                }
+                onClick={() => fetchAISuggestion(
+                  'Performance Score',
+                  result.pageSpeedResults ? `${result.pageSpeedResults.performance}/100` : 'Ikke målt',
+                  result.pageSpeedResults && result.pageSpeedResults.performance >= 90 ? 'good' : 'warning',
+                  result.pageSpeedResults 
+                    ? `Performance score på ${result.pageSpeedResults.performance}. Accessibility: ${result.pageSpeedResults.accessibility}, Best Practices: ${result.pageSpeedResults.bestPractices}.`
+                    : 'PageSpeed-analyse ikke tilgjengelig.'
+                )}
+              />
+              {!result.pageSpeedResults?.isEstimate && (
+              <MetricCard
+                icon={Activity}
+                title="LCP (Largest Contentful Paint)"
+                description={result.pageSpeedResults?.coreWebVitals ? `${(result.pageSpeedResults.coreWebVitals.lcp / 1000).toFixed(1)}s` : 'Ikke målt'}
+                value={
+                  result.pageSpeedResults?.coreWebVitals
+                    ? result.pageSpeedResults.coreWebVitals.lcp <= 2500
+                      ? 'Bra – innhold lastes raskt'
+                      : result.pageSpeedResults.coreWebVitals.lcp <= 4000
+                        ? 'Moderat – kan forbedres'
+                        : 'Tregt – innhold lastes sent'
+                    : 'Ikke tilgjengelig'
+                }
+                recommendation={
+                  result.pageSpeedResults?.coreWebVitals
+                    ? result.pageSpeedResults.coreWebVitals.lcp <= 2500 ? 'Under 2.5s' : result.pageSpeedResults.coreWebVitals.lcp <= 4000 ? 'Under 4s anbefalt' : 'Må forbedres'
+                    : 'Ikke tilgjengelig'
+                }
+                status={
+                  result.pageSpeedResults?.coreWebVitals
+                    ? result.pageSpeedResults.coreWebVitals.lcp <= 2500 ? 'good' : result.pageSpeedResults.coreWebVitals.lcp <= 4000 ? 'warning' : 'bad'
+                    : 'warning'
+                }
+                onClick={() => fetchAISuggestion(
+                  'LCP (Largest Contentful Paint)',
+                  result.pageSpeedResults?.coreWebVitals ? `${(result.pageSpeedResults.coreWebVitals.lcp / 1000).toFixed(1)} sekunder` : 'Ikke målt',
+                  result.pageSpeedResults?.coreWebVitals && result.pageSpeedResults.coreWebVitals.lcp <= 2500 ? 'good' : 'warning',
+                  'LCP måler hvor lang tid det tar før det største synlige elementet lastes. Mål: under 2.5 sekunder.'
+                )}
+              />
+              )}
+              {!result.pageSpeedResults?.isEstimate && (
+              <MetricCard
+                icon={Activity}
+                title="CLS (Cumulative Layout Shift)"
+                description={result.pageSpeedResults?.coreWebVitals ? result.pageSpeedResults.coreWebVitals.cls.toFixed(3) : 'Ikke målt'}
+                value={
+                  result.pageSpeedResults?.coreWebVitals
+                    ? result.pageSpeedResults.coreWebVitals.cls <= 0.1
+                      ? 'Stabilt layout – ingen hopping'
+                      : result.pageSpeedResults.coreWebVitals.cls <= 0.25
+                        ? 'Noe layoutforskyvning'
+                        : 'Ustabilt – elementer hopper rundt'
+                    : 'Ikke tilgjengelig'
+                }
+                recommendation={
+                  result.pageSpeedResults?.coreWebVitals
+                    ? result.pageSpeedResults.coreWebVitals.cls <= 0.1 ? 'Under 0.1' : result.pageSpeedResults.coreWebVitals.cls <= 0.25 ? 'Under 0.25 anbefalt' : 'Må forbedres'
+                    : 'Ikke tilgjengelig'
+                }
+                status={
+                  result.pageSpeedResults?.coreWebVitals
+                    ? result.pageSpeedResults.coreWebVitals.cls <= 0.1 ? 'good' : result.pageSpeedResults.coreWebVitals.cls <= 0.25 ? 'warning' : 'bad'
+                    : 'warning'
+                }
+                onClick={() => fetchAISuggestion(
+                  'CLS (Cumulative Layout Shift)',
+                  result.pageSpeedResults?.coreWebVitals ? result.pageSpeedResults.coreWebVitals.cls.toFixed(3) : 'Ikke målt',
+                  result.pageSpeedResults?.coreWebVitals && result.pageSpeedResults.coreWebVitals.cls <= 0.1 ? 'good' : 'warning',
+                  'CLS måler visuell stabilitet – hvor mye elementer flytter seg under lasting. Mål: under 0.1.'
+                )}
+              />
+              )}
             </div>
           </div>
 
@@ -799,21 +1082,136 @@ export function OverviewTab({
       </Dialog>
 
       {/* Modal: generert artikkel */}
-      <Dialog open={!!generatedArticle} onOpenChange={(open) => !open && setGeneratedArticle(null)}>
+      <Dialog open={!!generatedArticleResult} onOpenChange={(open) => !open && setGeneratedArticle(null)}>
         <DialogContent
           showCloseButton
           className="sm:max-w-5xl max-h-[90vh] flex flex-col gap-0 p-0 overflow-hidden"
         >
           <DialogHeader className="shrink-0 px-6 pt-6 pb-4 border-b border-neutral-100">
             <DialogTitle className="text-lg font-semibold">Generert artikkel</DialogTitle>
-            <div className="flex gap-2 mt-3">
+            <div className="flex flex-wrap gap-2 mt-3">
               <Button type="button" variant="outline" size="sm" onClick={copyArticle} className="rounded-lg text-xs">
                 <Copy className="h-3.5 w-3.5 mr-1.5" />
                 Kopier artikkel
               </Button>
             </div>
           </DialogHeader>
-          <div className="flex-1 overflow-y-auto px-6 py-5 min-h-0">
+          <div className="flex-1 overflow-y-auto px-6 py-5 min-h-0 space-y-6">
+            {/* Hero: tittel + forslått featured image */}
+            {generatedArticleResult && (
+              <>
+                <section className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4 sm:p-5">
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-3">Artikkel og bilde</h2>
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">{generatedArticleResult.title}</h3>
+                  {(generatedArticleResult.featuredImageUrl || generatedArticleResult.featuredImageSuggestion) && (
+                    <div className="mt-3 space-y-2">
+                      {generatedArticleResult.featuredImageUrl && (
+                        <div className="rounded-lg overflow-hidden border border-neutral-200 bg-white">
+                          <div className="max-h-[420px] flex items-center justify-center bg-neutral-100">
+                            <img
+                              src={generatedArticleResult.featuredImageUrl}
+                              alt="Forslått featured image"
+                              className="w-full h-auto max-h-[420px] object-contain"
+                            />
+                          </div>
+                          <div className="px-3 py-2 flex flex-wrap items-center justify-between gap-2 bg-neutral-50 border-t border-neutral-100">
+                            {generatedArticleResult.featuredImageAttribution && (
+                              <a
+                                href={generatedArticleResult.featuredImageProfileUrl ?? 'https://unsplash.com/?utm_source=analyseverktyy&utm_medium=referral'}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] text-neutral-600 hover:underline"
+                              >
+                                {generatedArticleResult.featuredImageAttribution}
+                              </a>
+                            )}
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="rounded-lg text-xs h-8"
+                              asChild
+                            >
+                              <a
+                                href={generatedArticleResult.featuredImageUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download
+                              >
+                                <Download className="h-3.5 w-3.5 mr-1.5" />
+                                Last ned
+                              </a>
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      {generatedArticleResult.featuredImageSuggestion && !generatedArticleResult.featuredImageUrl && (
+                        <div className="flex items-start gap-2 p-3 rounded-lg bg-white border border-neutral-100">
+                          <Image className="h-4 w-4 text-neutral-500 shrink-0 mt-0.5" aria-hidden />
+                          <div>
+                            <p className="text-xs font-medium text-neutral-600 mb-0.5">Forslått featured image</p>
+                            <p className="text-sm text-neutral-800">{generatedArticleResult.featuredImageSuggestion}</p>
+                            <p className="text-[11px] text-neutral-500 mt-1">Bruk som søkeord på stock-bilder eller beskrivelse til illustratør.</p>
+                          </div>
+                        </div>
+                      )}
+                      {generatedArticleResult.featuredImageSuggestion && generatedArticleResult.featuredImageUrl && (
+                        <p className="text-[11px] text-neutral-500">Søkeforslag: {generatedArticleResult.featuredImageSuggestion}</p>
+                      )}
+                    </div>
+                  )}
+                </section>
+                {/* SEO: meta tittel og beskrivelse */}
+                {(generatedArticleResult.metaTitle || generatedArticleResult.metaDescription) && (
+                  <section className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4 sm:p-5">
+                    <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-3">SEO og deling</h2>
+                    <div className="space-y-3">
+                      {generatedArticleResult.metaTitle && (
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                          <label className="text-xs font-medium text-neutral-600 shrink-0 sm:w-28">Meta-tittel</label>
+                          <div className="flex-1 flex items-center gap-2 min-w-0">
+                            <p className="text-sm text-neutral-800 truncate flex-1" title={generatedArticleResult.metaTitle}>
+                              {generatedArticleResult.metaTitle}
+                            </p>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="shrink-0 h-8 w-8 p-0 rounded-lg"
+                              onClick={() => copyMeta('Meta-tittel', generatedArticleResult!.metaTitle!)}
+                              title="Kopier meta-tittel"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                      {generatedArticleResult.metaDescription && (
+                        <div className="flex flex-col sm:flex-row sm:items-start gap-2">
+                          <label className="text-xs font-medium text-neutral-600 shrink-0 sm:w-28">Meta-beskrivelse</label>
+                          <div className="flex-1 flex items-start gap-2 min-w-0">
+                            <p className="text-sm text-neutral-700 flex-1 line-clamp-3" title={generatedArticleResult.metaDescription}>
+                              {generatedArticleResult.metaDescription}
+                            </p>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="shrink-0 h-8 w-8 p-0 rounded-lg"
+                              onClick={() => copyMeta('Meta-beskrivelse', generatedArticleResult!.metaDescription!)}
+                              title="Kopier meta-beskrivelse"
+                            >
+                              <Copy className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                )}
+              </>
+            )}
+            {/* Artikkeltekst */}
             <article className="prose prose-neutral prose-sm sm:prose-base max-w-none">
               <ReactMarkdown
                 components={{
@@ -827,7 +1225,7 @@ export function OverviewTab({
                   strong: ({ children }) => <strong className="font-semibold text-neutral-900">{children}</strong>,
                 }}
               >
-                {generatedArticle ?? ''}
+                {generatedArticleResult?.article ?? ''}
               </ReactMarkdown>
             </article>
           </div>

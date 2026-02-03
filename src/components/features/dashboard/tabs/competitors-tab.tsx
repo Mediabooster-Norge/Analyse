@@ -285,26 +285,34 @@ export function CompetitorsTab({
                           </button>
                         </th>
                         <th className="text-center py-3 px-2 sm:px-3 font-medium text-neutral-600 text-xs sm:text-sm">
-                      {AI_VISIBILITY_ENABLED ? (
-                        <button
-                          onClick={() => setCompetitorSort(competitorSort?.column === 'aiVisibility' ? { column: 'aiVisibility', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'aiVisibility', direction: 'desc' })}
-                          className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors cursor-pointer"
-                        >
-                          AI-søk
-                          {competitorSort?.column === 'aiVisibility' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />}
-                        </button>
-                      ) : (
-                        <span className="inline-flex flex-col items-center gap-0.5">
-                          AI-søk
-                          <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-600 font-medium">Snart</span>
-                        </span>
-                      )}
-                    </th>
+                          <button
+                            onClick={() => setCompetitorSort(competitorSort?.column === 'speed' ? { column: 'speed', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'speed', direction: 'desc' })}
+                            className="inline-flex flex-col items-center gap-0.5 hover:text-neutral-900 transition-colors cursor-pointer"
+                          >
+                            <span className="inline-flex items-center gap-1">
+                              Speed
+                              {competitorSort?.column === 'speed' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-neutral-300" />}
+                            </span>
+                            <span className="text-[9px] font-normal text-neutral-400">Din: PageSpeed · Konk.: est.</span>
+                          </button>
+                        </th>
+                        {AI_VISIBILITY_ENABLED && (
+                          <th className="text-center py-3 px-2 sm:px-3 font-medium text-neutral-600 text-xs sm:text-sm">
+                            <button
+                              onClick={() => setCompetitorSort(competitorSort?.column === 'aiVisibility' ? { column: 'aiVisibility', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'aiVisibility', direction: 'desc' })}
+                              className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors cursor-pointer"
+                            >
+                              AI-søk
+                              {competitorSort?.column === 'aiVisibility' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />}
+                            </button>
+                          </th>
+                        )}
                   </tr>
                 </thead>
                 <tbody>
                   {(() => {
                     const userAiScore = result.aiVisibility?.score ?? null;
+                    const userSpeedScore = result.pageSpeedResults?.performance ?? null;
                     const allEntries = [
                       {
                         type: 'user' as const,
@@ -314,6 +322,7 @@ export function CompetitorsTab({
                         seo: result.seoResults.score,
                         content: result.contentResults.score,
                         security: result.securityResults.score,
+                        speed: userSpeedScore,
                         aiVisibility: userAiScore,
                       },
                       ...result.competitors.map((c, idx) => ({
@@ -324,6 +333,7 @@ export function CompetitorsTab({
                         seo: c.results.seoResults.score,
                         content: c.results.contentResults.score,
                         security: c.results.securityResults.score,
+                        speed: c.results.pageSpeedResults?.performance ?? null,
                         aiVisibility: c.results.aiVisibility?.score ?? null,
                         competitor: c,
                         index: idx,
@@ -390,18 +400,29 @@ export function CompetitorsTab({
                               </div>
                             </td>
                             <td className="text-center py-3 px-3">
-                              {AI_VISIBILITY_ENABLED ? (
-                                result.aiVisibility?.score != null ? (
+                              {entry.speed != null ? (
+                                <div className="flex flex-col items-center gap-1">
+                                  <span className={`font-semibold ${entry.speed >= 50 ? 'text-green-600' : 'text-red-600'}`}>{entry.speed}</span>
+                                  <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
+                                    <div className={`h-full rounded-full ${entry.speed >= 90 ? 'bg-green-500' : entry.speed >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${entry.speed}%` }} />
+                                  </div>
+                                  {!result.pageSpeedResults?.isEstimate && (
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">PageSpeed</span>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-neutral-400 text-sm">–</span>
+                              )}
+                            </td>
+                            {AI_VISIBILITY_ENABLED && (
+                              <td className="text-center py-3 px-3">
+                                {result.aiVisibility?.score != null ? (
                                   <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">{result.aiVisibility.score}</span>
                                 ) : (
                                   <span className="text-neutral-400 text-sm">–</span>
-                                )
-                              ) : (
-                                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-violet-50 text-violet-400">
-                                  <Clock className="w-4 h-4" />
-                                </span>
-                              )}
-                            </td>
+                                )}
+                              </td>
+                            )}
                           </tr>
                         );
                       }
@@ -455,18 +476,31 @@ export function CompetitorsTab({
                             </div>
                           </td>
                           <td className="text-center py-3 px-3">
-                            {AI_VISIBILITY_ENABLED ? (
-                              competitor.results.aiVisibility?.score != null ? (
+                            {competitor.results.pageSpeedResults?.performance != null ? (
+                              <div className="flex flex-col items-center gap-1">
+                                <span className={`font-semibold ${(competitor.results.pageSpeedResults?.performance ?? 0) > (result.pageSpeedResults?.performance ?? 0) ? 'text-red-600' : 'text-neutral-600'}`}>
+                                  {competitor.results.pageSpeedResults.performance}
+                                </span>
+                                <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
+                                  <div className="h-full rounded-full bg-neutral-400" style={{ width: `${competitor.results.pageSpeedResults.performance}%` }} />
+                                </div>
+                                {competitor.results.pageSpeedResults?.isEstimate && (
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">Estimat</span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-neutral-400 text-sm">–</span>
+                            )}
+                          </td>
+                          {AI_VISIBILITY_ENABLED && (
+                            <td className="text-center py-3 px-3">
+                              {competitor.results.aiVisibility?.score != null ? (
                                 <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">{competitor.results.aiVisibility.score}</span>
                               ) : (
                                 <span className="text-neutral-400 text-sm">–</span>
-                              )
-                            ) : (
-                              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-violet-50 text-violet-400">
-                                <Clock className="w-4 h-4" />
-                              </span>
-                            )}
-                          </td>
+                              )}
+                            </td>
+                          )}
                         </tr>
                       );
                     });

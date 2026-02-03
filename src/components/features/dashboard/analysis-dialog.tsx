@@ -217,7 +217,7 @@ export function AnalysisDialog({
 
               {/* Status message */}
               <p className="text-center text-xs text-neutral-400">
-                Vanligvis ferdig under ett minutt
+                Vanligvis rundt 1 min
               </p>
             </div>
           </>

@@ -364,7 +364,7 @@ export default function LandingPage() {
               alt="Mediabooster"
               className="h-4 sm:h-5 w-auto"
             />
-            <span className="text-neutral-500 text-[10px] sm:text-xs hidden sm:inline truncate">Din digitale CMO</span>
+            <span className="text-neutral-500 text-[9px] sm:text-xs truncate">Din digitale CMO - og AI-kollega!</span>
           </Link>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {loading ? (
@@ -491,7 +491,6 @@ export default function LandingPage() {
                       {tab.label}
                     </button>
                   ))}
-                  {/* AI-synlighet - Coming soon, not clickable */}
                   <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium text-neutral-400 cursor-not-allowed shrink-0">
                     <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                     AI-synlighet
@@ -509,7 +508,7 @@ export default function LandingPage() {
               }}
             >
               
-              {/* Oversikt Tab */}
+              {/* Oversikt Tab (also shown for Hastighet) */}
               {demoTab === 'oversikt' && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -565,8 +564,8 @@ export default function LandingPage() {
                             <p className="text-[10px] text-neutral-500 mt-1">Trygghet</p>
                           </div>
                           <div className="text-center">
-                            <ScoreRing score={72} label="AI" size="sm" />
-                            <p className="text-[10px] text-neutral-500 mt-1">AI-synlighet</p>
+                            <ScoreRing score={88} label="Speed" size="sm" />
+                            <p className="text-[10px] text-neutral-500 mt-1">Hastighet</p>
                           </div>
                         </div>
                       </div>
@@ -619,7 +618,7 @@ export default function LandingPage() {
                   <div>
                     <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-2">
                       <BarChart3 className="h-4 w-4 text-neutral-600" />
-                      Konkurrentsammenligning (2 konkurrenter)
+                      Konkurrentsammenligning (1 konkurrent)
                     </h3>
                     <p className="text-sm text-neutral-600">Sammenlign din nettside med konkurrentene dine</p>
                   </div>
@@ -634,6 +633,7 @@ export default function LandingPage() {
                           <th className="text-center py-2.5 px-2 font-medium text-neutral-600 text-xs">SEO</th>
                           <th className="text-center py-2.5 px-2 font-medium text-neutral-600 text-xs">Innhold</th>
                           <th className="text-center py-2.5 px-2 font-medium text-neutral-600 text-xs">Sikkerhet</th>
+                          <th className="text-center py-2.5 px-2 font-medium text-neutral-600 text-xs">Hastighet</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -662,6 +662,9 @@ export default function LandingPage() {
                           <td className="text-center py-2.5 px-2">
                             <span className="font-semibold text-green-600 text-xs">95</span>
                           </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="font-semibold text-green-600 text-xs">88</span>
+                          </td>
                         </tr>
                         {/* Competitor 1 */}
                         <tr className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
@@ -687,6 +690,9 @@ export default function LandingPage() {
                           <td className="text-center py-2.5 px-2">
                             <span className="font-semibold text-neutral-600 text-xs">72</span>
                           </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="font-semibold text-neutral-600 text-xs">64</span>
+                          </td>
                         </tr>
                         {/* Competitor 2 */}
                         <tr className="hover:bg-neutral-50 transition-colors">
@@ -711,6 +717,9 @@ export default function LandingPage() {
                           </td>
                           <td className="text-center py-2.5 px-2">
                             <span className="font-semibold text-neutral-600 text-xs">70</span>
+                          </td>
+                          <td className="text-center py-2.5 px-2">
+                            <span className="font-semibold text-red-600 text-xs">91</span>
                           </td>
                         </tr>
                       </tbody>
@@ -970,26 +979,26 @@ export default function LandingPage() {
       </section>
 
       {/* Bento Grid Features */}
-      <section className="py-12 sm:py-16 md:py-24">
+      <section className="py-8 sm:py-12 md:py-16">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-center mb-8 sm:mb-12 md:mb-16"
+            className="text-center mb-5 sm:mb-8 md:mb-12"
           >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-3 sm:mb-4">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight mb-2 sm:mb-3">
               Komplett analyse<br />
               <span className="text-neutral-400">av hele nettsiden.</span>
             </h2>
-            <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl mx-auto px-2">
-              SEO, sikkerhet, innhold og nøkkelord – med AI-anbefalinger.
+            <p className="text-xs sm:text-sm md:text-base text-neutral-500 max-w-xl mx-auto px-2">
+              SEO, sikkerhet, innhold, hastighet og nøkkelord – med AI-anbefalinger.
             </p>
           </motion.div>
 
           {/* Bento Grid */}
           <motion.div 
-            className="grid md:grid-cols-3 gap-2 sm:gap-3 md:gap-4"
+            className="grid md:grid-cols-3 gap-1.5 sm:gap-2 md:gap-3"
             variants={containerVariants}
             initial="hidden"
             whileInView="visible"
@@ -998,21 +1007,21 @@ export default function LandingPage() {
             {/* SEO - Large card */}
             <motion.div 
               variants={itemVariants}
-              className="md:col-span-2 relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 md:p-8 overflow-hidden group bg-neutral-100"
+              className="md:col-span-2 relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-4 md:p-6 overflow-hidden group bg-neutral-100"
             >
               <div className="relative z-10">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white shadow-sm flex items-center justify-center mb-3 sm:mb-6 md:group-hover:scale-110 transition-transform">
-                  <Search className="w-5 h-5 sm:w-6 sm:h-6 text-neutral-700" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-3 md:group-hover:scale-110 transition-transform">
+                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-700" />
                 </div>
-                <h3 className="text-base sm:text-xl font-semibold mb-1 sm:mb-2">SEO-analyse</h3>
-                <p className="text-neutral-500 mb-3 sm:mb-6 max-w-sm text-sm sm:text-base">
+                <h3 className="text-sm sm:text-lg font-semibold mb-1">SEO-analyse</h3>
+                <p className="text-neutral-500 mb-2 sm:mb-4 max-w-sm text-xs sm:text-sm">
                   Sjekk meta tags, overskrifter, bilder, lenker og teknisk SEO
                 </p>
-                <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                <div className="flex flex-wrap gap-1 sm:gap-1.5">
                   {['Title', 'Description', 'H1-H6', 'Bilder', 'Lenker', 'Open Graph'].map((tag, i) => (
                     <span 
                       key={tag} 
-                      className="px-2 sm:px-3 py-0.5 sm:py-1 bg-white rounded-full text-xs sm:text-sm text-neutral-600 md:transition-all md:duration-300 md:group-hover:bg-neutral-900 md:group-hover:text-white"
+                      className="px-1.5 sm:px-2.5 py-0.5 bg-white rounded-full text-[10px] sm:text-xs text-neutral-600 md:transition-all md:duration-300 md:group-hover:bg-neutral-900 md:group-hover:text-white"
                       style={{ transitionDelay: `${i * 50}ms` }}
                     >
                       {tag}
@@ -1020,7 +1029,7 @@ export default function LandingPage() {
                   ))}
                 </div>
               </div>
-              <div className="absolute right-8 top-1/2 -translate-y-1/2 opacity-0 md:group-hover:opacity-100 transition-all duration-300 transform translate-x-4 md:group-hover:translate-x-0 z-10 hidden md:block">
+              <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 md:group-hover:opacity-100 transition-all duration-300 transform translate-x-4 md:group-hover:translate-x-0 z-10 hidden md:block">
                 <ScoreRing score={92} label="SEO" size="lg" />
               </div>
             </motion.div>
@@ -1028,21 +1037,21 @@ export default function LandingPage() {
             {/* Security - Small card */}
             <motion.div 
               variants={itemVariants}
-              className="relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 md:p-8 group overflow-hidden bg-gradient-to-br from-green-100 to-emerald-100"
+              className="relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-4 md:p-6 group overflow-hidden bg-gradient-to-br from-green-100 to-emerald-100"
             >
               <div className="relative z-10">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white shadow-sm flex items-center justify-center mb-3 sm:mb-6 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
-                  <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-3 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
+                  <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
                 </div>
-                <h3 className="text-base sm:text-xl font-semibold text-neutral-900 mb-1 sm:mb-2">Sikkerhet</h3>
-                <p className="text-neutral-500 mb-3 sm:mb-6 text-sm sm:text-base">
+                <h3 className="text-sm sm:text-lg font-semibold text-neutral-900 mb-1">Sikkerhet</h3>
+                <p className="text-neutral-500 mb-2 sm:mb-4 text-xs sm:text-sm">
                   SSL-sertifikat og sikkerhetsheaders
                 </p>
-                <div className="flex items-center gap-3 sm:gap-4">
-                  <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg sm:rounded-xl bg-green-100 flex items-center justify-center md:group-hover:scale-110 md:group-hover:bg-green-200 md:transition-all">
-                    <span className="text-lg sm:text-xl font-bold text-green-600">A+</span>
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-green-100 flex items-center justify-center md:group-hover:scale-110 md:group-hover:bg-green-200 md:transition-all">
+                    <span className="text-base sm:text-lg font-bold text-green-600">A+</span>
                   </div>
-                  <div className="text-xs sm:text-sm text-neutral-500 md:group-hover:text-neutral-600 md:transition-colors">
+                  <div className="text-[10px] sm:text-xs text-neutral-500 md:group-hover:text-neutral-600 md:transition-colors">
                     SSL Grade
                   </div>
                 </div>
@@ -1052,24 +1061,24 @@ export default function LandingPage() {
             {/* Content - Small card */}
             <motion.div 
               variants={itemVariants}
-              className="relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 md:p-8 group overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100"
+              className="relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-4 md:p-6 group overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100"
             >
               <div className="relative z-10">
-              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white shadow-sm flex items-center justify-center mb-3 sm:mb-6 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
-                <FileText className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
-              </div>
-              <h3 className="text-base sm:text-xl font-semibold mb-1 sm:mb-2">Innhold</h3>
-              <p className="text-neutral-500 mb-3 sm:mb-6 text-sm sm:text-base">
-                Ordtelling, lesbarhet og struktur
-              </p>
-              <div className="grid grid-cols-2 gap-2 sm:gap-3">
-                <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 text-center md:group-hover:shadow-md md:transition-all">
-                  <div className="text-xl sm:text-2xl font-bold md:group-hover:text-purple-600 md:transition-colors">847</div>
-                  <div className="text-[10px] sm:text-xs text-neutral-500">Ord</div>
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-3 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
+                  <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
                 </div>
-                <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 text-center md:group-hover:shadow-md md:transition-all">
-                  <div className="text-xl sm:text-2xl font-bold md:group-hover:text-purple-600 md:transition-colors">38</div>
-                  <div className="text-[10px] sm:text-xs text-neutral-500">LIX</div>
+                <h3 className="text-sm sm:text-lg font-semibold mb-1">Innhold</h3>
+                <p className="text-neutral-500 mb-2 sm:mb-4 text-xs sm:text-sm">
+                  Ordtelling, lesbarhet og struktur
+                </p>
+                <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
+                  <div className="bg-white rounded-lg p-1.5 sm:p-2 text-center md:group-hover:shadow-md md:transition-all">
+                    <div className="text-lg sm:text-xl font-bold md:group-hover:text-purple-600 md:transition-colors">847</div>
+                    <div className="text-[9px] sm:text-[10px] text-neutral-500">Ord</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-1.5 sm:p-2 text-center md:group-hover:shadow-md md:transition-all">
+                    <div className="text-lg sm:text-xl font-bold md:group-hover:text-purple-600 md:transition-colors">38</div>
+                    <div className="text-[9px] sm:text-[10px] text-neutral-500">LIX</div>
                   </div>
                 </div>
               </div>
@@ -1078,29 +1087,29 @@ export default function LandingPage() {
             {/* Keywords - Medium card */}
             <motion.div 
               variants={itemVariants}
-              className="md:col-span-2 relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 md:p-8 group overflow-hidden bg-gradient-to-br from-blue-100 to-cyan-100"
+              className="md:col-span-2 relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-4 md:p-6 group overflow-hidden bg-gradient-to-br from-blue-100 to-cyan-100"
             >
               <div className="relative z-10">
-              <div className="flex items-start justify-between mb-3 sm:mb-6">
-                <div>
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-4 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
-                    <Tag className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+                <div className="flex items-start justify-between mb-2 sm:mb-3">
+                  <div>
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-3 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
+                      <Tag className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
+                    </div>
+                    <h3 className="text-sm sm:text-lg font-semibold mb-0.5 sm:mb-1">Nøkkelordanalyse</h3>
+                    <p className="text-neutral-500 text-xs sm:text-sm">
+                      AI-estimert søkevolum, CPC og konkurranse
+                    </p>
                   </div>
-                  <h3 className="text-base sm:text-xl font-semibold mb-1 sm:mb-2">Nøkkelordanalyse</h3>
-                  <p className="text-neutral-500 text-sm sm:text-base">
-                    AI-estimert søkevolum, CPC og konkurranse
-                  </p>
+                  <Badge className="bg-amber-100 text-amber-700 md:group-hover:bg-amber-200 md:transition-colors text-[9px] sm:text-[10px]">AI-drevet</Badge>
                 </div>
-                <Badge className="bg-amber-100 text-amber-700 md:group-hover:bg-amber-200 md:transition-colors text-[10px] sm:text-xs">AI-drevet</Badge>
-              </div>
-              <div className="bg-white rounded-lg sm:rounded-2xl p-2 sm:p-4 overflow-hidden md:group-hover:shadow-md md:transition-all">
-                  <table className="w-full text-xs sm:text-sm">
+                <div className="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3 overflow-hidden md:group-hover:shadow-md md:transition-all">
+                  <table className="w-full text-[10px] sm:text-xs">
                     <thead>
                       <tr className="border-b border-neutral-100">
-                        <th className="text-left py-1.5 sm:py-2 px-1 sm:px-2 text-[10px] sm:text-xs font-semibold text-neutral-500 uppercase tracking-wide">Nøkkelord</th>
-                        <th className="text-right py-1.5 sm:py-2 px-1 sm:px-2 text-[10px] sm:text-xs font-semibold text-neutral-500 uppercase tracking-wide">Volum</th>
-                        <th className="text-right py-1.5 sm:py-2 px-1 sm:px-2 text-[10px] sm:text-xs font-semibold text-neutral-500 uppercase tracking-wide hidden sm:table-cell">CPC</th>
-                        <th className="text-center py-1.5 sm:py-2 px-1 sm:px-2 text-[10px] sm:text-xs font-semibold text-neutral-500 uppercase tracking-wide">Konk.</th>
+                        <th className="text-left py-1 sm:py-1.5 px-1 text-[9px] sm:text-[10px] font-semibold text-neutral-500 uppercase tracking-wide">Nøkkelord</th>
+                        <th className="text-right py-1 sm:py-1.5 px-1 text-[9px] sm:text-[10px] font-semibold text-neutral-500 uppercase tracking-wide">Volum</th>
+                        <th className="text-right py-1 sm:py-1.5 px-1 text-[9px] sm:text-[10px] font-semibold text-neutral-500 uppercase tracking-wide hidden sm:table-cell">CPC</th>
+                        <th className="text-center py-1 sm:py-1.5 px-1 text-[9px] sm:text-[10px] font-semibold text-neutral-500 uppercase tracking-wide">Konk.</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -1108,13 +1117,13 @@ export default function LandingPage() {
                         { word: 'digital markedsføring', vol: '2.4K', cpc: '45 kr', comp: 'høy' },
                         { word: 'seo tjenester oslo', vol: '1.8K', cpc: '62 kr', comp: 'medium' },
                         { word: 'nettside analyse', vol: '890', cpc: '28 kr', comp: 'lav' },
-                ].map((kw, i) => (
+                      ].map((kw, i) => (
                         <tr key={i} className="border-t border-neutral-50 hover:bg-blue-50 transition-colors">
-                          <td className="py-1.5 sm:py-2.5 px-1 sm:px-2 text-neutral-700 truncate max-w-[120px] sm:max-w-none">{kw.word}</td>
-                          <td className="py-1.5 sm:py-2.5 px-1 sm:px-2 text-right text-neutral-600">{kw.vol}</td>
-                          <td className="py-1.5 sm:py-2.5 px-1 sm:px-2 text-right text-green-600 font-medium hidden sm:table-cell">{kw.cpc}</td>
-                          <td className="py-1.5 sm:py-2.5 px-1 sm:px-2 text-center">
-                            <span className={`px-1.5 sm:px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium ${
+                          <td className="py-1 sm:py-1.5 px-1 text-neutral-700 truncate max-w-[100px] sm:max-w-none">{kw.word}</td>
+                          <td className="py-1 sm:py-1.5 px-1 text-right text-neutral-600">{kw.vol}</td>
+                          <td className="py-1 sm:py-1.5 px-1 text-right text-green-600 font-medium hidden sm:table-cell">{kw.cpc}</td>
+                          <td className="py-1 sm:py-1.5 px-1 text-center">
+                            <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-medium ${
                               kw.comp === 'høy' ? 'bg-red-100 text-red-700' :
                               kw.comp === 'medium' ? 'bg-amber-100 text-amber-700' :
                               'bg-green-100 text-green-700'
@@ -1128,69 +1137,96 @@ export default function LandingPage() {
               </div>
             </motion.div>
 
-            {/* AI Articles - Full width card */}
+            {/* AI Articles - Two columns on md (first in row) */}
             <motion.div 
               variants={itemVariants}
-              className="md:col-span-3 relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-5 md:p-8 group overflow-hidden bg-gradient-to-br from-violet-100 via-purple-100 to-fuchsia-100"
+              className="md:col-span-2 relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-4 md:p-6 group overflow-hidden bg-gradient-to-br from-violet-100 via-purple-100 to-fuchsia-100"
             >
               <div className="relative z-10">
-                <div className="flex items-start justify-between mb-3 sm:mb-6">
+                <div className="flex items-start justify-between mb-2 sm:mb-3">
                   <div>
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-4 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
-                      <Sparkles className="w-5 h-5 sm:w-6 sm:h-6 text-violet-600" />
+                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-3 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
+                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
                     </div>
-                    <h3 className="text-base sm:text-xl font-semibold mb-1 sm:mb-2">AI-genererte artikler</h3>
-                    <p className="text-neutral-500 max-w-md text-sm sm:text-base">
-                      Få artikkelideer basert på analysen og generer fullstendige artikler
+                    <h3 className="text-sm sm:text-lg font-semibold mb-0.5 sm:mb-1">AI-genererte artikler</h3>
+                    <p className="text-neutral-500 max-w-md text-xs sm:text-sm">
+                      Artikkelideer basert på analysen
                     </p>
                   </div>
-                  <Badge className="bg-violet-100 text-violet-700 md:group-hover:bg-violet-200 md:transition-colors text-[10px] sm:text-xs">Ny</Badge>
+                  <Badge className="bg-violet-100 text-violet-700 md:group-hover:bg-violet-200 md:transition-colors text-[9px] sm:text-[10px]">Ny</Badge>
                 </div>
                 
-                <div className="grid md:grid-cols-2 gap-2 sm:gap-4">
+                <div className="grid md:grid-cols-2 gap-2 sm:gap-3">
                   {/* Left - Article suggestions */}
-                  <div className="bg-white rounded-lg sm:rounded-2xl p-2 sm:p-4 md:group-hover:shadow-md md:transition-all">
-                    <p className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide mb-2 sm:mb-3">Artikkelideer</p>
-                    <div className="space-y-1.5 sm:space-y-2">
+                  <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 md:group-hover:shadow-md md:transition-all">
+                    <p className="text-[9px] sm:text-[10px] font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2">Artikkelideer</p>
+                    <div className="space-y-1 sm:space-y-1.5">
                       {[
                         { title: '10 strategier for digital markedsføring', priority: 'høy' },
                         { title: 'Hvordan velge riktig SEO-byrå', priority: 'høy' },
                       ].map((article, i) => (
-                        <div key={i} className="flex items-start gap-2 sm:gap-3 p-2 sm:p-3 rounded-lg sm:rounded-xl bg-neutral-50 hover:bg-violet-50 transition-colors">
-                          <span className={`text-[9px] sm:text-[10px] px-1 sm:px-1.5 py-0.5 rounded font-medium shrink-0 mt-0.5 ${
+                        <div key={i} className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-neutral-50 hover:bg-violet-50 transition-colors">
+                          <span className={`text-[8px] sm:text-[9px] px-1 py-0.5 rounded font-medium shrink-0 ${
                             article.priority === 'høy' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
                           }`}>{article.priority}</span>
-                          <span className="text-xs sm:text-sm text-neutral-700 line-clamp-1">{article.title}</span>
+                          <span className="text-[10px] sm:text-xs text-neutral-700 line-clamp-1">{article.title}</span>
                         </div>
                       ))}
                     </div>
                   </div>
                   
                   {/* Right - Generated article preview */}
-                  <div className="bg-white rounded-lg sm:rounded-2xl p-2 sm:p-4 md:group-hover:shadow-md md:transition-all hidden sm:block">
-                    <div className="flex items-center justify-between mb-2 sm:mb-3">
-                      <p className="text-[10px] sm:text-xs font-medium text-neutral-500 uppercase tracking-wide">Generert artikkel</p>
-                      <div className="flex items-center gap-1.5">
+                  <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 md:group-hover:shadow-md md:transition-all hidden sm:block">
+                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
+                      <p className="text-[9px] sm:text-[10px] font-medium text-neutral-500 uppercase tracking-wide">Generert artikkel</p>
+                      <div className="flex items-center gap-1">
                         <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                        <span className="text-[10px] text-neutral-400">600-1200 ord</span>
+                        <span className="text-[9px] text-neutral-400">600-1200 ord</span>
                       </div>
                     </div>
-                    <div className="space-y-1.5 sm:space-y-2">
-                      <div className="h-4 sm:h-5 bg-neutral-100 rounded w-3/4 md:group-hover:bg-violet-100 md:transition-colors" />
-                      <div className="h-2.5 sm:h-3 bg-neutral-50 rounded w-full" />
-                      <div className="h-2.5 sm:h-3 bg-neutral-50 rounded w-full" />
-                      <div className="h-2.5 sm:h-3 bg-neutral-50 rounded w-5/6" />
-                      <div className="h-3 sm:h-4 bg-neutral-100 rounded w-1/2 mt-2 sm:mt-3 md:group-hover:bg-violet-100 md:transition-colors" />
-                      <div className="h-2.5 sm:h-3 bg-neutral-50 rounded w-full" />
+                    <div className="space-y-1 sm:space-y-1.5">
+                      <div className="h-3 sm:h-4 bg-neutral-100 rounded w-3/4 md:group-hover:bg-violet-100 md:transition-colors" />
+                      <div className="h-2 sm:h-2.5 bg-neutral-50 rounded w-full" />
+                      <div className="h-2 sm:h-2.5 bg-neutral-50 rounded w-5/6" />
+                      <div className="h-2.5 sm:h-3 bg-neutral-100 rounded w-1/2 mt-1.5 sm:mt-2 md:group-hover:bg-violet-100 md:transition-colors" />
                     </div>
-                    <div className="flex gap-2 mt-3 sm:mt-4">
-                      <div className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-violet-100 text-violet-700 text-[10px] sm:text-xs font-medium md:group-hover:bg-violet-200 md:transition-colors">
+                    <div className="flex gap-1.5 mt-2 sm:mt-3">
+                      <div className="px-2 py-1 rounded-lg bg-violet-100 text-violet-700 text-[9px] sm:text-[10px] font-medium md:group-hover:bg-violet-200 md:transition-colors">
                         Kopier artikkel
                       </div>
-                      <div className="px-3 py-1.5 rounded-lg bg-neutral-100 text-neutral-600 text-xs font-medium">
-                        Lagret i Mine artikler
-                      </div>
                     </div>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Speed / Ytelse - Performance, LCP, CLS (second in row) */}
+            <motion.div 
+              variants={itemVariants}
+              className="relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-4 md:p-6 group overflow-hidden bg-gradient-to-br from-amber-100 to-orange-100 flex flex-col justify-center"
+            >
+              <div className="relative z-10">
+                <div className="flex items-center gap-2 mb-2 sm:mb-3">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
+                    <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm sm:text-lg font-semibold text-neutral-900">Hastighet</h3>
+                    <p className="text-[10px] sm:text-xs text-neutral-500">PageSpeed og Core Web Vitals</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+                  <div className="bg-white rounded-lg p-1.5 sm:p-2 text-center md:group-hover:shadow-md md:transition-all">
+                    <div className="text-base sm:text-lg font-bold text-amber-600">88</div>
+                    <div className="text-[9px] sm:text-[10px] text-neutral-500">Performance</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-1.5 sm:p-2 text-center md:group-hover:shadow-md md:transition-all">
+                    <div className="text-base sm:text-lg font-bold text-amber-600">1.8s</div>
+                    <div className="text-[9px] sm:text-[10px] text-neutral-500">LCP</div>
+                  </div>
+                  <div className="bg-white rounded-lg p-1.5 sm:p-2 text-center md:group-hover:shadow-md md:transition-all">
+                    <div className="text-base sm:text-lg font-bold text-amber-600">0.05</div>
+                    <div className="text-[9px] sm:text-[10px] text-neutral-500">CLS</div>
                   </div>
                 </div>
               </div>
@@ -1442,7 +1478,7 @@ export default function LandingPage() {
               Tre enkle steg<br />
               <span className="text-neutral-400">til bedre resultater.</span>
             </h2>
-            <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl">Ingen installasjon, ingen ventetid. Bare resultater.</p>
+            <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl">Bare å lime inn URL – analysen er klar på under ett minutt.</p>
           </motion.div>
 
           <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-start">

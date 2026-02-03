@@ -2,8 +2,10 @@ import { scrapeUrl, parseHtml } from '@/lib/services/scraper';
 import { analyzeSEO } from './seo-analyzer';
 import { analyzeContent } from './content-analyzer';
 import { analyzeSecurity, analyzeSecurityQuick } from './security-analyzer';
+import { analyzePageSpeed } from '@/lib/services/pagespeed';
+import { estimatePerformanceFromScrape } from '@/lib/analyzers/quick-performance';
 import { generateAIAnalysis, generateKeywordResearch, KeywordData, checkAIVisibility, AIVisibilityData } from '@/lib/services/openai';
-import type { SEOResults, ContentResults, SecurityResults, AISummary } from '@/types';
+import type { SEOResults, ContentResults, SecurityResults, AISummary, PageSpeedResults } from '@/types';
 
 // Feature flag: Disable AI visibility to reduce analysis time
 // Set to true when ready to enable AI visibility feature
@@ -13,6 +15,7 @@ export interface FullAnalysisResult {
   seoResults: SEOResults;
   contentResults: ContentResults;
   securityResults: SecurityResults;
+  pageSpeedResults?: PageSpeedResults;
   aiSummary: AISummary | null;
   keywordResearch?: KeywordData[];
   aiVisibility?: AIVisibilityData;
@@ -59,8 +62,9 @@ export async function runFullAnalysis(
 
   // Step 2: Run analyses in parallel
   // Security is domain-level, so reuse cached results if available (same domain)
+  // PageSpeed is also run in parallel (async API call)
   console.log('Running analyses...');
-  const [seoResults, contentResults, securityResults] = await Promise.all([
+  const [seoResults, contentResults, securityResults, pageSpeedResults] = await Promise.all([
     analyzeSEO($, url),
     Promise.resolve(analyzeContent($)),
     cachedSecurityResults
@@ -68,16 +72,33 @@ export async function runFullAnalysis(
       : quickSecurityScan
         ? analyzeSecurityQuick(url, scrapedData.headers)
         : analyzeSecurity(url, scrapedData.headers),
+    analyzePageSpeed(url).catch((err) => {
+      console.error('PageSpeed analysis failed:', err);
+      return null;
+    }),
   ]);
   
   if (cachedSecurityResults) {
     console.log('[Security] Using cached security results (same domain)');
   }
 
-  // Step 3: Calculate overall score
-  const overallScore = Math.round(
-    (seoResults.score * 0.4 + contentResults.score * 0.3 + securityResults.score * 0.3)
-  );
+  // Step 3: Calculate overall score (now includes performance if available)
+  // Weight distribution: SEO 35%, Content 25%, Security 25%, Performance 15%
+  const performanceScore = pageSpeedResults?.performance ?? 0;
+  const hasPageSpeed = pageSpeedResults && pageSpeedResults.performance > 0;
+  
+  const overallScore = hasPageSpeed
+    ? Math.round(
+        seoResults.score * 0.35 + 
+        contentResults.score * 0.25 + 
+        securityResults.score * 0.25 + 
+        performanceScore * 0.15
+      )
+    : Math.round(
+        seoResults.score * 0.4 + 
+        contentResults.score * 0.3 + 
+        securityResults.score * 0.3
+      );
 
   // Step 4: Generate AI analysis, keyword research, and AI visibility check (if enabled)
   let aiSummary: AISummary | null = null;
@@ -108,6 +129,7 @@ export async function runFullAnalysis(
           seoResults,
           contentResults,
           securityResults,
+          pageSpeedResults,
           industry,
           targetKeywords,
         },
@@ -176,6 +198,7 @@ export async function runFullAnalysis(
     seoResults,
     contentResults,
     securityResults,
+    pageSpeedResults: pageSpeedResults ?? undefined,
     aiSummary,
     keywordResearch,
     aiVisibility,
@@ -213,22 +236,40 @@ export async function runCompetitorAnalysis(
 
   // Step 2: Run main analysis
   // Security is domain-level, so reuse cached results if available (same domain)
+  // PageSpeed is also run in parallel
   console.log('Analyzing main URL...');
-  const [mainSeoResults, mainContentResults, mainSecurityResults] = await Promise.all([
+  const [mainSeoResults, mainContentResults, mainSecurityResults, mainPageSpeedResults] = await Promise.all([
     analyzeSEO(main$, mainUrl),
     Promise.resolve(analyzeContent(main$)),
     cachedSecurityResults
       ? Promise.resolve(cachedSecurityResults)
       : analyzeSecurity(mainUrl, mainScrapedData.headers),
+    analyzePageSpeed(mainUrl).catch((err) => {
+      console.error('PageSpeed analysis failed for main URL:', err);
+      return null;
+    }),
   ]);
   
   if (cachedSecurityResults) {
     console.log('[Security] Using cached security results for main URL (same domain)');
   }
 
-  const mainOverallScore = Math.round(
-    (mainSeoResults.score * 0.4 + mainContentResults.score * 0.3 + mainSecurityResults.score * 0.3)
-  );
+  // Calculate overall score (includes performance if available)
+  const mainPerformanceScore = mainPageSpeedResults?.performance ?? 0;
+  const hasMainPageSpeed = mainPageSpeedResults && mainPageSpeedResults.performance > 0;
+  
+  const mainOverallScore = hasMainPageSpeed
+    ? Math.round(
+        mainSeoResults.score * 0.35 + 
+        mainContentResults.score * 0.25 + 
+        mainSecurityResults.score * 0.25 + 
+        mainPerformanceScore * 0.15
+      )
+    : Math.round(
+        mainSeoResults.score * 0.4 + 
+        mainContentResults.score * 0.3 + 
+        mainSecurityResults.score * 0.3
+      );
 
   // Step 3: Analyze competitors with full security scan for accurate comparison
   const competitorResults: Array<{ url: string; results: FullAnalysisResult }> = [];
@@ -242,8 +283,11 @@ export async function runCompetitorAnalysis(
         const compScrapedData = await scrapeUrl(competitorUrl);
         const comp$ = parseHtml(compScrapedData.html);
         
-        // Use quick security scan for competitors to stay within timeout limits
-        // Main site gets full SSL Labs analysis, competitors get fast direct SSL check
+        // Use quick security + quick performance estimate for competitors (no PageSpeed API; fits 60s limit)
+        const compPageSpeedResults = estimatePerformanceFromScrape({
+          html: compScrapedData.html,
+          loadTimeMs: compScrapedData.loadTime,
+        });
         const [compSeoResults, compContentResults, compSecurityResults] = await Promise.all([
           analyzeSEO(comp$, competitorUrl),
           Promise.resolve(analyzeContent(comp$)),
@@ -251,7 +295,10 @@ export async function runCompetitorAnalysis(
         ]);
 
         const compOverallScore = Math.round(
-          (compSeoResults.score * 0.4 + compContentResults.score * 0.3 + compSecurityResults.score * 0.3)
+          compSeoResults.score * 0.35 +
+          compContentResults.score * 0.25 +
+          compSecurityResults.score * 0.25 +
+          compPageSpeedResults.performance * 0.15
         );
 
         return {
@@ -260,6 +307,7 @@ export async function runCompetitorAnalysis(
             seoResults: compSeoResults,
             contentResults: compContentResults,
             securityResults: compSecurityResults,
+            pageSpeedResults: compPageSpeedResults,
             aiSummary: null,
             overallScore: compOverallScore,
             tokensUsed: 0,
@@ -325,6 +373,7 @@ export async function runCompetitorAnalysis(
         seoResults: mainSeoResults,
         contentResults: mainContentResults,
         securityResults: mainSecurityResults,
+        pageSpeedResults: mainPageSpeedResults ?? undefined,
         competitorResults: competitorResults.length > 0 ? {
           competitors: competitorResults.map(c => ({
             url: c.url,
@@ -426,6 +475,7 @@ export async function runCompetitorAnalysis(
       seoResults: mainSeoResults,
       contentResults: mainContentResults,
       securityResults: mainSecurityResults,
+      pageSpeedResults: mainPageSpeedResults ?? undefined,
       aiSummary,
       keywordResearch,
       aiVisibility,
@@ -453,7 +503,10 @@ export async function analyzeCompetitorsOnly(
         const compScrapedData = await scrapeUrl(competitorUrl);
         const comp$ = parseHtml(compScrapedData.html);
         
-        // Use quick security scan for competitors to stay within timeout limits
+        const compPageSpeedResults = estimatePerformanceFromScrape({
+          html: compScrapedData.html,
+          loadTimeMs: compScrapedData.loadTime,
+        });
         const [compSeoResults, compContentResults, compSecurityResults] = await Promise.all([
           analyzeSEO(comp$, competitorUrl),
           Promise.resolve(analyzeContent(comp$)),
@@ -461,7 +514,10 @@ export async function analyzeCompetitorsOnly(
         ]);
 
         const compOverallScore = Math.round(
-          (compSeoResults.score * 0.4 + compContentResults.score * 0.3 + compSecurityResults.score * 0.3)
+          compSeoResults.score * 0.35 +
+          compContentResults.score * 0.25 +
+          compSecurityResults.score * 0.25 +
+          compPageSpeedResults.performance * 0.15
         );
 
         return {
@@ -470,6 +526,7 @@ export async function analyzeCompetitorsOnly(
             seoResults: compSeoResults,
             contentResults: compContentResults,
             securityResults: compSecurityResults,
+            pageSpeedResults: compPageSpeedResults,
             aiSummary: null,
             overallScore: compOverallScore,
             tokensUsed: 0,

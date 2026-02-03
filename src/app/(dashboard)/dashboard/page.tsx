@@ -1,7 +1,8 @@
 'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useDashboard } from '@/hooks/useDashboard';
@@ -33,6 +34,8 @@ import {
   ChevronDown,
   Eye,
   Lock,
+  Zap,
+  FileDown,
 } from 'lucide-react';
 
 // Extracted components
@@ -44,12 +47,14 @@ import {
   AISuggestionDialog,
   AnalysisDialog,
 } from '@/components/features/dashboard';
+import { downloadAnalysisReportPdf } from '@/components/features/dashboard/analysis-report-pdf';
 import { OverviewTab, CompetitorsTab, KeywordsTab, AiTab, AiVisibilityTab } from '@/components/features/dashboard/tabs';
 
 function DashboardPageContent() {
   const searchParams = useSearchParams();
   const showNewDialog = searchParams.get('new') === 'true';
   const analysisIdFromUrl = searchParams.get('analysisId');
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const dashboard = useDashboard({ analysisIdFromUrl, showNewDialog });
   const {
@@ -118,10 +123,11 @@ function DashboardPageContent() {
     fetchArticleSuggestions,
     remainingArticleGenerations,
     articleGenerationsLimit,
-    generatedArticle,
+    generatedArticleResult,
     generatingArticleIndex,
     fetchGenerateArticle,
     setGeneratedArticle,
+    analysisHistory,
     checkAiVisibility,
     startEditingCompetitors,
     addEditCompetitor,
@@ -141,10 +147,11 @@ function DashboardPageContent() {
   const FREE_UPDATE_LIMIT = limits.updates;
 
   const analysisSteps = [
-    { label: 'Henter nettside', description: 'Laster inn innhold fra nettsiden', duration: '~5s', icon: Globe },
-    { label: 'Analyserer SEO', description: 'Sjekker meta-tags, overskrifter og lenker', duration: '~10s', icon: Search },
-    { label: 'Sjekker sikkerhet', description: 'Analyserer SSL-sertifikat og headers', duration: '~15s', icon: Shield },
-    { label: 'Genererer rapport', description: 'AI analyserer funnene og lager anbefalinger', duration: '~20s', icon: Sparkles },
+    { label: 'Henter nettside', description: 'Laster inn og scraper innhold fra nettsiden', duration: '~5s', icon: Globe },
+    { label: 'Analyserer SEO', description: 'Sjekker meta-tags, overskrifter, lenker og innhold', duration: '~10s', icon: Search },
+    { label: 'Sjekker sikkerhet', description: 'Tester SSL-sertifikat og sikkerhetsheaders', duration: '~15s', icon: Shield },
+    { label: 'Måler ytelse', description: 'Henter Google PageSpeed-score og Core Web Vitals', duration: '~30s', icon: Zap },
+    { label: 'Genererer rapport', description: 'AI sammenligner resultater og lager anbefalinger', duration: '~20s', icon: Sparkles },
   ];
 
   const getScoreColor = (score: number) => {
@@ -368,12 +375,48 @@ function DashboardPageContent() {
       {/* Results or Empty State */}
       {result ? (
         <>
-          {/* Tab Navigation */}
-          <TabNavigation
-            activeTab={activeTab}
-            onTabChange={setActiveTab}
-            competitorCount={result.competitors?.length}
-          />
+          {/* Tab Navigation + PDF download */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <TabNavigation
+              activeTab={activeTab}
+              onTabChange={setActiveTab}
+              competitorCount={result.competitors?.length}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="rounded-xl text-xs shrink-0 w-full sm:w-auto"
+              disabled={downloadingPdf}
+              onClick={async () => {
+                setDownloadingPdf(true);
+                try {
+                  await downloadAnalysisReportPdf({
+                    result,
+                    companyUrl: companyUrl || url || '',
+                    companyName: companyName || null,
+                  });
+                  toast.success('Rapport lastet ned');
+                } catch {
+                  toast.error('Kunne ikke generere PDF');
+                } finally {
+                  setDownloadingPdf(false);
+                }
+              }}
+            >
+              {downloadingPdf ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  Genererer…
+                </>
+              ) : (
+                <>
+                  <FileDown className="h-3.5 w-3.5 mr-1.5" />
+                  Last ned rapport (PDF)
+                </>
+              )}
+            </Button>
+          </div>
 
           {/* Tab Content */}
           {activeTab === 'overview' && (
@@ -391,10 +434,11 @@ function DashboardPageContent() {
               hasCompetitors={Boolean(result?.competitors?.length)}
               remainingArticleGenerations={remainingArticleGenerations}
               articleGenerationsLimit={articleGenerationsLimit}
-              generatedArticle={generatedArticle}
+              generatedArticleResult={generatedArticleResult}
               generatingArticleIndex={generatingArticleIndex}
               fetchGenerateArticle={fetchGenerateArticle}
               setGeneratedArticle={setGeneratedArticle}
+              analysisHistory={analysisHistory}
             />
           )}
 

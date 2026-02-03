@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getPremiumStatusServer } from '@/lib/premium-server';
 import type { AIVisibilityData } from '@/lib/services/openai';
 
-export const maxDuration = 60; // Allow up to 60 seconds for analysis
+export const maxDuration = 60; // Vercel Free limit; competitors use quick performance estimate (no PageSpeed API)
 
 interface AnalyzeRequest {
   url?: string;
@@ -98,6 +98,13 @@ export async function POST(request: NextRequest) {
     const premiumStatus = await getPremiumStatusServer(user);
     const { isPremium } = premiumStatus;
     const FREE_MONTHLY_LIMIT = premiumStatus.monthlyAnalysisLimit;
+    
+    // Enforce competitor limits (Free: 1, Premium: 3)
+    const MAX_COMPETITORS = isPremium ? 5 : 1;
+    if (competitorUrls.length > MAX_COMPETITORS) {
+      competitorUrls = competitorUrls.slice(0, MAX_COMPETITORS);
+      console.log(`[Analyze] Trimmed competitors to ${MAX_COMPETITORS} (isPremium: ${isPremium})`);
+    }
     
     // Check monthly analysis limit
     const now = new Date();
@@ -215,6 +222,7 @@ export async function POST(request: NextRequest) {
         seo_results: result.seoResults,
         content_results: result.contentResults,
         security_results: result.securityResults,
+        pagespeed_results: result.pageSpeedResults || null,
         competitor_results: competitors.length > 0 ? competitors : null,
         ai_summary: result.aiSummary,
         keyword_research: result.keywordResearch || null,

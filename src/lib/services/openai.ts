@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { SEOResults, ContentResults, SecurityResults, CompetitorResults, AISummary, Priority, RecommendationCategory } from '@/types';
+import type { SEOResults, ContentResults, SecurityResults, CompetitorResults, AISummary, Priority, RecommendationCategory, PageSpeedResults } from '@/types';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -10,6 +10,7 @@ interface AnalysisData {
   seoResults: SEOResults;
   contentResults: ContentResults;
   securityResults: SecurityResults;
+  pageSpeedResults?: PageSpeedResults;
   competitorResults?: CompetitorResults;
   industry?: string;
   targetKeywords?: string[];
@@ -85,15 +86,26 @@ ${data.contentResults.keywords?.slice(0, 10).map(k => `  - "${k.word}": ${k.coun
   - Permissions-Policy: ${data.securityResults.headers.permissionsPolicy ? '✓ Implementert' : '✗ Mangler'}
 - Total sikkerhetsscore: ${data.securityResults.score}/100
 
+${data.pageSpeedResults ? `## Ytelse (PageSpeed)
+- Performance-score: ${data.pageSpeedResults.performance}/100 ${data.pageSpeedResults.performance >= 90 ? '(Utmerket)' : data.pageSpeedResults.performance >= 50 ? '(Trenger forbedring)' : '(Dårlig)'}
+- Tilgjengelighet: ${data.pageSpeedResults.accessibility}/100
+- Best Practices: ${data.pageSpeedResults.bestPractices}/100
+- SEO (Lighthouse): ${data.pageSpeedResults.seo}/100
+- Core Web Vitals:
+  - LCP (Largest Contentful Paint): ${(data.pageSpeedResults.coreWebVitals.lcp / 1000).toFixed(2)}s ${data.pageSpeedResults.coreWebVitals.lcp <= 2500 ? '(God)' : data.pageSpeedResults.coreWebVitals.lcp <= 4000 ? '(Trenger forbedring)' : '(Dårlig)'}
+  - CLS (Cumulative Layout Shift): ${data.pageSpeedResults.coreWebVitals.cls.toFixed(3)} ${data.pageSpeedResults.coreWebVitals.cls <= 0.1 ? '(God)' : data.pageSpeedResults.coreWebVitals.cls <= 0.25 ? '(Trenger forbedring)' : '(Dårlig)'}
+  - TBT (Total Blocking Time): ${data.pageSpeedResults.coreWebVitals.fid}ms
+` : ''}
 ${data.competitorResults && data.competitorResults.competitors.length > 0 ? `
 ## Konkurrentanalyse
-Din score: ${data.seoResults.score}/100 (SEO), ${data.contentResults.score}/100 (Innhold), ${data.securityResults.score}/100 (Sikkerhet)
+Din score: ${data.seoResults.score}/100 (SEO), ${data.contentResults.score}/100 (Innhold), ${data.securityResults.score}/100 (Sikkerhet)${data.pageSpeedResults ? `, ${data.pageSpeedResults.performance}/100 (Ytelse)` : ''}
 
 ${data.competitorResults.competitors.map((comp, index) => `
 Konkurrent ${index + 1}: ${comp.url}
 - SEO: ${comp.results.seoResults.score}/100
 - Innhold: ${comp.results.contentResults.score}/100 (${comp.results.contentResults.wordCount} ord)
 - Sikkerhet: ${comp.results.securityResults.score}/100
+- Ytelse: ${comp.results.pageSpeedResults?.performance ?? 'Ikke målt'}/100
 - Total: ${comp.results.overallScore}/100
 `).join('\n')}
 ` : ''}

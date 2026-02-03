@@ -256,6 +256,8 @@ export interface PageSpeedResults {
     fid: number;
     cls: number;
   };
+  /** True when from quick estimate (competitors), not full PageSpeed API */
+  isEstimate?: boolean;
 }
 
 export interface CompetitorResults {

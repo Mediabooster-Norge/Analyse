@@ -64,6 +64,24 @@ export interface AIVisibilityData {
 }
 
 /**
+ * PageSpeed/Performance results
+ * When isEstimate is true, only performance and coreWebVitals.lcp (as TTFB) are meaningful; from quick estimate for competitors.
+ */
+export interface PageSpeedResults {
+  performance: number;
+  accessibility: number;
+  bestPractices: number;
+  seo: number;
+  coreWebVitals: {
+    lcp: number; // Largest Contentful Paint (ms), or TTFB for estimates
+    fid: number; // First Input Delay / TBT (ms)
+    cls: number; // Cumulative Layout Shift
+  };
+  /** True when result is from quick estimate (competitors), not full PageSpeed API */
+  isEstimate?: boolean;
+}
+
+/**
  * Competitor analysis result
  */
 export interface CompetitorAnalysis {
@@ -74,6 +92,7 @@ export interface CompetitorAnalysis {
     securityResults: { score: number };
     overallScore: number;
     aiVisibility?: { score: number };
+    pageSpeedResults?: PageSpeedResults;
   };
 }
 
@@ -120,6 +139,12 @@ export interface DashboardAnalysisResult {
     score: number;
     wordCount: number;
     keywords?: Array<{ word: string; count: number; density: number }>;
+    readability?: {
+      lixScore: number;
+      lixLevel: string;
+      avgWordsPerSentence: number;
+      avgWordLength: number;
+    };
   };
   securityResults: {
     score: number;
@@ -144,6 +169,7 @@ export interface DashboardAnalysisResult {
     };
   };
   overallScore: number;
+  pageSpeedResults?: PageSpeedResults;
   keywordResearch?: KeywordResearchData[];
   competitors?: CompetitorAnalysis[];
   aiSummary?: {
@@ -218,7 +244,7 @@ export interface KeywordSort {
  * Competitor sort configuration
  */
 export interface CompetitorSort {
-  column: 'total' | 'seo' | 'content' | 'security' | 'aiVisibility';
+  column: 'total' | 'seo' | 'content' | 'security' | 'speed' | 'aiVisibility';
   direction: 'asc' | 'desc';
 }
 
@@ -229,4 +255,21 @@ export interface ArticleSuggestion {
   title: string;
   rationale: string;
   priority?: 'high' | 'medium' | 'low';
+}
+
+/**
+ * Result from article generation: body + suggested meta and featured image
+ */
+export interface GeneratedArticleResult {
+  title: string;
+  article: string;
+  metaTitle?: string;
+  metaDescription?: string;
+  featuredImageSuggestion?: string;
+  /** Actual image URL from Unsplash when UNSPLASH_ACCESS_KEY is set */
+  featuredImageUrl?: string;
+  /** e.g. "Photo by Name on Unsplash" for attribution */
+  featuredImageAttribution?: string;
+  /** Photographer profile URL for attribution link (only in fresh response, not stored) */
+  featuredImageProfileUrl?: string;
 }

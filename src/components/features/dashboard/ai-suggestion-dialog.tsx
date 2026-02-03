@@ -81,7 +81,7 @@ export function AISuggestionDialog({
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-5 bg-neutral-50/50">
           {loadingSuggestion ? (
             <div className="space-y-6">
               <div className="flex flex-col items-center justify-center gap-4 py-10">
@@ -110,21 +110,17 @@ export function AISuggestionDialog({
               </div>
             </div>
           ) : aiSuggestion ? (
-            <div className="grid md:grid-cols-2 gap-5">
-              <div className="space-y-4">
-                {selectedElement && (
-                  <div
-                    className={`p-4 rounded-xl ${
-                      selectedElement.status === 'good'
-                        ? 'bg-green-50 border border-green-200'
-                        : selectedElement.status === 'warning'
-                          ? 'bg-amber-50 border border-amber-200'
-                          : 'bg-red-50 border border-red-200'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
+            <div className="space-y-4">
+              {/* Current value section */}
+              {selectedElement && (
+                <div className="rounded-2xl bg-white border border-neutral-200 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                    <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">Nåværende verdi</p>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-start gap-3">
                       <div
-                        className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                        className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                           selectedElement.status === 'good'
                             ? 'bg-green-100'
                             : selectedElement.status === 'warning'
@@ -133,105 +129,122 @@ export function AISuggestionDialog({
                         }`}
                       >
                         {selectedElement.status === 'good' ? (
-                          <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          <CheckCircle2 className="h-5 w-5 text-green-600" />
                         ) : selectedElement.status === 'warning' ? (
-                          <AlertCircle className="h-4 w-4 text-amber-600" />
+                          <AlertCircle className="h-5 w-5 text-amber-600" />
                         ) : (
-                          <AlertCircle className="h-4 w-4 text-red-600" />
+                          <AlertCircle className="h-5 w-5 text-red-600" />
                         )}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-sm text-neutral-900">{selectedElement.name}</p>
-                        <p className="text-xs text-neutral-600 line-clamp-2">{selectedElement.value}</p>
+                        <p className="font-semibold text-neutral-900 mb-1">{selectedElement.name}</p>
+                        <p className="text-sm text-neutral-600 leading-relaxed whitespace-pre-wrap">{selectedElement.value || <span className="italic text-neutral-400">Ingen verdi</span>}</p>
                       </div>
                     </div>
                   </div>
-                )}
-
-                {aiSuggestion.problem && (
-                  <div className="p-3 rounded-xl bg-red-50 border border-red-200">
-                    <div className="flex gap-2">
-                      <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-xs text-red-900 mb-1">Problem</p>
-                        <p className="text-sm text-red-700 leading-relaxed">{aiSuggestion.problem}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {selectedElement?.relatedUrls && selectedElement.relatedUrls.length > 0 && (
-                  <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200">
-                    <p className="font-medium text-xs text-neutral-700 mb-2">
-                      {selectedElement.name.includes('Bilder') ? 'Bilder som mangler alt-tekst:' : 'Relaterte lenker:'}
-                    </p>
-                    <ul className="space-y-1.5">
-                      {selectedElement.relatedUrls.map((url, i) => (
-                        <li key={i} className="group">
-                          <a
-                            href={url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-2 text-xs text-blue-600 hover:text-blue-800 hover:underline break-all"
-                          >
-                            <ExternalLink className="h-3 w-3 shrink-0 opacity-60 group-hover:opacity-100" />
-                            <span className="truncate">{url}</span>
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-
-                <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-200">
-                  <p className="text-sm text-neutral-700 leading-relaxed">{aiSuggestion.summary}</p>
                 </div>
+              )}
 
-                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-                  <div className="flex gap-2">
-                    <Zap className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-1">
-                        <p className="font-medium text-xs text-amber-900">Rask forbedring</p>
-                        <button
-                          onClick={() => copyToClipboard(aiSuggestion.quickWin, 'quickwin')}
-                          className="p-1 rounded hover:bg-amber-100 transition-colors"
-                          title="Kopier"
-                        >
-                          {copiedId === 'quickwin' ? (
-                            <Check className="h-3 w-3 text-green-600" />
-                          ) : (
-                            <Copy className="h-3 w-3 text-amber-500 hover:text-amber-700" />
-                          )}
-                        </button>
+              {/* Problem and Quick Win in a grid on larger screens */}
+              <div className="grid sm:grid-cols-2 gap-3">
+                {/* Problem */}
+                {aiSuggestion.problem && (
+                  <div className="rounded-2xl bg-red-50 border border-red-200 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-red-100 bg-red-100/50">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="h-4 w-4 text-red-600" />
+                        <p className="text-xs font-medium text-red-800 uppercase tracking-wide">Problem</p>
                       </div>
-                      <p className="text-sm text-amber-800 leading-relaxed">{aiSuggestion.quickWin}</p>
                     </div>
+                    <div className="p-4">
+                      <p className="text-sm text-red-800 leading-relaxed">{aiSuggestion.problem}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Quick Win */}
+                <div className="rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-amber-100 bg-amber-100/50">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Zap className="h-4 w-4 text-amber-600" />
+                        <p className="text-xs font-medium text-amber-800 uppercase tracking-wide">Rask forbedring</p>
+                      </div>
+                      <button
+                        onClick={() => copyToClipboard(aiSuggestion.quickWin, 'quickwin')}
+                        className="p-1.5 rounded-lg hover:bg-amber-200/50 transition-colors"
+                        title="Kopier"
+                      >
+                        {copiedId === 'quickwin' ? (
+                          <Check className="h-4 w-4 text-green-600" />
+                        ) : (
+                          <Copy className="h-4 w-4 text-amber-600" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <p className="text-sm text-amber-900 leading-relaxed">{aiSuggestion.quickWin}</p>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <h4 className="font-medium text-sm text-neutral-900 flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-neutral-400" />
-                  Anbefalinger ({aiSuggestion.suggestions.length})
-                </h4>
-                <div className="space-y-2">
+              {/* Related URLs if present */}
+              {selectedElement?.relatedUrls && selectedElement.relatedUrls.length > 0 && (
+                <div className="rounded-2xl bg-white border border-neutral-200 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                    <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">
+                      {selectedElement.name.includes('Bilder') ? 'Bilder som mangler alt-tekst' : 'Relaterte lenker'}
+                    </p>
+                  </div>
+                  <div className="p-4">
+                    <div className="space-y-2 max-h-32 overflow-y-auto">
+                      {selectedElement.relatedUrls.map((url, i) => (
+                        <a
+                          key={i}
+                          href={url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-2 p-2 rounded-lg bg-neutral-50 hover:bg-blue-50 text-xs text-blue-600 hover:text-blue-800 transition-colors group"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0 opacity-60 group-hover:opacity-100" />
+                          <span className="truncate">{url}</span>
+                        </a>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* AI Recommendations */}
+              <div className="rounded-2xl bg-white border border-neutral-200 overflow-hidden">
+                <div className="px-4 py-3 border-b border-neutral-100 bg-neutral-50">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-violet-500" />
+                    <p className="text-xs font-medium text-neutral-700 uppercase tracking-wide">
+                      AI-anbefalinger ({aiSuggestion.suggestions.length})
+                    </p>
+                  </div>
+                </div>
+                <div className="divide-y divide-neutral-100">
                   {aiSuggestion.suggestions.map((suggestion, i) => (
-                    <div
-                      key={i}
-                      className="p-3 rounded-xl bg-white border border-neutral-200 hover:border-neutral-300 transition-colors"
-                    >
-                      <div className="flex items-start gap-2">
-                        <div className="w-5 h-5 rounded-full bg-neutral-100 flex items-center justify-center shrink-0 text-xs font-medium text-neutral-600">
+                    <div key={i} className="p-4 hover:bg-neutral-50/50 transition-colors">
+                      <div className="flex items-start gap-3">
+                        <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold ${
+                          suggestion.priority === 'høy'
+                            ? 'bg-red-100 text-red-700'
+                            : suggestion.priority === 'medium'
+                              ? 'bg-amber-100 text-amber-700'
+                              : 'bg-green-100 text-green-700'
+                        }`}>
                           {i + 1}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium text-sm text-neutral-900">{suggestion.title}</span>
+                          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+                            <span className="font-semibold text-neutral-900">{suggestion.title}</span>
                             <Badge
                               variant="outline"
-                              className={`text-[10px] px-1.5 py-0 ${
+                              className={`text-[10px] px-2 py-0.5 ${
                                 suggestion.priority === 'høy'
                                   ? 'border-red-200 text-red-700 bg-red-50'
                                   : suggestion.priority === 'medium'
@@ -239,33 +252,46 @@ export function AISuggestionDialog({
                                     : 'border-green-200 text-green-700 bg-green-50'
                               }`}
                             >
-                              {suggestion.priority}
+                              {suggestion.priority} prioritet
                             </Badge>
                           </div>
-                          <p className="text-xs text-neutral-600 leading-relaxed">{suggestion.description}</p>
+                          <p className="text-sm text-neutral-600 leading-relaxed mb-2">{suggestion.description}</p>
                           {suggestion.example && (
-                            <div className="mt-2 p-2 rounded-lg bg-neutral-50 border border-neutral-100">
-                              <div className="flex items-center justify-between mb-0.5">
-                                <p className="text-[10px] text-neutral-500">Eksempel:</p>
+                            <div className="p-3 rounded-xl bg-neutral-100 border border-neutral-200">
+                              <div className="flex items-center justify-between mb-1.5">
+                                <p className="text-[11px] font-medium text-neutral-500 uppercase tracking-wide">Eksempel</p>
                                 <button
                                   onClick={() => copyToClipboard(suggestion.example!, `example-${i}`)}
-                                  className="p-1 rounded hover:bg-neutral-200 transition-colors"
+                                  className="p-1.5 rounded-lg hover:bg-neutral-200 transition-colors"
                                   title="Kopier"
                                 >
                                   {copiedId === `example-${i}` ? (
-                                    <Check className="h-3 w-3 text-green-600" />
+                                    <Check className="h-3.5 w-3.5 text-green-600" />
                                   ) : (
-                                    <Copy className="h-3 w-3 text-neutral-400 hover:text-neutral-600" />
+                                    <Copy className="h-3.5 w-3.5 text-neutral-500" />
                                   )}
                                 </button>
                               </div>
-                              <p className="text-xs text-neutral-800 font-mono break-all">{suggestion.example}</p>
+                              <p className="text-sm text-neutral-800 font-mono bg-white rounded-lg p-2 border border-neutral-200 break-all">{suggestion.example}</p>
                             </div>
                           )}
                         </div>
                       </div>
                     </div>
                   ))}
+                </div>
+              </div>
+
+              {/* Summary */}
+              <div className="rounded-2xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-200 p-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+                    <Sparkles className="h-5 w-5 text-violet-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-medium text-violet-700 uppercase tracking-wide mb-1">Oppsummering</p>
+                    <p className="text-sm text-violet-900 leading-relaxed">{aiSuggestion.summary}</p>
+                  </div>
                 </div>
               </div>
             </div>

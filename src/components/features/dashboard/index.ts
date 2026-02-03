@@ -9,3 +9,5 @@ export { DashboardEmptyState } from './empty-state';
 export { AISuggestionDialog } from './ai-suggestion-dialog';
 export { AnalysisDialog } from './analysis-dialog';
 export type { AnalysisStepConfig } from './analysis-dialog';
+export { ScoreTrendChart } from './score-trend-chart';
+export { SocialPreview } from './social-preview';

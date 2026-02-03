@@ -21,6 +21,7 @@ import {
   CheckCircle2,
   Trash2,
   AlertTriangle,
+  Zap,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -64,10 +65,11 @@ export default function AnalysisPage() {
   const [deleting, setDeleting] = useState(false);
 
   const RERUN_STEPS = [
-    { label: 'Henter nettside', description: 'Laster inn innhold fra nettsiden', duration: '~5s', icon: Globe },
-    { label: 'Analyserer SEO', description: 'Sjekker meta-tags, overskrifter og lenker', duration: '~10s', icon: Search },
-    { label: 'Sjekker sikkerhet', description: 'Analyserer SSL-sertifikat og headers', duration: '~15s', icon: Shield },
-    { label: 'Genererer rapport', description: 'AI analyserer funnene og lager anbefalinger', duration: '~20s', icon: Sparkles },
+    { label: 'Henter nettside', description: 'Laster inn og scraper innhold fra nettsiden', duration: '~5s', icon: Globe },
+    { label: 'Analyserer SEO', description: 'Sjekker meta-tags, overskrifter, lenker og innhold', duration: '~10s', icon: Search },
+    { label: 'Sjekker sikkerhet', description: 'Tester SSL-sertifikat og sikkerhetsheaders', duration: '~15s', icon: Shield },
+    { label: 'Måler ytelse', description: 'Henter Google PageSpeed-score og Core Web Vitals', duration: '~30s', icon: Zap },
+    { label: 'Genererer rapport', description: 'AI sammenligner resultater og lager anbefalinger', duration: '~20s', icon: Sparkles },
   ];
 
   // Timer og steg-fremdrift mens «Kjør på nytt» kjører
@@ -157,22 +159,47 @@ export default function AnalysisPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ rerunFromAnalysisId: analysis.id }),
       });
-      const data = await res.json();
+      let data: { error?: string; limitReached?: boolean; analysisId?: string } = {};
+      try {
+        data = await res.json();
+      } catch {
+        if (res.status === 504 || res.status === 503) {
+          toast.error('Analysen tok for lang tid og ble avbrutt', {
+            description: 'Prøv å kjøre analysen på nytt.',
+          });
+          return;
+        }
+        data = { error: 'Kunne ikke kjøre analysen på nytt' };
+      }
 
       if (!res.ok) {
-        const message = data?.error || 'Kunne ikke kjøre analysen på nytt';
+        const isTimeout = res.status === 504 || res.status === 503;
         if (data?.limitReached) {
-          toast.error(message, { description: 'Oppgrader til Premium for flere analyser.' });
+          toast.error(data.error || 'Kunne ikke kjøre analysen på nytt', {
+            description: 'Oppgrader til Premium for flere analyser.',
+          });
+        } else if (isTimeout) {
+          toast.error('Analysen tok for lang tid og ble avbrutt', {
+            description: 'Prøv å kjøre analysen på nytt.',
+          });
         } else {
-          toast.error(message);
+          toast.error(data?.error || 'Kunne ikke kjøre analysen på nytt');
         }
         return;
       }
 
       toast.success('Analysen er ferdig.');
       router.push(`/dashboard?analysisId=${data.analysisId}`);
-    } catch {
-      toast.error('Noe gikk galt. Prøv igjen.');
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : '';
+      const isTimeoutOrNetwork = /timeout|timed out|network|failed to fetch|load failed/i.test(msg);
+      if (isTimeoutOrNetwork) {
+        toast.error('Analysen tok for lang tid eller ble avbrutt', {
+          description: 'Prøv å kjøre analysen på nytt.',
+        });
+      } else {
+        toast.error('Noe gikk galt. Prøv igjen.');
+      }
     } finally {
       setRerunningAnalysis(null);
     }
