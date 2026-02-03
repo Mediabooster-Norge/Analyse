@@ -358,13 +358,8 @@ export default function LandingPage() {
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-100">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
-          <Link href="/" className="flex flex-col gap-0.5 min-w-0 flex-shrink">
-            <img
-              src="/mediabooster-logo-darkgrey.avif"
-              alt="Mediabooster"
-              className="h-4 sm:h-5 w-auto"
-            />
-            <span className="text-neutral-500 text-[9px] sm:text-xs truncate">Din digitale CMO - og AI-kollega!</span>
+          <Link href="/" className="flex items-center min-w-0 flex-shrink">
+            <img src="/logo.svg" alt="Mediabooster" className="h-5 sm:h-6 w-auto brightness-0" />
           </Link>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {loading ? (
@@ -391,30 +386,48 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section - Centered with Dashboard Demo */}
-      <section className="pt-20 pb-6 sm:pt-24 sm:pb-8 md:pt-32 md:pb-12 relative overflow-hidden">
-        {/* Background elements */}
-        <div className="absolute inset-0 -z-10">
-          <div className="absolute top-0 right-0 w-[400px] sm:w-[600px] h-[400px] sm:h-[600px] rounded-full bg-gradient-to-br from-purple-100/40 via-transparent to-transparent blur-[80px] sm:blur-[100px]" />
-          <div className="absolute bottom-0 left-0 w-[300px] sm:w-[500px] h-[300px] sm:h-[500px] rounded-full bg-gradient-to-br from-cyan-100/30 via-transparent to-transparent blur-[60px] sm:blur-[80px]" />
-        </div>
+      <section className="pt-20 pb-6 sm:pt-24 sm:pb-8 md:pt-28 md:pb-12 relative overflow-hidden">
+        {/* Hero tekst + dashboard – bakgrunn stopper midt i dashboard-fremvisningen */}
+        <div className="relative">
+          {/* Bakgrunn med mask så den fader ut midt i dashboard-området */}
+          <div
+            className="absolute inset-0 z-0 opacity-60 rounded-b-2xl sm:rounded-b-3xl pointer-events-none"
+            style={{
+              maskImage: 'linear-gradient(to bottom, black 0%, black 45%, transparent 75%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 45%, transparent 75%)',
+            }}
+            aria-hidden
+          >
+            <div className="absolute inset-0 bg-grid-subtle-hero rounded-b-2xl sm:rounded-b-3xl" />
+          </div>
+          <div
+            className="absolute inset-0 -z-10 overflow-hidden rounded-b-2xl sm:rounded-b-3xl pointer-events-none"
+            style={{
+              maskImage: 'linear-gradient(to bottom, black 0%, black 45%, transparent 75%)',
+              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 45%, transparent 75%)',
+            }}
+          >
+            <div className="absolute top-0 right-0 w-[400px] sm:w-[500px] h-[400px] sm:h-[500px] rounded-full bg-gradient-to-br from-neutral-200/30 via-transparent to-transparent blur-[100px] sm:blur-[120px]" />
+            <div className="absolute bottom-0 left-0 w-[280px] sm:w-[400px] h-[280px] sm:h-[400px] rounded-full bg-gradient-to-tr from-neutral-100/25 via-transparent to-transparent blur-[80px] sm:blur-[100px]" />
+          </div>
 
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
-          {/* Hero Text - Centered */}
+          <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 relative z-10 pb-8 sm:pb-10 md:pb-12">
+            {/* Hero Text - Centered */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-            className="text-center max-w-3xl mx-auto mb-8 sm:mb-12"
+            className="text-center max-w-3xl mx-auto mb-6 sm:mb-8"
             >
-              <Badge variant="outline" className="mb-4 sm:mb-6 text-xs sm:text-sm text-neutral-600 border-neutral-300">
-              AI-drevet nettside-analyse
+              <Badge variant="outline" className="mb-3 sm:mb-4 text-xs sm:text-sm text-neutral-600 border-neutral-300">
+              Din digitale CMO – og AI-kollega
               </Badge>
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-4 sm:mb-6">
-              Din digitale CMO<br />
-              <span className="text-neutral-400">- og AI-kollega.</span>
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-3 sm:mb-4 max-w-2xl mx-auto leading-none">
+              Analyser nettsiden din<br />
+              <span className="text-neutral-400">med AI som hjelper deg.</span>
               </h1>
-            <p className="text-base sm:text-lg text-neutral-500 mb-6 sm:mb-8 max-w-xl mx-auto px-1">
-                Få en fullstendig helsesjekk av nettsiden med SEO, sikkerhet, innhold og AI-anbefalinger – alt i én rapport.
+            <p className="text-base sm:text-lg text-neutral-500 mb-4 sm:mb-6 max-w-xl mx-auto px-1 leading-relaxed">
+                Helsesjekk av nettsiden: SEO, sikkerhet, innhold og hastighet – med konkrete AI-anbefalinger i én rapport.
               </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
                 {user ? (
@@ -439,13 +452,14 @@ export default function LandingPage() {
                 )}
               </div>
             </motion.div>
+          </div>
 
-          {/* Dashboard Demo */}
+          {/* Dashboard Demo – bakgrunn stopper midt i denne */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative overflow-hidden"
+            className="relative z-10 overflow-hidden max-w-6xl mx-auto px-3 sm:px-4 md:px-6"
           >
             {/* Top part with border and shadow */}
             <div className="rounded-t-2xl sm:rounded-t-3xl border border-b-0 border-neutral-200 shadow-xl sm:shadow-2xl shadow-neutral-200/50 overflow-hidden bg-white min-w-0">
@@ -491,11 +505,6 @@ export default function LandingPage() {
                       {tab.label}
                     </button>
                   ))}
-                  <div className="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium text-neutral-400 cursor-not-allowed shrink-0">
-                    <Eye className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                    AI-synlighet
-                    <span className="text-[8px] sm:text-[9px] px-1 sm:px-1.5 py-0.5 rounded-full bg-violet-100 text-violet-600 font-medium">Snart</span>
-                  </div>
                 </div>
               </div>
         
@@ -516,22 +525,22 @@ export default function LandingPage() {
                   transition={{ duration: 0.3 }}
                   className="space-y-4"
                 >
-                  {/* Summary Card */}
-                  <div className="rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-amber-50 border border-amber-200">
+                  {/* Summary Card – positiv framing */}
+                  <div className="rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-green-50 border border-green-200">
                     <div className="flex items-start gap-2 sm:gap-4">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 bg-amber-100">
-                        <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-amber-600" />
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 bg-green-100">
+                        <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm sm:text-base font-semibold text-amber-900">
-                          Nettsiden har forbedringspotensial
+                        <h3 className="text-sm sm:text-base font-semibold text-green-900">
+                          Solid resultat
                         </h3>
-                        <p className="text-xs sm:text-sm text-amber-700 mt-0.5 line-clamp-2">
-                          Vi har funnet noen områder som kan forbedres for bedre synlighet i Google.
+                        <p className="text-xs sm:text-sm text-green-700 mt-0.5 line-clamp-2">
+                          82 poeng – vi viser deg hvordan du blir enda bedre i Google.
                         </p>
                       </div>
                       <div className="text-right shrink-0">
-                        <div className="text-2xl sm:text-3xl font-bold text-amber-600">78</div>
+                        <div className="text-2xl sm:text-3xl font-bold text-green-600">82</div>
                         <p className="text-[10px] sm:text-xs text-neutral-500">av 100</p>
                       </div>
                     </div>
@@ -548,15 +557,15 @@ export default function LandingPage() {
                       <div className="p-2 sm:p-4">
                         <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-3">
                           <div className="text-center">
-                            <ScoreRing score={78} label="Totalt" size="sm" />
+                            <ScoreRing score={82} label="Totalt" size="sm" />
                             <p className="text-[10px] text-neutral-500 mt-1">Samlet</p>
                           </div>
                           <div className="text-center">
-                            <ScoreRing score={72} label="SEO" size="sm" />
+                            <ScoreRing score={78} label="SEO" size="sm" />
                             <p className="text-[10px] text-neutral-500 mt-1">Søkemotor</p>
                           </div>
                           <div className="text-center">
-                            <ScoreRing score={58} label="Innhold" size="sm" />
+                            <ScoreRing score={68} label="Innhold" size="sm" />
                             <p className="text-[10px] text-neutral-500 mt-1">Tekst</p>
                           </div>
                           <div className="text-center">
@@ -571,14 +580,14 @@ export default function LandingPage() {
                       </div>
                     </div>
 
-                    {/* Priority Improvements */}
+                    {/* Muligheter – positiv formulering */}
                     <div className="rounded-xl sm:rounded-2xl border border-neutral-200 bg-white p-2 sm:p-4 min-w-0">
                       <div className="flex items-center justify-between mb-2 sm:mb-3">
                         <h3 className="font-semibold text-neutral-900 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-                          <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-amber-500" />
-                          Forbedringer
+                          <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500" />
+                          Tips for å bli enda bedre
                         </h3>
-                        <span className="text-[10px] sm:text-xs text-neutral-400">4 funn</span>
+                        <span className="text-[10px] sm:text-xs text-neutral-400">4 muligheter</span>
                       </div>
                       <div className="space-y-1 sm:space-y-1.5">
                         {[
@@ -899,15 +908,22 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Trusted by - Scrolling Logo Carousel */}
-      <section className="py-8 sm:py-12 overflow-hidden relative">
+      {/* Vertikale linjer som går gjennom seksjonene (opp og ned) */}
+      <div className="relative">
+        <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-full max-w-6xl px-3 sm:px-4 md:px-6 pointer-events-none z-0" aria-hidden>
+          <div className="absolute left-1/3 top-0 bottom-0 w-px bg-neutral-200/80" />
+          <div className="absolute left-2/3 top-0 bottom-0 w-px bg-neutral-200/80" />
+        </div>
+
+      {/* Trusted by - Scrolling Logo Carousel (vertikale linjer skjult – kun horisontal) */}
+      <section className="relative z-10 bg-white pt-8 sm:pt-12 md:pt-16 pb-12 sm:pb-16 md:pb-20 overflow-hidden section-separator-top">
         <motion.p 
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           className="text-center text-[10px] sm:text-xs uppercase tracking-widest text-neutral-400 mb-4 sm:mb-8 px-4"
         >
-          Brukes av innovative bedrifter
+          Brukes av norske bedrifter
         </motion.p>
         
         {/* Fade edges */}
@@ -919,17 +935,9 @@ export default function LandingPage() {
           <div className="flex animate-scroll-left">
             {[...Array(3)].map((_, setIndex) => (
               <div key={setIndex} className="flex shrink-0 items-center gap-16 px-8">
-                {[
-                  { name: 'Acme Corp', icon: '◆' },
-                  { name: 'TechFlow', icon: '●' },
-                  { name: 'Quantum', icon: '◈' },
-                  { name: 'Synapse', icon: '◎' },
-                  { name: 'Vertex', icon: '▲' },
-                  { name: 'Nebula', icon: '★' },
-                ].map((logo, i) => (
-                  <div key={`${setIndex}-${i}`} className="flex items-center gap-2 opacity-40 hover:opacity-70 transition-opacity">
-                    <span className="text-2xl text-neutral-600">{logo.icon}</span>
-                    <span className="text-lg font-semibold text-neutral-600 tracking-tight">{logo.name}</span>
+                {[...Array(6)].map((_, i) => (
+                  <div key={`${setIndex}-${i}`} className="flex items-center opacity-40 hover:opacity-70 transition-opacity">
+                    <img src="/logo.svg" alt="" className="h-6 sm:h-8 w-auto brightness-0" aria-hidden />
                   </div>
                 ))}
               </div>
@@ -942,17 +950,9 @@ export default function LandingPage() {
           <div className="flex animate-scroll-right">
             {[...Array(3)].map((_, setIndex) => (
               <div key={setIndex} className="flex shrink-0 items-center gap-16 px-8">
-                {[
-                  { name: 'Horizon', icon: '◐' },
-                  { name: 'Pulse', icon: '◉' },
-                  { name: 'Atlas', icon: '⬡' },
-                  { name: 'Spark', icon: '✦' },
-                  { name: 'Nova', icon: '✧' },
-                  { name: 'Prism', icon: '◇' },
-                ].map((logo, i) => (
-                  <div key={`${setIndex}-${i}`} className="flex items-center gap-2 opacity-40 hover:opacity-70 transition-opacity">
-                    <span className="text-2xl text-neutral-600">{logo.icon}</span>
-                    <span className="text-lg font-semibold text-neutral-600 tracking-tight">{logo.name}</span>
+                {[...Array(6)].map((_, i) => (
+                  <div key={`${setIndex}-${i}`} className="flex items-center opacity-40 hover:opacity-70 transition-opacity">
+                    <img src="/logo.svg" alt="" className="h-6 sm:h-8 w-auto brightness-0" aria-hidden />
                   </div>
                 ))}
               </div>
@@ -978,279 +978,21 @@ export default function LandingPage() {
         `}</style>
       </section>
 
-      {/* Bento Grid Features */}
-      <section className="py-8 sm:py-12 md:py-16">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-5 sm:mb-8 md:mb-12"
-          >
-            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight mb-2 sm:mb-3">
-              Komplett analyse<br />
-              <span className="text-neutral-400">av hele nettsiden.</span>
-            </h2>
-            <p className="text-xs sm:text-sm md:text-base text-neutral-500 max-w-xl mx-auto px-2">
-              SEO, sikkerhet, innhold, hastighet og nøkkelord – med AI-anbefalinger.
-            </p>
-          </motion.div>
-
-          {/* Bento Grid */}
-          <motion.div 
-            className="grid md:grid-cols-3 gap-1.5 sm:gap-2 md:gap-3"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-          >
-            {/* SEO - Large card */}
-            <motion.div 
-              variants={itemVariants}
-              className="md:col-span-2 relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-4 md:p-6 overflow-hidden group bg-neutral-100"
-            >
-              <div className="relative z-10">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-3 md:group-hover:scale-110 transition-transform">
-                  <Search className="w-4 h-4 sm:w-5 sm:h-5 text-neutral-700" />
-                </div>
-                <h3 className="text-sm sm:text-lg font-semibold mb-1">SEO-analyse</h3>
-                <p className="text-neutral-500 mb-2 sm:mb-4 max-w-sm text-xs sm:text-sm">
-                  Sjekk meta tags, overskrifter, bilder, lenker og teknisk SEO
-                </p>
-                <div className="flex flex-wrap gap-1 sm:gap-1.5">
-                  {['Title', 'Description', 'H1-H6', 'Bilder', 'Lenker', 'Open Graph'].map((tag, i) => (
-                    <span 
-                      key={tag} 
-                      className="px-1.5 sm:px-2.5 py-0.5 bg-white rounded-full text-[10px] sm:text-xs text-neutral-600 md:transition-all md:duration-300 md:group-hover:bg-neutral-900 md:group-hover:text-white"
-                      style={{ transitionDelay: `${i * 50}ms` }}
-                    >
-                      {tag}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className="absolute right-6 top-1/2 -translate-y-1/2 opacity-0 md:group-hover:opacity-100 transition-all duration-300 transform translate-x-4 md:group-hover:translate-x-0 z-10 hidden md:block">
-                <ScoreRing score={92} label="SEO" size="lg" />
-              </div>
-            </motion.div>
-
-            {/* Security - Small card */}
-            <motion.div 
-              variants={itemVariants}
-              className="relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-4 md:p-6 group overflow-hidden bg-gradient-to-br from-green-100 to-emerald-100"
-            >
-              <div className="relative z-10">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-3 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
-                  <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-green-600" />
-                </div>
-                <h3 className="text-sm sm:text-lg font-semibold text-neutral-900 mb-1">Sikkerhet</h3>
-                <p className="text-neutral-500 mb-2 sm:mb-4 text-xs sm:text-sm">
-                  SSL-sertifikat og sikkerhetsheaders
-                </p>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg bg-green-100 flex items-center justify-center md:group-hover:scale-110 md:group-hover:bg-green-200 md:transition-all">
-                    <span className="text-base sm:text-lg font-bold text-green-600">A+</span>
-                  </div>
-                  <div className="text-[10px] sm:text-xs text-neutral-500 md:group-hover:text-neutral-600 md:transition-colors">
-                    SSL Grade
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Content - Small card */}
-            <motion.div 
-              variants={itemVariants}
-              className="relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-4 md:p-6 group overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100"
-            >
-              <div className="relative z-10">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-3 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
-                  <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-purple-600" />
-                </div>
-                <h3 className="text-sm sm:text-lg font-semibold mb-1">Innhold</h3>
-                <p className="text-neutral-500 mb-2 sm:mb-4 text-xs sm:text-sm">
-                  Ordtelling, lesbarhet og struktur
-                </p>
-                <div className="grid grid-cols-2 gap-1.5 sm:gap-2">
-                  <div className="bg-white rounded-lg p-1.5 sm:p-2 text-center md:group-hover:shadow-md md:transition-all">
-                    <div className="text-lg sm:text-xl font-bold md:group-hover:text-purple-600 md:transition-colors">847</div>
-                    <div className="text-[9px] sm:text-[10px] text-neutral-500">Ord</div>
-                  </div>
-                  <div className="bg-white rounded-lg p-1.5 sm:p-2 text-center md:group-hover:shadow-md md:transition-all">
-                    <div className="text-lg sm:text-xl font-bold md:group-hover:text-purple-600 md:transition-colors">38</div>
-                    <div className="text-[9px] sm:text-[10px] text-neutral-500">LIX</div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Keywords - Medium card */}
-            <motion.div 
-              variants={itemVariants}
-              className="md:col-span-2 relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-4 md:p-6 group overflow-hidden bg-gradient-to-br from-blue-100 to-cyan-100"
-            >
-              <div className="relative z-10">
-                <div className="flex items-start justify-between mb-2 sm:mb-3">
-                  <div>
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-3 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
-                      <Tag className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600" />
-                    </div>
-                    <h3 className="text-sm sm:text-lg font-semibold mb-0.5 sm:mb-1">Nøkkelordanalyse</h3>
-                    <p className="text-neutral-500 text-xs sm:text-sm">
-                      AI-estimert søkevolum, CPC og konkurranse
-                    </p>
-                  </div>
-                  <Badge className="bg-amber-100 text-amber-700 md:group-hover:bg-amber-200 md:transition-colors text-[9px] sm:text-[10px]">AI-drevet</Badge>
-                </div>
-                <div className="bg-white rounded-lg sm:rounded-xl p-1.5 sm:p-3 overflow-hidden md:group-hover:shadow-md md:transition-all">
-                  <table className="w-full text-[10px] sm:text-xs">
-                    <thead>
-                      <tr className="border-b border-neutral-100">
-                        <th className="text-left py-1 sm:py-1.5 px-1 text-[9px] sm:text-[10px] font-semibold text-neutral-500 uppercase tracking-wide">Nøkkelord</th>
-                        <th className="text-right py-1 sm:py-1.5 px-1 text-[9px] sm:text-[10px] font-semibold text-neutral-500 uppercase tracking-wide">Volum</th>
-                        <th className="text-right py-1 sm:py-1.5 px-1 text-[9px] sm:text-[10px] font-semibold text-neutral-500 uppercase tracking-wide hidden sm:table-cell">CPC</th>
-                        <th className="text-center py-1 sm:py-1.5 px-1 text-[9px] sm:text-[10px] font-semibold text-neutral-500 uppercase tracking-wide">Konk.</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {[
-                        { word: 'digital markedsføring', vol: '2.4K', cpc: '45 kr', comp: 'høy' },
-                        { word: 'seo tjenester oslo', vol: '1.8K', cpc: '62 kr', comp: 'medium' },
-                        { word: 'nettside analyse', vol: '890', cpc: '28 kr', comp: 'lav' },
-                      ].map((kw, i) => (
-                        <tr key={i} className="border-t border-neutral-50 hover:bg-blue-50 transition-colors">
-                          <td className="py-1 sm:py-1.5 px-1 text-neutral-700 truncate max-w-[100px] sm:max-w-none">{kw.word}</td>
-                          <td className="py-1 sm:py-1.5 px-1 text-right text-neutral-600">{kw.vol}</td>
-                          <td className="py-1 sm:py-1.5 px-1 text-right text-green-600 font-medium hidden sm:table-cell">{kw.cpc}</td>
-                          <td className="py-1 sm:py-1.5 px-1 text-center">
-                            <span className={`px-1 sm:px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-medium ${
-                              kw.comp === 'høy' ? 'bg-red-100 text-red-700' :
-                              kw.comp === 'medium' ? 'bg-amber-100 text-amber-700' :
-                              'bg-green-100 text-green-700'
-                            }`}>{kw.comp}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* AI Articles - Two columns on md (first in row) */}
-            <motion.div 
-              variants={itemVariants}
-              className="md:col-span-2 relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-4 md:p-6 group overflow-hidden bg-gradient-to-br from-violet-100 via-purple-100 to-fuchsia-100"
-            >
-              <div className="relative z-10">
-                <div className="flex items-start justify-between mb-2 sm:mb-3">
-                  <div>
-                    <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center mb-2 sm:mb-3 md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
-                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 text-violet-600" />
-                    </div>
-                    <h3 className="text-sm sm:text-lg font-semibold mb-0.5 sm:mb-1">AI-genererte artikler</h3>
-                    <p className="text-neutral-500 max-w-md text-xs sm:text-sm">
-                      Artikkelideer basert på analysen
-                    </p>
-                  </div>
-                  <Badge className="bg-violet-100 text-violet-700 md:group-hover:bg-violet-200 md:transition-colors text-[9px] sm:text-[10px]">Ny</Badge>
-                </div>
-                
-                <div className="grid md:grid-cols-2 gap-2 sm:gap-3">
-                  {/* Left - Article suggestions */}
-                  <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 md:group-hover:shadow-md md:transition-all">
-                    <p className="text-[9px] sm:text-[10px] font-medium text-neutral-500 uppercase tracking-wide mb-1.5 sm:mb-2">Artikkelideer</p>
-                    <div className="space-y-1 sm:space-y-1.5">
-                      {[
-                        { title: '10 strategier for digital markedsføring', priority: 'høy' },
-                        { title: 'Hvordan velge riktig SEO-byrå', priority: 'høy' },
-                      ].map((article, i) => (
-                        <div key={i} className="flex items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-lg bg-neutral-50 hover:bg-violet-50 transition-colors">
-                          <span className={`text-[8px] sm:text-[9px] px-1 py-0.5 rounded font-medium shrink-0 ${
-                            article.priority === 'høy' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-                          }`}>{article.priority}</span>
-                          <span className="text-[10px] sm:text-xs text-neutral-700 line-clamp-1">{article.title}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  
-                  {/* Right - Generated article preview */}
-                  <div className="bg-white rounded-lg sm:rounded-xl p-2 sm:p-3 md:group-hover:shadow-md md:transition-all hidden sm:block">
-                    <div className="flex items-center justify-between mb-1.5 sm:mb-2">
-                      <p className="text-[9px] sm:text-[10px] font-medium text-neutral-500 uppercase tracking-wide">Generert artikkel</p>
-                      <div className="flex items-center gap-1">
-                        <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
-                        <span className="text-[9px] text-neutral-400">600-1200 ord</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1 sm:space-y-1.5">
-                      <div className="h-3 sm:h-4 bg-neutral-100 rounded w-3/4 md:group-hover:bg-violet-100 md:transition-colors" />
-                      <div className="h-2 sm:h-2.5 bg-neutral-50 rounded w-full" />
-                      <div className="h-2 sm:h-2.5 bg-neutral-50 rounded w-5/6" />
-                      <div className="h-2.5 sm:h-3 bg-neutral-100 rounded w-1/2 mt-1.5 sm:mt-2 md:group-hover:bg-violet-100 md:transition-colors" />
-                    </div>
-                    <div className="flex gap-1.5 mt-2 sm:mt-3">
-                      <div className="px-2 py-1 rounded-lg bg-violet-100 text-violet-700 text-[9px] sm:text-[10px] font-medium md:group-hover:bg-violet-200 md:transition-colors">
-                        Kopier artikkel
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Speed / Ytelse - Performance, LCP, CLS (second in row) */}
-            <motion.div 
-              variants={itemVariants}
-              className="relative rounded-xl sm:rounded-2xl md:rounded-3xl p-3 sm:p-4 md:p-6 group overflow-hidden bg-gradient-to-br from-amber-100 to-orange-100 flex flex-col justify-center"
-            >
-              <div className="relative z-10">
-                <div className="flex items-center gap-2 mb-2 sm:mb-3">
-                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white shadow-sm flex items-center justify-center md:group-hover:shadow-md md:group-hover:scale-110 md:transition-all">
-                    <Zap className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm sm:text-lg font-semibold text-neutral-900">Hastighet</h3>
-                    <p className="text-[10px] sm:text-xs text-neutral-500">PageSpeed og Core Web Vitals</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
-                  <div className="bg-white rounded-lg p-1.5 sm:p-2 text-center md:group-hover:shadow-md md:transition-all">
-                    <div className="text-base sm:text-lg font-bold text-amber-600">88</div>
-                    <div className="text-[9px] sm:text-[10px] text-neutral-500">Performance</div>
-                  </div>
-                  <div className="bg-white rounded-lg p-1.5 sm:p-2 text-center md:group-hover:shadow-md md:transition-all">
-                    <div className="text-base sm:text-lg font-bold text-amber-600">1.8s</div>
-                    <div className="text-[9px] sm:text-[10px] text-neutral-500">LCP</div>
-                  </div>
-                  <div className="bg-white rounded-lg p-1.5 sm:p-2 text-center md:group-hover:shadow-md md:transition-all">
-                    <div className="text-base sm:text-lg font-bold text-amber-600">0.05</div>
-                    <div className="text-[9px] sm:text-[10px] text-neutral-500">CLS</div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-          </motion.div>
-        </div>
-      </section>
-
       {/* AI Suggestions Interactive Section */}
-      <section className="py-12 sm:py-16 md:py-20">
+      <section className="relative z-10 py-12 sm:py-16 md:py-20 section-separator-top">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-            className="text-center mb-8 sm:mb-12"
-          >
+              className="text-center mb-8 sm:mb-12"
+            >
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-2 sm:mb-3">
-              Fra problem<br />
-              <span className="text-neutral-400">til løsning.</span>
+              AI finner svakheter<br />
+              <span className="text-neutral-400">og foreslår løsninger.</span>
               </h2>
             <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl mx-auto px-2">
-              AI analyserer funnene og gir deg konkrete forslag du kan implementere med én gang.
+              Basert på analysen gir AI deg konkrete forslag du kan ta i bruk med én gang.
             </p>
             </motion.div>
 
@@ -1260,72 +1002,42 @@ export default function LandingPage() {
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="lg:col-span-2 space-y-1.5 sm:space-y-2"
+              className="lg:col-span-2 space-y-1 sm:space-y-2"
             >
-              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-green-600 mb-1.5 sm:mb-2 px-1">
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-green-600 mb-1 sm:mb-1.5 px-1">
                 <span>Klikk for å utforske</span>
                 <ChevronDown className="w-3 h-3 animate-bounce" />
               </div>
               {[
-                { 
-                  id: 'meta', 
-                  title: 'Meta description', 
-                  severity: 'høy',
-                  icon: FileText,
-                },
-                { 
-                  id: 'h1', 
-                  title: 'H1-struktur', 
-                  severity: 'medium',
-                  icon: AlertCircle,
-                },
-                { 
-                  id: 'images', 
-                  title: 'Alt-tekst på bilder', 
-                  severity: 'medium',
-                  icon: FileText,
-                },
-                { 
-                  id: 'content', 
-                  title: 'Innholdsmengde', 
-                  severity: 'lav',
-                  icon: FileText,
-                },
-              ].map((issue) => (
+                { id: 'meta', title: 'Meta description', desc: 'Mangler eller for kort' },
+                { id: 'h1', title: 'H1-struktur', desc: 'Flere H1 eller svak formulering' },
+                { id: 'images', title: 'Alt-tekst på bilder', desc: 'Bilder uten beskrivende tekst' },
+                { id: 'content', title: 'Innholdsmengde', desc: 'For lite tekst på siden' },
+              ].map((issue, index) => (
                 <button
                   key={issue.id}
                   onClick={() => setSelectedIssue(issue.id)}
-                  className={`w-full text-left p-2.5 sm:p-4 rounded-xl sm:rounded-2xl border transition-all duration-200 cursor-pointer ${
+                  className={`w-full text-left p-2.5 sm:p-3 rounded-lg sm:rounded-xl border transition-all duration-200 cursor-pointer ${
                     selectedIssue === issue.id
-                      ? 'border-neutral-300 bg-neutral-50'
-                      : 'border-transparent bg-neutral-50/50 hover:bg-neutral-50 hover:border-neutral-200'
+                      ? 'border-neutral-300 bg-white'
+                      : 'border-transparent bg-white/50 hover:bg-white hover:border-neutral-200'
                   }`}
                 >
-                  <div className="flex items-center gap-2 sm:gap-3">
-                    <div className={`w-7 h-7 sm:w-8 sm:h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      selectedIssue === issue.id ? 'bg-neutral-200' : 'bg-neutral-100'
-                    }`}>
-                      <issue.icon className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${
-                        selectedIssue === issue.id ? 'text-neutral-700' : 'text-neutral-500'
-                      }`} />
-                  </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className={`text-xs sm:text-sm font-medium ${
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <span className={`text-lg sm:text-xl font-light transition-colors ${
+                      selectedIssue === issue.id ? 'text-neutral-900' : 'text-neutral-300'
+                    }`}>{index + 1}</span>
+                    <div className="pt-0.5">
+                      <h3 className={`font-semibold text-sm mb-0.5 transition-colors ${
                         selectedIssue === issue.id ? 'text-neutral-900' : 'text-neutral-600'
-                      }`}>{issue.title}</h4>
-                </div>
-                    <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium ${
-                      issue.severity === 'høy' 
-                        ? 'bg-red-100 text-red-600'
-                        : issue.severity === 'medium'
-                        ? 'bg-amber-100 text-amber-600'
-                        : 'bg-green-100 text-green-600'
-                    }`}>
-                      {issue.severity}
-                        </span>
-                        </div>
+                      }`}>{issue.title}</h3>
+                      <p className={`text-xs sm:text-sm transition-colors leading-snug ${
+                        selectedIssue === issue.id ? 'text-neutral-600' : 'text-neutral-400'
+                      }`}>{issue.desc}</p>
+                    </div>
+                  </div>
                 </button>
-                  ))}
+              ))}
               </motion.div>
 
             {/* AI Suggestion panel - wider */}
@@ -1335,12 +1047,13 @@ export default function LandingPage() {
               viewport={{ once: true }}
               className="lg:col-span-3"
             >
-              <div className="bg-neutral-50 rounded-xl sm:rounded-2xl p-4 sm:p-6 min-h-[280px] sm:min-h-[320px]">
-                <div className="flex items-center gap-2 mb-4">
-                  <Sparkles className="w-4 h-4 text-neutral-500" />
-                  <span className="text-sm font-medium text-neutral-600">AI-forslag</span>
+              <div className="bg-neutral-50 rounded-xl sm:rounded-2xl border border-neutral-100 p-4 sm:p-6 min-h-[280px] sm:min-h-[320px]">
+                <div className="flex items-center gap-2 mb-1">
+                  <Sparkles className="w-4 h-4 text-amber-500" />
+                  <span className="text-sm font-semibold text-neutral-900">AI-forslag</span>
                 </div>
-                
+                <p className="text-xs text-neutral-500 mb-4">Konkrete forslag du kan ta i bruk med én gang</p>
+
                 {selectedIssue === 'meta' && (
                   <motion.div 
                     initial={{ opacity: 0, y: 10 }}
@@ -1465,20 +1178,256 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* How it works - Two column layout */}
-      <section className="py-12 sm:py-16 md:py-20 bg-neutral-50 overflow-hidden">
+      {/* Bento Grid Features – kompakt */}
+      <section className="relative z-10 py-12 sm:py-16 md:py-20 section-separator-top">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-8 sm:mb-12"
+            className="mb-4 sm:mb-6"
           >
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-2 sm:mb-3">
-              Tre enkle steg<br />
-              <span className="text-neutral-400">til bedre resultater.</span>
+              Alt vi sjekker<br />
+              <span className="text-neutral-400">i én analyse.</span>
             </h2>
-            <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl">Bare å lime inn URL – analysen er klar på under ett minutt.</p>
+            <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl">
+              SEO, sikkerhet, innhold, hastighet, nøkkelord og konkurrenter – med konkrete AI-anbefalinger.
+            </p>
+          </motion.div>
+
+          {/* Bento Grid */}
+          <motion.div 
+            className="grid md:grid-cols-3 gap-1.5 sm:gap-2 [&>*:nth-child(3n+2)]:md:section-separator-v [&>*:nth-child(3n+2)]:md:border-l [&>*:nth-child(3n+2)]:md:pl-2 [&>*:nth-child(3n+3)]:md:section-separator-v [&>*:nth-child(3n+3)]:md:border-l [&>*:nth-child(3n+3)]:md:pl-2"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+          >
+            {/* SEO */}
+            <motion.div 
+              variants={itemVariants}
+              className="relative rounded-lg sm:rounded-xl p-2.5 sm:p-3 overflow-hidden bg-neutral-100"
+            >
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0">
+                  <Search className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-neutral-700" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-xs sm:text-sm font-semibold mb-0.5">SEO-analyse</h3>
+                  <p className="text-neutral-500 mb-1.5 max-w-sm text-[10px] sm:text-xs">
+                    Meta tags, overskrifter, bilder, lenker, Open Graph
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {['Title', 'Description', 'H1-H6', 'Bilder', 'Open Graph'].map((tag) => (
+                      <span key={tag} className="px-1.5 py-0.5 bg-white rounded-full text-[9px] sm:text-[10px] text-neutral-600">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Security - Small card */}
+            <motion.div 
+              variants={itemVariants}
+              className="relative rounded-lg sm:rounded-xl p-2.5 sm:p-3 overflow-hidden bg-gradient-to-br from-green-100 to-emerald-100 flex flex-col justify-center min-h-full"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0">
+                  <Shield className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-600" />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-semibold text-neutral-900">Sikkerhet</h3>
+                  <p className="text-[10px] sm:text-xs text-neutral-500">SSL, sikkerhetsheaders</p>
+                </div>
+                <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center ml-auto">
+                  <span className="text-sm font-bold text-green-600">A+</span>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Content - Small card */}
+            <motion.div 
+              variants={itemVariants}
+              className="relative rounded-lg sm:rounded-xl p-2.5 sm:p-3 overflow-hidden bg-gradient-to-br from-purple-100 to-pink-100 flex flex-col justify-center min-h-full"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0">
+                  <FileText className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600" />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-semibold">Innhold</h3>
+                  <p className="text-[10px] sm:text-xs text-neutral-500">Ordtelling, lesbarhet (LIX)</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                <div className="bg-white rounded-md p-1.5 text-center">
+                  <div className="text-sm font-bold text-purple-600">847</div>
+                  <div className="text-[9px] text-neutral-500">Ord</div>
+                </div>
+                <div className="bg-white rounded-md p-1.5 text-center">
+                  <div className="text-sm font-bold text-purple-600">38</div>
+                  <div className="text-[9px] text-neutral-500">LIX</div>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Konkurrenter */}
+            <motion.div 
+              variants={itemVariants}
+              className="relative rounded-lg sm:rounded-xl p-2.5 sm:p-3 overflow-hidden bg-gradient-to-br from-slate-100 to-sky-100 flex flex-col justify-center min-h-full"
+            >
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0">
+                  <Globe className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-sky-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-xs sm:text-sm font-semibold text-neutral-900">Konkurrenter</h3>
+                  <p className="text-[10px] sm:text-xs text-neutral-500">Sammenlign score mot andre</p>
+                </div>
+              </div>
+              <div className="mt-1.5 flex items-center gap-2 flex-wrap text-[9px] sm:text-[10px]">
+                <span className="px-1.5 py-0.5 bg-white rounded-md font-medium text-green-600">Du 78</span>
+                <span className="text-neutral-400">vs</span>
+                <span className="px-1.5 py-0.5 bg-white rounded-md text-neutral-600">Konk. 72</span>
+              </div>
+            </motion.div>
+
+            {/* Keywords - Medium card */}
+            <motion.div 
+              variants={itemVariants}
+              className="md:col-span-2 relative rounded-lg sm:rounded-xl p-2.5 sm:p-3 overflow-hidden bg-gradient-to-br from-blue-100 to-cyan-100"
+            >
+              <div className="flex items-start justify-between gap-2 mb-1.5">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0">
+                    <Tag className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs sm:text-sm font-semibold">Nøkkelordanalyse</h3>
+                    <p className="text-[10px] sm:text-xs text-neutral-500">AI-estimert volum, CPC, konkurranse</p>
+                  </div>
+                </div>
+                <Badge className="bg-amber-100 text-amber-700 text-[9px] shrink-0">AI</Badge>
+              </div>
+              <div className="bg-white rounded-md p-1.5 overflow-hidden">
+                <table className="w-full text-[9px] sm:text-[10px]">
+                  <thead>
+                    <tr className="border-b border-neutral-100">
+                      <th className="text-left py-1 px-1 font-medium text-neutral-500">Nøkkelord</th>
+                      <th className="text-right py-1 px-1 font-medium text-neutral-500">Vol</th>
+                      <th className="text-right py-1 px-1 font-medium text-neutral-500 hidden sm:table-cell">CPC</th>
+                      <th className="text-center py-1 px-1 font-medium text-neutral-500">Konk.</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { word: 'digital markedsføring', vol: '2.4K', cpc: '45 kr', comp: 'høy' },
+                      { word: 'seo tjenester oslo', vol: '1.8K', cpc: '62 kr', comp: 'medium' },
+                      { word: 'nettside analyse', vol: '890', cpc: '28 kr', comp: 'lav' },
+                    ].map((kw, i) => (
+                      <tr key={i} className="border-t border-neutral-50">
+                        <td className="py-1 px-1 text-neutral-700 truncate max-w-[90px] sm:max-w-none">{kw.word}</td>
+                        <td className="py-1 px-1 text-right text-neutral-600">{kw.vol}</td>
+                        <td className="py-1 px-1 text-right text-green-600 hidden sm:table-cell">{kw.cpc}</td>
+                        <td className="py-1 px-1 text-center">
+                          <span className={`px-1 py-0.5 rounded text-[8px] font-medium ${
+                            kw.comp === 'høy' ? 'bg-red-100 text-red-700' :
+                            kw.comp === 'medium' ? 'bg-amber-100 text-amber-700' :
+                            'bg-green-100 text-green-700'
+                          }`}>{kw.comp}</span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+
+            {/* AI Articles */}
+            <motion.div 
+              variants={itemVariants}
+              className="md:col-span-2 relative rounded-lg sm:rounded-xl p-2.5 sm:p-3 overflow-hidden bg-gradient-to-br from-violet-100 via-purple-100 to-fuchsia-100"
+            >
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-violet-600" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-xs sm:text-sm font-semibold">AI-genererte artikler</h3>
+                    <Badge className="bg-white/90 text-violet-700 text-[9px] shrink-0 border-0">Ny</Badge>
+                  </div>
+                  <p className="text-neutral-600 mb-1.5 max-w-sm text-[10px] sm:text-xs">
+                    Få artikkelideer basert på analysen, deretter full tekst med meta og bildeforslag.
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {['Ideer', 'Full tekst', 'Meta', 'Bilde'].map((tag) => (
+                      <span key={tag} className="px-1.5 py-0.5 bg-white rounded-full text-[9px] sm:text-[10px] text-violet-700/90">
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-[9px] sm:text-[10px] text-neutral-500 mt-1">600–1200 ord per artikkel</p>
+                </div>
+              </div>
+            </motion.div>
+
+            {/* Speed */}
+            <motion.div 
+              variants={itemVariants}
+              className="relative rounded-lg sm:rounded-xl p-2.5 sm:p-3 overflow-hidden bg-gradient-to-br from-amber-100 to-orange-100"
+            >
+              <div className="flex items-center gap-2 mb-1.5">
+                <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-white shadow-sm flex items-center justify-center shrink-0">
+                  <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-xs sm:text-sm font-semibold text-neutral-900">Hastighet</h3>
+                  <p className="text-[10px] sm:text-xs text-neutral-500">PageSpeed, LCP, CLS</p>
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                <div className="bg-white rounded-md p-1.5 text-center">
+                  <div className="text-sm font-bold text-amber-600">88</div>
+                  <div className="text-[8px] text-neutral-500">Perf</div>
+                </div>
+                <div className="bg-white rounded-md p-1.5 text-center">
+                  <div className="text-sm font-bold text-amber-600">1.8s</div>
+                  <div className="text-[8px] text-neutral-500">LCP</div>
+                </div>
+                <div className="bg-white rounded-md p-1.5 text-center">
+                  <div className="text-sm font-bold text-amber-600">0.05</div>
+                  <div className="text-[8px] text-neutral-500">CLS</div>
+                </div>
+              </div>
+            </motion.div>
+
+          </motion.div>
+        </div>
+      </section>
+
+      {/* How it works - Two column layout. Vertikale linjer i full seksjonshøyde. */}
+      <section className="relative z-10 py-12 sm:py-16 md:py-20 bg-neutral-50 overflow-hidden section-separator-top">
+        {/* Vertikale linjer venstre og høyre – hele seksjonen opp og ned */}
+        <div className="hidden lg:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-full max-w-6xl px-3 sm:px-4 md:px-6 pointer-events-none z-0" aria-hidden>
+          <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-300" />
+          <div className="absolute right-0 top-0 bottom-0 w-px bg-neutral-300" />
+        </div>
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 relative z-10">
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-8 sm:mb-12"
+          >
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-2 sm:mb-3">
+              Slik fungerer det<br />
+              <span className="text-neutral-400">tre enkle steg.</span>
+            </h2>
+            <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl mx-auto">Lim inn nettside-URL – analysen er klar på under ett minutt.</p>
           </motion.div>
 
           <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-start">
@@ -1487,9 +1436,19 @@ export default function LandingPage() {
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="space-y-1.5 sm:space-y-3"
+              className="relative flex gap-0 lg:gap-6"
             >
-              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-green-600 mb-1.5 sm:mb-2 px-1">
+              <div className="hidden lg:flex flex-col items-center shrink-0 pt-8 pb-2 w-6" aria-hidden>
+                <div className="w-px flex-1 min-h-[2rem] bg-neutral-300/70" />
+                <div className="w-2 h-2 rounded-full bg-neutral-400 shrink-0 -mt-px ring-4 ring-neutral-50" />
+                <div className="w-px flex-1 min-h-[4rem] bg-neutral-300/70" />
+                <div className="w-2 h-2 rounded-full bg-neutral-400 shrink-0 -mt-px ring-4 ring-neutral-50" />
+                <div className="w-px flex-1 min-h-[4rem] bg-neutral-300/70" />
+                <div className="w-2 h-2 rounded-full bg-neutral-400 shrink-0 -mt-px ring-4 ring-neutral-50" />
+                <div className="w-px flex-1 min-h-[2rem] bg-neutral-300/70" />
+              </div>
+              <div className="space-y-1 sm:space-y-2 flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-green-600 mb-1 sm:mb-1.5 px-1">
                 <span>Klikk for å utforske</span>
                 <ChevronDown className="w-3 h-3 animate-bounce" />
               </div>
@@ -1502,7 +1461,7 @@ export default function LandingPage() {
                 { 
                   step: 2, 
                 title: 'Start analysen',
-                  desc: 'Legg inn nettadressen din og klikk "Analyser". Vi sjekker SEO, sikkerhet, innhold og AI-synlighet.',
+                  desc: 'Legg inn nettadressen din og klikk "Analyser". Vi sjekker SEO, sikkerhet, innhold og hastighet.',
                 },
                 { 
                   step: 3, 
@@ -1513,21 +1472,21 @@ export default function LandingPage() {
                 <button
                   key={item.step}
                   onClick={() => setSelectedStep(item.step)}
-                  className={`w-full text-left p-3 sm:p-5 rounded-xl sm:rounded-2xl border transition-all duration-200 cursor-pointer ${
+                  className={`w-full text-left p-2.5 sm:p-3 rounded-lg sm:rounded-xl border transition-all duration-200 cursor-pointer ${
                     selectedStep === item.step
                       ? 'border-neutral-300 bg-white'
                       : 'border-transparent bg-white/50 hover:bg-white hover:border-neutral-200'
                   }`}
                 >
-                  <div className="flex items-start gap-2.5 sm:gap-4">
-                    <span className={`text-2xl sm:text-3xl font-light transition-colors ${
+                  <div className="flex items-start gap-2 sm:gap-3">
+                    <span className={`text-lg sm:text-xl font-light transition-colors ${
                       selectedStep === item.step ? 'text-neutral-900' : 'text-neutral-300'
                     }`}>{item.step}</span>
-                    <div className="pt-0.5 sm:pt-1">
-                      <h3 className={`font-semibold text-sm sm:text-lg mb-0.5 sm:mb-1 transition-colors ${
+                    <div className="pt-0.5">
+                      <h3 className={`font-semibold text-sm mb-0.5 transition-colors ${
                         selectedStep === item.step ? 'text-neutral-900' : 'text-neutral-600'
                       }`}>{item.title}</h3>
-                      <p className={`text-xs sm:text-sm transition-colors ${
+                      <p className={`text-xs sm:text-sm transition-colors leading-snug ${
                         selectedStep === item.step ? 'text-neutral-600' : 'text-neutral-400'
                       }`}>{item.desc}</p>
                     </div>
@@ -1535,13 +1494,14 @@ export default function LandingPage() {
                 </button>
               ))}
               
-              <div className="pt-4 sm:pt-6 pb-2 sm:pb-0">
+              <div className="pt-3 sm:pt-4 pb-2 sm:pb-0">
                 <Button className="bg-neutral-900 hover:bg-neutral-800 w-full sm:w-auto h-11 sm:h-10" asChild>
                   <Link href="/register">
                     Kom i gang gratis
                     <ArrowRight className="ml-2 w-4 h-4" />
                   </Link>
                 </Button>
+              </div>
               </div>
             </motion.div>
 
@@ -1566,7 +1526,7 @@ export default function LandingPage() {
               
               {/* Content with fade effect */}
               <div 
-                className="bg-white border-l border-r border-neutral-200 max-h-[380px] overflow-hidden"
+                className="relative bg-white border-l border-r border-neutral-200 max-h-[380px] overflow-hidden"
                 style={{ 
                   maskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)', 
                   WebkitMaskImage: 'linear-gradient(to bottom, black 65%, transparent 100%)' 
@@ -1759,11 +1719,113 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials - Hidden for now */}
-      {/* TODO: Add real testimonials when available */}
+      {/* Hva du får – Gratis vs Premium. Vertikale linjer i full seksjonshøyde. */}
+      <section className="relative z-10 py-12 sm:py-16 md:py-20 bg-neutral-50 section-separator-top border-t border-neutral-300">
+        {/* Vertikale linjer: venstre kant, mellom kortene, høyre kant – hele seksjonen opp og ned (kun to-kolonne) */}
+        <div className="hidden md:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl pointer-events-none z-0" aria-hidden>
+          <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-300" />
+          <div className="absolute right-0 top-0 bottom-0 w-px bg-neutral-300" />
+        </div>
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-8 sm:mb-12"
+          >
+            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-2 sm:mb-3">
+              Hva du får<br />
+              <span className="text-neutral-400">Gratis og Premium.</span>
+            </h2>
+            <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl mx-auto">
+              Samme analyseverktøy – ulike grenser avhengig av plan.
+            </p>
+          </motion.div>
+
+          <div className="relative w-full">
+            {/* Horisontale linjer – hele bredden av innholdsområdet */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-neutral-300 z-0 hidden md:block" aria-hidden />
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-neutral-300 z-0 hidden md:block" aria-hidden />
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="relative z-10 grid md:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto"
+            >
+            {/* Gratis */}
+            <div className="relative z-10 rounded-2xl border border-neutral-200 bg-white shadow-sm p-5 sm:p-6 flex flex-col">
+              <div className="mb-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-neutral-500">Gratis</p>
+                <p className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-0.5">0 kr</p>
+                <p className="text-xs text-neutral-500 mt-0.5">per måned</p>
+              </div>
+              <ul className="space-y-2 flex-1 text-sm text-neutral-700">
+                {[
+                  'Full SEO-, sikkerhets- og innholdsanalyse',
+                  'AI-anbefalinger og forbedringsforslag',
+                  'Sammenligning med konkurrenter',
+                  'Nøkkelordanalyse (AI-estimater)',
+                  'Rapport som PDF',
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mt-4 pt-4 border-t border-neutral-100 space-y-1.5">
+                <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Grenser</p>
+                <p className="text-sm text-neutral-700">3 analyser og 1 AI-artikkel per måned</p>
+              </div>
+              <Button className="mt-6 w-full bg-neutral-900 hover:bg-neutral-800" size="lg" asChild>
+                <Link href="/register">
+                  Kom i gang gratis
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </Link>
+              </Button>
+            </div>
+
+            {/* Premium */}
+            <div className="relative z-10 rounded-2xl border-2 border-neutral-900 bg-white shadow-md p-5 sm:p-6 flex flex-col md:pl-6">
+              <div className="absolute top-3 right-3">
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] sm:text-xs font-medium">
+                  Anbefalt
+                </span>
+              </div>
+              <div className="mb-4">
+                <p className="text-xs font-medium uppercase tracking-wider text-neutral-500">Premium</p>
+                <p className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-0.5">89 kr</p>
+                <p className="text-xs text-neutral-500 mt-0.5">per måned</p>
+              </div>
+              <p className="text-sm font-medium text-neutral-800 mb-3">Alt i Gratis, pluss:</p>
+              <ul className="space-y-2 flex-1 text-sm text-neutral-700">
+                {[
+                  'Ubegrenset analyser per måned',
+                  '30 AI-genererte artikler per måned',
+                  'Tilpasset til ditt bruk',
+                  'Prioritert support',
+                ].map((item, i) => (
+                  <li key={i} className="flex items-start gap-2">
+                    <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <Button variant="outline" className="mt-6 w-full border-neutral-900 text-neutral-900 hover:bg-neutral-900 hover:text-white" size="lg" asChild>
+                <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
+                  Kom i gang nå
+                  <ArrowRight className="ml-2 w-4 h-4" />
+                </a>
+              </Button>
+            </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
 
       {/* FAQ - Two column layout */}
-      <section className="py-16">
+      <section className="relative z-10 py-12 sm:py-16 md:py-20 overflow-hidden section-separator-top">
         <div className="max-w-6xl mx-auto px-6">
           <div className="grid md:grid-cols-5 gap-8 items-start">
             {/* Left side - Title */}
@@ -1777,7 +1839,7 @@ export default function LandingPage() {
                 Spørsmål<br />
                 <span className="text-neutral-400">og svar.</span>
               </h2>
-              <p className="text-neutral-500 mb-6">Alt du lurer på før du kommer i gang.</p>
+              <p className="text-sm sm:text-base md:text-lg text-neutral-500 mb-6">Alt du lurer på om analysen og tilbudet.</p>
               <motion.div whileHover={{ x: 4 }}>
                 <Link 
                   href="https://mediabooster.no/kontakt" 
@@ -1801,27 +1863,31 @@ export default function LandingPage() {
               {[
                 {
                   q: 'Er dette virkelig gratis?',
-                  a: 'Ja, verktøyet er helt gratis å bruke. Du kan kjøre analyser, se resultater og få AI-anbefalinger uten å betale noe.',
+                  a: 'Ja. Med gratis konto får du 3 analyser og 1 AI-generert artikkel per måned, samt full tilgang til SEO-, sikkerhets-, innholds- og hastighetsanalyse med AI-anbefalinger. Premium (89 kr/mnd) gir ubegrenset analyser og 30 AI-artikler per måned.',
                 },
                 {
                   q: 'Hva analyserer dere?',
-                  a: 'Vi sjekker SEO (tittel, meta description, H1-struktur, bilder), sikkerhet (SSL-sertifikat, sikkerhetsheaders), innhold (ordantall, lesbarhet), AI-synlighet og gir deg AI-genererte forbedringsforslag.',
+                  a: 'Vi sjekker SEO (sidetittel, meta-beskrivelse, H1/H2, bilder med alt-tekst, Open Graph), sikkerhet (SSL, HSTS, CSP m.m.), innhold (ordtelling, lesbarhet LIX) og hastighet (PageSpeed, LCP, CLS). Du får konkrete forbedringsforslag og kan sammenligne med konkurrenter og se AI-estimerte nøkkelord.',
                 },
                 {
-                  q: 'Hva er AI-søk synlighet?',
-                  a: 'Vi sjekker om AI-modeller som ChatGPT og Claude kjenner til bedriften din og kan anbefale den til brukere. Dette blir stadig viktigere ettersom flere bruker AI-assistenter for å finne tjenester.',
+                  q: 'Hva er grensen for gratis?',
+                  a: 'Gratis: 3 analyser per måned og 1 AI-generert artikkel per måned. Premium: ubegrenset analyser og 30 AI-artikler per måned for 89 kr/mnd.',
                 },
                 {
                   q: 'Hva er nøkkelordanalysen?',
-                  a: 'Vi bruker AI til å estimere søkevolum, CPC og konkurranse for relevante nøkkelord. Dette hjelper deg å forstå hvilke søkeord du bør satse på.',
+                  a: 'Vi bruker AI til å estimere søkevolum, CPC og konkurranse for nøkkelord som passer til nettsiden din. Det hjelper deg å prioritere hvilke søkeord du bør satse på.',
                 },
                 {
                   q: 'Kan jeg sammenligne med konkurrenter?',
-                  a: 'Ja! Du kan legge til konkurrenters nettsider og se hvordan du ligger an på SEO, sikkerhet og innhold sammenlignet med dem.',
+                  a: 'Ja. Du legger inn URL-er til konkurrentene, og vi sammenligner score på SEO, innhold, sikkerhet og hastighet så du ser hvordan du ligger an.',
+                },
+                {
+                  q: 'Hva er AI-genererte artikler?',
+                  a: 'Basert på analysen kan du få forslag til artikkelideer og la AI generere full artikkeltekst (med forslag til meta og bilde). Gratis har 1 slik artikkel per måned, Premium har 30.',
                 },
                 {
                   q: 'Hvor lang tid tar en analyse?',
-                  a: 'En analyse tar vanligvis under ett minutt. Du får resultater med én gang analysen er ferdig.',
+                  a: 'Vanligvis under ett minutt. Du limer inn URL, klikker Analyser, og får rapport med én gang.',
                 },
               ].map((faq, i) => (
                 <motion.div
@@ -1849,7 +1915,7 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA - Inline style */}
-      <section className="py-8 sm:py-12">
+      <section className="relative z-10 py-12 sm:py-16 md:py-20 section-separator-top">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
@@ -1863,11 +1929,11 @@ export default function LandingPage() {
               {/* Left column - Text and CTA */}
               <div className="p-6 sm:p-10 md:p-12 flex flex-col justify-center relative z-20">
                 <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight text-white mb-3 sm:mb-4 leading-tight">
-                  Prøv det selv<br />
-                  <span className="text-neutral-400">- helt gratis.</span>
+                  Prøv analysen<br />
+                  <span className="text-neutral-400">helt gratis.</span>
                 </h2>
                 <p className="text-sm sm:text-base text-neutral-400 mb-6 sm:mb-8 max-w-sm">
-                  Full analyse av nettsiden din på under ett minutt. SEO, sikkerhet, innhold og AI-anbefalinger.
+                  Full helsesjekk av nettsiden din på under ett minutt – SEO, sikkerhet, innhold og AI-anbefalinger.
                 </p>
               <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
                   <Button className="bg-white text-neutral-900 hover:bg-neutral-100 h-10 sm:h-12 px-4 sm:px-6 text-sm sm:text-base" asChild>
@@ -1957,8 +2023,10 @@ export default function LandingPage() {
         </div>
       </section>
 
+      </div>
+
       {/* Footer - Modern minimal */}
-      <footer className="py-6 sm:py-8">
+      <footer className="py-10 sm:py-12">
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-4 sm:py-6 border-t border-neutral-100">
             <motion.div 
@@ -1966,14 +2034,13 @@ export default function LandingPage() {
               whileInView={{ opacity: 1 }}
               viewport={{ once: true }}
             >
-              <Link href="/" className="flex flex-col gap-0.5 group">
+              <Link href="/" className="flex items-center group">
                 <motion.img
                   whileHover={{ rotate: 5 }}
-                  src="/mediabooster-logo-darkgrey.avif"
+                  src="/logo.svg"
                   alt="Mediabooster"
-                  className="h-5 w-auto"
+                  className="h-6 w-auto brightness-0"
                 />
-                <span className="text-neutral-500 text-xs">Din digitale CMO - og AI-kollega!</span>
               </Link>
             </motion.div>
             

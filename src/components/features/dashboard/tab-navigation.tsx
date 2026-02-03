@@ -3,13 +3,15 @@
 import { BarChart3, TrendingUp, Tag, Sparkles, Eye } from 'lucide-react';
 import type { DashboardTab } from '@/types/dashboard';
 
+const AI_VISIBILITY_ENABLED = false;
+
 interface TabNavigationProps {
   activeTab: DashboardTab;
   onTabChange: (tab: DashboardTab) => void;
   competitorCount?: number;
 }
 
-const tabs = [
+const allTabs = [
   { id: 'overview' as const, label: 'Oversikt', shortLabel: 'Oversikt', icon: BarChart3 },
   { id: 'competitors' as const, label: 'Konkurrenter', shortLabel: 'Konk.', icon: TrendingUp, showCount: true },
   { id: 'keywords' as const, label: 'Nøkkelord', shortLabel: 'Nøkkel', icon: Tag },
@@ -18,6 +20,8 @@ const tabs = [
 ];
 
 export function TabNavigation({ activeTab, onTabChange, competitorCount }: TabNavigationProps) {
+  const tabs = AI_VISIBILITY_ENABLED ? allTabs : allTabs.filter((t) => t.id !== 'ai-visibility');
+
   return (
     <div className="overflow-x-auto -mx-3 max-[400px]:-mx-3 min-[401px]:-mx-4 sm:mx-0 px-3 max-[400px]:px-3 min-[401px]:px-4 sm:px-0 scrollbar-hide touch-pan-x">
       <div className="flex items-center gap-0.5 max-[400px]:gap-0.5 min-[401px]:gap-1 p-0.5 max-[400px]:p-0.5 min-[401px]:p-1 bg-neutral-100 rounded-xl w-max sm:w-fit">

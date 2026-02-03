@@ -85,7 +85,8 @@ Returner et JSON-objekt med nøyaktig disse nøklene (alle strenger):
 - "article": Hele artikkelen i markdown (600–1200 ord). Bruk ##, ###, avsnitt, lister. Profesjonell tone. Innledning og avslutning med oppsummering/CTA. Vi er i år ${currentYear} – bruk ${currentYear}, ikke tidligere år. Ingen plassholdere.
 - "metaTitle": Forslått SEO-tittel (ca. 50–60 tegn).
 - "metaDescription": Forslått meta-beskrivelse (ca. 150–160 tegn, leservennlig og oppsummerende).
-- "featuredImageSuggestion": Kort beskrivelse for featured image – enten søkeord for stock (f.eks. "team meeting office") eller en setning som beskriver bildet (f.eks. "Bilde som viser person som arbeider på laptop"). Ett kort uttrykk eller én setning.`,
+- "featuredImageSuggestion": Kort brukervennlig beskrivelse av bildet på norsk (f.eks. "Bilde av gruppe som diskuterer AI-løsninger i kontor"). Vises til bruker.
+- "featuredImageSearchQuery": 2–4 engelske søkeord for stock-bilde (Unsplash), som matcher artikkelens tema. Kun engelsk, f.eks. "AI team meeting office" eller "business technology discussion". Viktig: må beskrive det visuelle innholdet i bildet, ikke bare artikkelens emne.`,
         },
         {
           role: 'user',
@@ -95,7 +96,7 @@ Tittel på artikkelen: ${title.trim()}
 
 Begrunnelse/mål med artikkelen: ${(rationale ?? '').trim() || 'Ingen begrunnelse oppgitt.'}
 
-Returner JSON med article, metaTitle, metaDescription og featuredImageSuggestion.`,
+Returner JSON med article, metaTitle, metaDescription, featuredImageSuggestion og featuredImageSearchQuery.`,
         },
       ],
       temperature: 0.6,
@@ -115,18 +116,21 @@ Returner JSON med article, metaTitle, metaDescription og featuredImageSuggestion
     let metaTitle: string | undefined;
     let metaDescription: string | undefined;
     let featuredImageSuggestion: string | undefined;
+    let featuredImageSearchQuery: string | undefined;
     try {
       const parsed = JSON.parse(raw) as {
         article?: string;
         metaTitle?: string;
         metaDescription?: string;
         featuredImageSuggestion?: string;
+        featuredImageSearchQuery?: string;
       };
       article = typeof parsed.article === 'string' ? parsed.article.trim() : '';
       if (!article) throw new Error('Mangler article');
       metaTitle = typeof parsed.metaTitle === 'string' ? parsed.metaTitle.trim() : undefined;
       metaDescription = typeof parsed.metaDescription === 'string' ? parsed.metaDescription.trim() : undefined;
       featuredImageSuggestion = typeof parsed.featuredImageSuggestion === 'string' ? parsed.featuredImageSuggestion.trim() : undefined;
+      featuredImageSearchQuery = typeof parsed.featuredImageSearchQuery === 'string' ? parsed.featuredImageSearchQuery.trim() : undefined;
     } catch {
       return NextResponse.json(
         { error: 'Kunne ikke tolke artikkeldata' },
@@ -135,12 +139,15 @@ Returner JSON med article, metaTitle, metaDescription og featuredImageSuggestion
     }
 
     let featuredImageUrl: string | undefined;
+    let featuredImageDownloadUrl: string | undefined;
     let featuredImageAttribution: string | undefined;
     let featuredImageProfileUrl: string | undefined;
-    if (featuredImageSuggestion) {
-      const unsplash = await fetchFeaturedImage(featuredImageSuggestion);
+    const imageQuery = featuredImageSearchQuery || featuredImageSuggestion;
+    if (imageQuery) {
+      const unsplash = await fetchFeaturedImage(imageQuery);
       if (unsplash) {
         featuredImageUrl = unsplash.url;
+        featuredImageDownloadUrl = unsplash.downloadUrl;
         featuredImageAttribution = unsplash.attribution;
         featuredImageProfileUrl = unsplash.profileUrl;
       }
@@ -188,6 +195,7 @@ Returner JSON med article, metaTitle, metaDescription og featuredImageSuggestion
       metaDescription: metaDescription || undefined,
       featuredImageSuggestion: featuredImageSuggestion || undefined,
       featuredImageUrl: featuredImageUrl || undefined,
+      featuredImageDownloadUrl: featuredImageDownloadUrl || undefined,
       featuredImageAttribution: featuredImageAttribution || undefined,
       featuredImageProfileUrl: featuredImageProfileUrl || undefined,
       remaining,

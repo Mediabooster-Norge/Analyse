@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Facebook, Twitter, Linkedin, Globe, ImageOff, CheckCircle2, AlertTriangle, Sparkles, Info } from 'lucide-react';
+import { Facebook, Twitter, Linkedin, Globe, ImageOff, Sparkles, Info } from 'lucide-react';
 
 interface OGTags {
   title: string | null;
@@ -22,7 +22,7 @@ type SocialPlatform = 'facebook' | 'twitter' | 'linkedin';
 export function SocialPreview({ url, pageTitle, pageDescription, ogTags, onGetTips }: SocialPreviewProps) {
   const [activePlatform, setActivePlatform] = useState<SocialPlatform>('facebook');
   const [imageError, setImageError] = useState(false);
-  const [showInfo, setShowInfo] = useState(false);
+  const [showInfo, setShowInfo] = useState(true);
 
   // Use OG tags if available, fall back to page title/description
   const title = ogTags.title || pageTitle || 'Ingen tittel';
@@ -115,135 +115,90 @@ export function SocialPreview({ url, pageTitle, pageDescription, ogTags, onGetTi
   };
 
   return (
-    <div className="space-y-4">
-      {/* Header row: Status + Platform tabs */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        {/* Status badge */}
-        <div className="flex items-center gap-2">
-          <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${
-            allOgTagsSet 
-              ? 'bg-green-100 text-green-800' 
-              : 'bg-amber-100 text-amber-800'
-          }`}>
-            {allOgTagsSet ? (
-              <CheckCircle2 className="w-3.5 h-3.5" />
-            ) : (
-              <AlertTriangle className="w-3.5 h-3.5" />
-            )}
-            <span>
-              {allOgTagsSet ? 'Alle OG-tagger satt' : `${missingTags.length} mangler`}
-            </span>
-            <span className="flex gap-1 ml-1">
-              <span className={`w-2 h-2 rounded-full ${hasOgTitle ? 'bg-green-500' : 'bg-amber-500'}`} title="og:title" />
-              <span className={`w-2 h-2 rounded-full ${hasOgDescription ? 'bg-green-500' : 'bg-amber-500'}`} title="og:description" />
-              <span className={`w-2 h-2 rounded-full ${hasOgImage ? 'bg-green-500' : 'bg-amber-500'}`} title="og:image" />
-            </span>
-          </div>
-          
-          {/* Info button */}
+    <div className="space-y-3">
+      {/* Én linje: status + AI-tips */}
+      <div className="flex items-center justify-between gap-2">
+        <span className={`text-xs ${allOgTagsSet ? 'text-green-700' : 'text-amber-700'}`}>
+          {allOgTagsSet ? 'Tittel, beskrivelse og bilde er satt for deling' : `${missingTags.join(', ')} mangler for deling`}
+        </span>
+        {onGetTips && (
           <button
-            onClick={() => setShowInfo(!showInfo)}
-            className={`p-1.5 rounded-full transition-colors cursor-pointer ${showInfo ? 'bg-neutral-200 text-neutral-700' : 'hover:bg-neutral-100 text-neutral-400'}`}
-            title="Vis info"
+            onClick={onGetTips}
+            type="button"
+            className="inline-flex items-center gap-1 px-2 py-1 max-[400px]:px-1.5 max-[400px]:py-1 min-[401px]:px-2.5 min-[401px]:py-1.5 rounded-md bg-amber-50 border border-amber-100 text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-amber-700 hover:bg-amber-100 cursor-pointer w-fit"
           >
-            <Info className="w-4 h-4" />
+            <Sparkles className="w-3 h-3" />
+            Få AI-tips
           </button>
-          
-          {/* AI Tips button */}
-          {onGetTips && (
-            <button
-              onClick={onGetTips}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-violet-100 text-violet-700 hover:bg-violet-200 transition-colors cursor-pointer"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Få AI-tips
-            </button>
-          )}
-        </div>
-
-        {/* Platform tabs - only on mobile */}
-        <div className="flex md:hidden rounded-lg bg-neutral-100 p-0.5">
-          {platforms.map((platform) => {
-            const Icon = platform.icon;
-            const isActive = activePlatform === platform.id;
-            return (
-              <button
-                key={platform.id}
-                onClick={() => {
-                  setActivePlatform(platform.id);
-                  setImageError(false);
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
-                  isActive
-                    ? 'bg-white text-neutral-900 shadow-sm'
-                    : 'text-neutral-600 hover:text-neutral-900'
-                }`}
-              >
-                <Icon className="w-3.5 h-3.5" />
-                <span>{platform.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        )}
       </div>
 
-      {/* Info panel */}
-      {showInfo && (
-        <div className="p-3 rounded-lg bg-blue-50 border border-blue-100 text-xs text-blue-800 space-y-2">
-          <p className="font-medium">Om Open Graph-tagger</p>
-          <p className="text-blue-700">
-            OG-tagger styrer hvordan siden din vises når den deles på sosiale medier. 
-            Uten disse bruker plattformene automatisk utvalg som ofte ser dårlig ut.
+      {/* Platform tabs – kun på mobil */}
+      <div className="flex md:hidden rounded-lg bg-neutral-100 p-0.5">
+        {platforms.map((platform) => {
+          const Icon = platform.icon;
+          const isActive = activePlatform === platform.id;
+          return (
+            <button
+              key={platform.id}
+              onClick={() => {
+                setActivePlatform(platform.id);
+                setImageError(false);
+              }}
+              type="button"
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all cursor-pointer ${
+                isActive ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900'
+              }`}
+            >
+              <Icon className="w-3.5 h-3.5" />
+              <span>{platform.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Info – liten (i) som viser panel */}
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setShowInfo(!showInfo)}
+          type="button"
+          className={`p-1 rounded cursor-pointer ${showInfo ? 'bg-neutral-200 text-neutral-700' : 'text-neutral-400 hover:text-neutral-600 hover:bg-neutral-100'}`}
+          title="Om deling og OG-tagger"
+          aria-expanded={showInfo}
+        >
+          <Info className="w-3.5 h-3.5" />
+        </button>
+        {showInfo && (
+          <p className="text-[11px] text-neutral-600">
+            Tittel, beskrivelse og bilde styrer hvordan lenken ser ut når den deles. Uten disse velger plattformene selv – ofte dårlig.
           </p>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-            <div className={`p-2 rounded ${hasOgTitle ? 'bg-green-100' : 'bg-amber-100'}`}>
-              <p className="font-medium text-neutral-800">og:title</p>
-              <p className="text-[10px] text-neutral-600 mt-0.5">
-                {hasOgTitle ? `"${ogTags.title?.slice(0, 40)}${(ogTags.title?.length ?? 0) > 40 ? '...' : ''}"` : 'Ikke satt - bruker sidetittel'}
-              </p>
-            </div>
-            <div className={`p-2 rounded ${hasOgDescription ? 'bg-green-100' : 'bg-amber-100'}`}>
-              <p className="font-medium text-neutral-800">og:description</p>
-              <p className="text-[10px] text-neutral-600 mt-0.5">
-                {hasOgDescription ? `"${ogTags.description?.slice(0, 40)}..."` : 'Ikke satt - bruker meta description'}
-              </p>
-            </div>
-            <div className={`p-2 rounded ${hasOgImage ? 'bg-green-100' : 'bg-amber-100'}`}>
-              <p className="font-medium text-neutral-800">og:image</p>
-              <p className="text-[10px] text-neutral-600 mt-0.5">
-                {hasOgImage ? 'Bilde er satt ✓' : 'Ikke satt - ingen forhåndsvisning'}
-              </p>
-            </div>
-          </div>
-          {missingTags.length > 0 && (
-            <p className="text-amber-700 pt-1">
-              <strong>Tips:</strong> Legg til {missingTags.join(', ')} i din HTML-header for bedre deling.
-            </p>
-          )}
-        </div>
+        )}
+      </div>
+      {showInfo && missingTags.length > 0 && (
+        <p className="text-[11px] text-amber-700">
+          Mangler: {missingTags.join(', ')}. Legg dem i HTML-head for bedre deling.
+        </p>
       )}
 
-      {/* Preview area: all 3 on desktop, tabbed on mobile */}
-      <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-100">
-        {/* Desktop: all three side by side */}
-        <div className="hidden md:grid grid-cols-3 gap-3">
-          {platforms.map((platform) => {
-            const Icon = platform.icon;
-            return (
-              <div key={platform.id} className="min-w-0 flex flex-col">
-                <p className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                  <Icon className="w-3 h-3" />
-                  {platform.label}
-                </p>
-                {renderPreviewForPlatform(platform.id)}
-              </div>
-            );
-          })}
-        </div>
-        {/* Mobile: single preview with tabs */}
-        <div className="flex justify-center md:hidden">
-          {renderPreviewForPlatform(activePlatform)}
-        </div>
+      {/* Forhåndsvisninger – uten ekstra boks */}
+      {/* Desktop: tre kolonner */}
+      <div className="hidden md:grid grid-cols-3 gap-3">
+        {platforms.map((platform) => {
+          const Icon = platform.icon;
+          return (
+            <div key={platform.id} className="min-w-0 flex flex-col">
+              <p className="text-[10px] font-medium text-neutral-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                <Icon className="w-3 h-3" />
+                {platform.label}
+              </p>
+              {renderPreviewForPlatform(platform.id)}
+            </div>
+          );
+        })}
+      </div>
+      {/* Mobil: én forhåndsvisning med faner */}
+      <div className="flex justify-center md:hidden">
+        {renderPreviewForPlatform(activePlatform)}
       </div>
     </div>
   );

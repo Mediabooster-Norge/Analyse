@@ -126,25 +126,21 @@ export async function analyzePageSpeed(url: string, options?: { timeout?: number
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`[PageSpeed] API error for ${normalizedUrl}:`, response.status, errorText);
-      
-      // Check for rate limiting
       if (response.status === 429) {
         console.warn('[PageSpeed] Rate limited! Consider adding an API key or reducing concurrent calls.');
       }
-      
-      return getDefaultResults();
+      throw new Error(`PageSpeed API error: ${response.status}`);
     }
 
     const data = await response.json();
-    
-    const elapsed = Date.now() - startTime;
-    console.log(`[PageSpeed] Completed ${domain} in ${Math.round(elapsed/1000)}s - Performance: ${Math.round((data.lighthouseResult?.categories?.performance?.score || 0) * 100)}`);
-    
     const lighthouse = data.lighthouseResult;
     if (!lighthouse) {
       console.error(`[PageSpeed] No lighthouseResult in response for ${normalizedUrl}`);
-      return getDefaultResults();
+      throw new Error('PageSpeed: no lighthouse result');
     }
+
+    const elapsed = Date.now() - startTime;
+    console.log(`[PageSpeed] Completed ${domain} in ${Math.round(elapsed/1000)}s - Performance: ${Math.round((data.lighthouseResult?.categories?.performance?.score || 0) * 100)}`);
     
     const performanceScore = lighthouse.categories?.performance?.score;
     const accessibilityScore = lighthouse.categories?.accessibility?.score;
@@ -173,7 +169,7 @@ export async function analyzePageSpeed(url: string, options?: { timeout?: number
     } else {
       console.error(`[PageSpeed] Error for ${normalizedUrl}:`, error);
     }
-    return getDefaultResults();
+    throw error;
   } finally {
     if (!options?.skipRateLimit) {
       releaseSlot();

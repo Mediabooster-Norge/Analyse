@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { TooltipProvider } from '@/components/ui/tooltip';
 import { usePathname, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -52,13 +53,8 @@ export default function DashboardLayout({
   const SidebarContent = () => (
     <div className="flex h-full flex-col bg-white">
       {/* Logo */}
-      <Link href="/" className="flex flex-col justify-center h-20 px-5 border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
-        <img 
-          src="/mediabooster-logo-darkgrey.avif" 
-          alt="Mediabooster" 
-          className="w-32 object-contain"
-        />
-        <span className="text-neutral-400 text-xs mt-1">Din digitale CMO - og AI-kollega!</span>
+      <Link href="/" className="flex items-center h-20 px-5 border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
+        <img src="/logo.svg" alt="Mediabooster" className="h-9 w-auto object-contain brightness-0" />
       </Link>
 
       {/* Navigation */}
@@ -120,6 +116,7 @@ export default function DashboardLayout({
   );
 
   return (
+    <TooltipProvider delayDuration={300} skipDelayDuration={0}>
     <div className="min-h-screen bg-[#FAFAFA]">
       {/* Mobile header */}
       <header className="lg:hidden sticky top-0 z-50 flex h-14 min-[450px]:h-16 items-center gap-2 min-[450px]:gap-4 border-b border-neutral-100 bg-white px-3 min-[450px]:px-4">
@@ -133,13 +130,8 @@ export default function DashboardLayout({
             <SidebarContent />
           </SheetContent>
         </Sheet>
-        <Link href="/" className="flex flex-col min-w-0 flex-1">
-          <img 
-            src="/mediabooster-logo-darkgrey.avif" 
-            alt="Mediabooster" 
-            className="w-20 max-[400px]:w-16 min-[450px]:w-28 object-contain"
-          />
-          <span className="text-neutral-400 text-[10px] max-[400px]:hidden min-[450px]:text-xs">Din digitale CMO</span>
+        <Link href="/" className="flex items-center min-w-0 flex-1">
+          <img src="/logo.svg" alt="Mediabooster" className="h-7 max-[400px]:h-6 min-[450px]:h-8 w-auto object-contain brightness-0" />
         </Link>
       </header>
 
@@ -157,5 +149,6 @@ export default function DashboardLayout({
         </main>
       </div>
     </div>
+    </TooltipProvider>
   );
 }

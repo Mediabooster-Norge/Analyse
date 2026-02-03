@@ -98,6 +98,8 @@ export interface OverviewTabProps {
     securityScore: number;
     performanceScore: number | null;
   }>;
+  /** True mens hastighet (PageSpeed) hentes i eget API-kall */
+  loadingPageSpeed?: boolean;
 }
 
 export function OverviewTab({
@@ -119,6 +121,7 @@ export function OverviewTab({
   fetchGenerateArticle,
   setGeneratedArticle,
   analysisHistory,
+  loadingPageSpeed = false,
 }: OverviewTabProps) {
   const copyTitle = (title: string) => {
     navigator.clipboard.writeText(title).then(
@@ -163,20 +166,6 @@ export function OverviewTab({
 
   return (
     <>
-      {/* Current URL indicator */}
-      <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-neutral-50 border border-neutral-200 mb-4">
-        <Globe className="h-4 w-4 text-neutral-400 shrink-0" />
-        <span className="text-sm text-neutral-600 truncate">{url}</span>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-auto text-xs text-neutral-400 hover:text-neutral-600 transition-colors shrink-0"
-        >
-          <ExternalLink className="h-3.5 w-3.5" />
-        </a>
-      </div>
-
       <SummaryCard score={result.overallScore} />
 
       {/* Score Grid + Priority Improvements - Side by side */}
@@ -200,25 +189,25 @@ export function OverviewTab({
           <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-5">
             <div className={`grid grid-cols-3 ${AI_VISIBILITY_ENABLED ? 'sm:grid-cols-6' : 'sm:grid-cols-5'} gap-1 max-[400px]:gap-1 min-[401px]:gap-2 sm:gap-3 max-[400px]:scale-[0.85] max-[400px]:origin-center`}>
               <div className="text-center min-w-0">
-                <ScoreRing score={result.overallScore} label="Totalt" size="md" showStatus />
+                <ScoreRing score={result.overallScore} label="Totalt" size="md" showStatus title={`Samlet score: ${result.overallScore} – vektet gjennomsnitt av alle kategorier`} />
                 <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Samlet</p>
               </div>
               <div className="text-center min-w-0">
-                <ScoreRing score={result.seoResults.score} label="SEO" size="md" showStatus />
+                <ScoreRing score={result.seoResults.score} label="SEO" size="md" showStatus title={`SEO: ${result.seoResults.score} – søkemotoroptimalisering (titler, beskrivelser, overskrifter)`} />
                 <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Søkemotor</p>
               </div>
               <div className="text-center min-w-0">
-                <ScoreRing score={result.contentResults.score} label="Innhold" size="md" showStatus />
+                <ScoreRing score={result.contentResults.score} label="Innhold" size="md" showStatus title={`Innhold: ${result.contentResults.score} – tekstmengde og lesbarhet`} />
                 <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Tekst</p>
               </div>
               <div className="text-center min-w-0">
-                <ScoreRing score={result.securityResults.score} label="Sikkerhet" size="md" showStatus />
+                <ScoreRing score={result.securityResults.score} label="Sikkerhet" size="md" showStatus title={`Sikkerhet: ${result.securityResults.score} – HTTPS, sikkerhetsheadere`} />
                 <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Trygghet</p>
               </div>
               <div className="text-center min-w-0">
                 {result.pageSpeedResults && result.pageSpeedResults.performance > 0 ? (
                   <>
-                    <ScoreRing score={result.pageSpeedResults.performance} label="Speed" size="md" showStatus />
+                    <ScoreRing score={result.pageSpeedResults.performance} label="Speed" size="md" showStatus title={`Hastighet: ${result.pageSpeedResults.performance} – PageSpeed (innlasting, ytelse)`} />
                     <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Hastighet</p>
                     {!result.pageSpeedResults.isEstimate && (
                       <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[8px] min-[401px]:text-[9px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
@@ -309,6 +298,25 @@ export function OverviewTab({
           // Only show AI visibility issues if feature is enabled
           if (AI_VISIBILITY_ENABLED && result.aiVisibility && result.aiVisibility.score < 50) issues.push({ label: 'AI-synlighet', desc: 'Lav AI-synlighet', priority: 'medium', category: 'ai' });
 
+          const issueToMetricId: Record<string, string> = {
+            'Sidetittel': 'sidetittel',
+            'Meta-beskrivelse': 'meta-beskrivelse',
+            'H1-overskrift': 'h1-overskrift',
+            'H2-overskrifter': 'h2-overskrifter',
+            'Bilder': 'bilder-alt',
+            'Open Graph': 'open-graph',
+            'Canonical URL': 'seo',
+            'Lesbarhet': 'lesbarhet',
+            'Innhold': 'ordtelling',
+            'Sikkerhet': 'sikkerhet',
+            'HSTS': 'hsts',
+            'CSP': 'csp',
+            'Ytelse': 'ytelse',
+            'LCP': 'lcp',
+            'CLS': 'cls',
+            'AI-synlighet': 'ai-synlighet',
+          };
+
           return issues.length > 0 ? (
             <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-5 flex flex-col h-full min-w-0">
               <div className="flex items-center justify-between mb-2 max-[400px]:mb-2">
@@ -318,25 +326,28 @@ export function OverviewTab({
                 </h3>
                 <span className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-400">{issues.length} funn</span>
               </div>
-              <div className="space-y-1 overflow-y-auto max-h-[180px] max-[400px]:max-h-[140px] min-[401px]:max-h-[200px] sm:max-h-[220px] pr-1 flex-1 custom-scrollbar">
-                {issues.map((issue, i) => (
+              <div className="flex flex-wrap gap-1.5 max-[400px]:gap-1 min-[401px]:gap-2 min-w-0 overflow-hidden">
+                {issues.map((issue, i) => {
+                  const metricId = issueToMetricId[issue.label] ?? 'detailed-metrics';
+                  return (
                   <button
                     key={i}
                     onClick={() => {
-                      const element = document.querySelector('[data-section="detailed-metrics"]');
-                      element?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      const selector = metricId === 'detailed-metrics' ? '[data-section="detailed-metrics"]' : `[data-metric="${metricId}"]`;
+                      const element = document.querySelector(selector);
+                      const target = element ?? document.querySelector('[data-section="detailed-metrics"]');
+                      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     }}
-                    className="w-full flex items-center gap-1.5 max-[400px]:gap-1 min-[401px]:gap-2 p-1.5 max-[400px]:p-1.5 min-[401px]:p-2 rounded-lg bg-neutral-50 hover:bg-neutral-100 transition-colors cursor-pointer text-left group"
+                    className="inline-flex items-center gap-1 max-[400px]:gap-1 min-[401px]:gap-1.5 p-1.5 max-[400px]:p-1.5 min-[401px]:p-2 rounded-lg bg-neutral-50 hover:bg-neutral-100 transition-colors cursor-pointer text-left group min-w-0 max-w-full shrink"
                   >
                     <div className={`w-1.5 h-1.5 max-[400px]:w-1 max-[400px]:h-1 min-[401px]:w-1.5 min-[401px]:h-1.5 rounded-full shrink-0 ${issue.priority === 'high' ? 'bg-red-500' : issue.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
-                    <div className="flex-1 min-w-0">
-                      <span className="font-medium text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-900">{issue.label}</span>
-                      <span className="text-neutral-400 mx-0.5 max-[400px]:mx-0.5">·</span>
-                      <span className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 truncate">{issue.desc}</span>
-                    </div>
+                    <span className="font-medium text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-900 shrink-0">{issue.label}</span>
+                    <span className="text-neutral-400 text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs shrink-0">·</span>
+                    <span className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 min-w-0 truncate">{issue.desc}</span>
                     <ChevronRight className="w-2.5 h-2.5 max-[400px]:w-2 max-[400px]:h-2 min-[401px]:w-3 min-[401px]:h-3 text-neutral-400 group-hover:text-neutral-600 shrink-0 transition-colors" />
                   </button>
-                ))}
+                );
+                })}
               </div>
             </div>
           ) : (
@@ -351,8 +362,8 @@ export function OverviewTab({
         })()}
       </div>
 
-      {/* Score Trend Chart - Accordion, closed by default */}
-      {analysisHistory.length > 0 && (
+      {/* Score Trend Chart – skjult for nå (sett til analysisHistory.length > 0 for å vise) */}
+      {false && analysisHistory.length > 0 && (
         <Accordion type="single" collapsible className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
           <AccordionItem value="trend" className="border-none">
             <AccordionTrigger className="px-3 max-[400px]:px-2 min-[401px]:px-4 sm:px-5 py-3 hover:no-underline hover:bg-neutral-50">
@@ -390,6 +401,37 @@ export function OverviewTab({
           </div>
         </div>
         <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6 space-y-3 max-[400px]:space-y-3 sm:space-y-4">
+          {/* Social preview – øverst */}
+          <div>
+            <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5 flex items-center gap-2">
+              <Share2 className="w-3.5 h-3.5" />
+              Slik ser lenken ut når den deles
+            </h4>
+            <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mb-3">Forhåndsvisning basert på sidetittel, meta og Open Graph</p>
+            <div className="rounded-xl border border-neutral-100 bg-neutral-50/80 p-4">
+              <SocialPreview
+                url={url}
+                pageTitle={result.seoResults.meta.title.content}
+                pageDescription={result.seoResults.meta.description.content}
+                ogTags={result.seoResults.meta.ogTags}
+                onGetTips={() => {
+                  const missing = [
+                    !result.seoResults.meta.ogTags.title && 'og:title',
+                    !result.seoResults.meta.ogTags.description && 'og:description',
+                    !result.seoResults.meta.ogTags.image && 'og:image'
+                  ].filter(Boolean);
+                  const allSet = missing.length === 0;
+                  fetchAISuggestion(
+                    'Open Graph / Social Media',
+                    allSet ? 'Alle OG-tagger er satt' : `Mangler: ${missing.join(', ')}`,
+                    allSet ? 'good' : 'warning',
+                    `URL: ${url}. OG-title: ${result.seoResults.meta.ogTags.title || 'ikke satt'}. OG-description: ${result.seoResults.meta.ogTags.description || 'ikke satt'}. OG-image: ${result.seoResults.meta.ogTags.image ? 'satt' : 'ikke satt'}. Gi konkrete tips for å forbedre deling på sosiale medier.`
+                  );
+                }}
+              />
+            </div>
+          </div>
+
           {/* SEO */}
           <div>
             <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-2">
@@ -397,6 +439,7 @@ export function OverviewTab({
               SEO
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+              <div data-metric="sidetittel">
               <MetricCard
                 icon={Type}
                 title="Sidetittel"
@@ -406,6 +449,8 @@ export function OverviewTab({
                 status={!result.seoResults.meta.title.content ? 'bad' : result.seoResults.meta.title.isOptimal ? 'good' : 'warning'}
                 onClick={() => fetchAISuggestion('Sidetittel', result.seoResults.meta.title.content ?? 'Mangler', result.seoResults.meta.title.isOptimal ? 'good' : result.seoResults.meta.title.content ? 'warning' : 'bad', result.seoResults.meta.title.content ? `Nåværende lengde: ${result.seoResults.meta.title.length} tegn.` : 'Mangler titletag.')}
               />
+              </div>
+              <div data-metric="meta-beskrivelse">
               <MetricCard
                 icon={FileText}
                 title="Meta-beskrivelse"
@@ -415,6 +460,8 @@ export function OverviewTab({
                 status={!result.seoResults.meta.description.content ? 'bad' : result.seoResults.meta.description.isOptimal ? 'good' : 'warning'}
                 onClick={() => fetchAISuggestion('Meta-beskrivelse', result.seoResults.meta.description.content ?? 'Mangler', result.seoResults.meta.description.isOptimal ? 'good' : result.seoResults.meta.description.content ? 'warning' : 'bad', result.seoResults.meta.description.content ? `Nåværende lengde: ${result.seoResults.meta.description.length} tegn.` : 'Mangler meta description.')}
               />
+              </div>
+              <div data-metric="h1-overskrift">
               <MetricCard
                 icon={Type}
                 title="H1-overskrift"
@@ -441,6 +488,8 @@ export function OverviewTab({
                       : undefined
                 )}
               />
+              </div>
+              <div data-metric="h2-overskrifter">
               <MetricCard
                 icon={Type}
                 title="H2-overskrifter"
@@ -450,6 +499,8 @@ export function OverviewTab({
                 status={result.seoResults.headings.h2.count > 0 ? 'good' : 'warning'}
                 onClick={() => fetchAISuggestion('H2-overskrifter', `${result.seoResults.headings.h2.count} underoverskrifter`, result.seoResults.headings.h2.count > 0 ? 'good' : 'warning', result.seoResults.headings.h2.count === 0 ? 'Mangler H2-overskrifter.' : undefined)}
               />
+              </div>
+              <div data-metric="bilder-alt">
               <MetricCard
                 icon={Image}
                 title="Bilder og alt-tekst"
@@ -465,6 +516,8 @@ export function OverviewTab({
                   result.seoResults.images.missingAltImages
                 )}
               />
+              </div>
+              <div data-metric="open-graph">
               <MetricCard
                 icon={Globe}
                 title="Open Graph"
@@ -474,6 +527,7 @@ export function OverviewTab({
                 status={result.seoResults.meta.ogTags.title && result.seoResults.meta.ogTags.description ? 'good' : !result.seoResults.meta.ogTags.title ? 'bad' : 'warning'}
                 onClick={() => fetchAISuggestion('Open Graph', result.seoResults.meta.ogTags.title ?? 'Mangler', result.seoResults.meta.ogTags.title ? 'good' : 'bad', !result.seoResults.meta.ogTags.title ? 'Mangler OG-tags for deling.' : undefined)}
               />
+              </div>
             </div>
           </div>
 
@@ -484,6 +538,7 @@ export function OverviewTab({
               Innhold
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+              <div data-metric="ordtelling">
               <MetricCard
                 icon={FileText}
                 title="Ordtelling"
@@ -493,40 +548,43 @@ export function OverviewTab({
                 status={result.contentResults.wordCount >= 300 ? 'good' : result.contentResults.wordCount >= 150 ? 'warning' : 'bad'}
                 onClick={() => fetchAISuggestion('Ordtelling', `${result.contentResults.wordCount} ord`, result.contentResults.wordCount >= 300 ? 'good' : 'warning', result.contentResults.wordCount < 300 ? 'Under 300 ord kan begrense SEO-potensialet.' : undefined)}
               />
+              </div>
+              <div data-metric="lesbarhet">
               <MetricCard
                 icon={BarChart3}
                 title="Lesbarhet (LIX)"
                 description={result.contentResults.readability ? `LIX ${result.contentResults.readability.lixScore}` : 'Ikke beregnet'}
                 value={result.contentResults.readability?.lixLevel ?? 'Ikke nok tekst'}
                 recommendation={
-                  result.contentResults.readability 
-                    ? result.contentResults.readability.lixScore >= 30 && result.contentResults.readability.lixScore <= 50 
-                      ? 'God lesbarhet' 
-                      : result.contentResults.readability.lixScore < 30 
-                        ? 'Veldig enkel tekst'
-                        : 'Kan forenkles'
+                  result.contentResults.readability
+                    ? result.contentResults.readability.lixScore < 45
+                      ? (result.contentResults.readability.lixScore < 30 ? 'Veldig enkel tekst' : 'God lesbarhet')
+                      : result.contentResults.readability.lixScore < 55
+                        ? 'Kan forenkles'
+                        : 'Veldig vanskelig – forenkles'
                     : 'Mer tekst trengs'
                 }
                 status={
-                  result.contentResults.readability 
-                    ? result.contentResults.readability.lixScore >= 30 && result.contentResults.readability.lixScore <= 50 
-                      ? 'good' 
-                      : result.contentResults.readability.lixScore >= 25 && result.contentResults.readability.lixScore <= 55 
+                  result.contentResults.readability
+                    ? result.contentResults.readability.lixScore < 45
+                      ? 'good'
+                      : result.contentResults.readability.lixScore < 55
                         ? 'warning'
                         : 'bad'
                     : 'warning'
                 }
                 onClick={() => fetchAISuggestion(
                   'Lesbarhet (LIX)',
-                  result.contentResults.readability 
-                    ? `LIX ${result.contentResults.readability.lixScore} – ${result.contentResults.readability.lixLevel}` 
+                  result.contentResults.readability
+                    ? `LIX ${result.contentResults.readability.lixScore} – ${result.contentResults.readability.lixLevel}`
                     : 'Ikke beregnet',
-                  result.contentResults.readability && result.contentResults.readability.lixScore >= 30 && result.contentResults.readability.lixScore <= 50 ? 'good' : 'warning',
+                  result.contentResults.readability && result.contentResults.readability.lixScore < 45 ? 'good' : 'warning',
                   result.contentResults.readability 
                     ? `Gjennomsnittlig ${result.contentResults.readability.avgWordsPerSentence} ord per setning. Gjennomsnittlig ordlengde: ${result.contentResults.readability.avgWordLength} tegn.`
                     : 'Ikke nok tekst til å beregne lesbarhet.'
                 )}
               />
+              </div>
               <MetricCard
                 icon={Link2}
                 title="Interne lenker"
@@ -548,38 +606,8 @@ export function OverviewTab({
             </div>
           </div>
 
-          {/* Social Preview */}
-          <div>
-            <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-              <Share2 className="w-3.5 h-3.5" />
-              Social Media Forhåndsvisning
-            </h4>
-            <div className="rounded-xl border border-neutral-200 bg-white p-4">
-              <SocialPreview
-                url={url}
-                pageTitle={result.seoResults.meta.title.content}
-                pageDescription={result.seoResults.meta.description.content}
-                ogTags={result.seoResults.meta.ogTags}
-                onGetTips={() => {
-                  const missing = [
-                    !result.seoResults.meta.ogTags.title && 'og:title',
-                    !result.seoResults.meta.ogTags.description && 'og:description',
-                    !result.seoResults.meta.ogTags.image && 'og:image'
-                  ].filter(Boolean);
-                  const allSet = missing.length === 0;
-                  fetchAISuggestion(
-                    'Open Graph / Social Media',
-                    allSet ? 'Alle OG-tagger er satt' : `Mangler: ${missing.join(', ')}`,
-                    allSet ? 'good' : 'warning',
-                    `URL: ${url}. OG-title: ${result.seoResults.meta.ogTags.title || 'ikke satt'}. OG-description: ${result.seoResults.meta.ogTags.description || 'ikke satt'}. OG-image: ${result.seoResults.meta.ogTags.image ? 'satt' : 'ikke satt'}. Gi konkrete tips for å forbedre deling på sosiale medier.`
-                  );
-                }}
-              />
-            </div>
-          </div>
-
           {/* Security */}
-          <div>
+          <div data-metric="sikkerhet">
             <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-2">
               <Shield className="w-3.5 h-3.5" />
               Sikkerhet
@@ -588,35 +616,39 @@ export function OverviewTab({
               <MetricCard
                 icon={Lock}
                 title="SSL-sertifikat"
-                description={`Karakter: ${result.securityResults.ssl.grade}`}
-                value={result.securityResults.ssl.certificate.daysUntilExpiry != null ? `Utløper om ${result.securityResults.ssl.certificate.daysUntilExpiry} dager` : 'SSL-sertifikat er gyldig'}
+                description={`Karakter ${result.securityResults.ssl.grade} · Sikrer kryptert forbindelse`}
+                value={result.securityResults.ssl.certificate.daysUntilExpiry != null ? `Utløper om ${result.securityResults.ssl.certificate.daysUntilExpiry} dager` : 'Kryptert forbindelse er aktiv'}
                 recommendation={result.securityResults.ssl.grade === 'A' || result.securityResults.ssl.grade === 'A+' ? 'Utmerket' : 'Kan forbedres'}
                 status={result.securityResults.ssl.grade === 'A' || result.securityResults.ssl.grade === 'A+' ? 'good' : result.securityResults.ssl.grade === 'B' || result.securityResults.ssl.grade === 'C' ? 'warning' : 'bad'}
                 onClick={() => fetchAISuggestion('SSL-sertifikat', result.securityResults.ssl.grade, result.securityResults.ssl.grade === 'A' || result.securityResults.ssl.grade === 'A+' ? 'good' : 'warning', `Karakter: ${result.securityResults.ssl.grade}.`)}
               />
+              <div data-metric="hsts">
               <MetricCard
                 icon={Shield}
                 title="HSTS"
-                description="Strict-Transport-Security"
-                value={result.securityResults.headers.strictTransportSecurity ? 'Header er satt og aktiv' : 'Header mangler - HTTPS ikke tvunget'}
+                description="Sørger for at nettleseren alltid bruker sikker forbindelse"
+                value={result.securityResults.headers.strictTransportSecurity ? 'Sikker forbindelse er påkrevd' : 'Anbefales for sikrere bruk'}
                 recommendation={result.securityResults.headers.strictTransportSecurity ? 'Aktivert' : 'Aktiver'}
                 status={result.securityResults.headers.strictTransportSecurity ? 'good' : 'warning'}
                 onClick={() => fetchAISuggestion('HSTS', result.securityResults.headers.strictTransportSecurity ? 'Aktivert' : 'Mangler', result.securityResults.headers.strictTransportSecurity ? 'good' : 'warning', !result.securityResults.headers.strictTransportSecurity ? 'Mangler HSTS-header for sikrere HTTPS.' : undefined)}
               />
+              </div>
+              <div data-metric="csp">
               <MetricCard
                 icon={Shield}
                 title="Content Security Policy"
-                description="CSP-header"
-                value={result.securityResults.headers.contentSecurityPolicy ? 'CSP er konfigurert' : 'Mangler CSP - sårbar for XSS'}
+                description="Begrenser hva slags kode som kan kjøres på siden"
+                value={result.securityResults.headers.contentSecurityPolicy ? 'Beskyttelse mot skadelig kode er aktiv' : 'Anbefales for å redusere risiko'}
                 recommendation={result.securityResults.headers.contentSecurityPolicy ? 'Satt' : 'Anbefalt'}
                 status={result.securityResults.headers.contentSecurityPolicy ? 'good' : 'warning'}
                 onClick={() => fetchAISuggestion('Content Security Policy', result.securityResults.headers.contentSecurityPolicy ? 'Satt' : 'Mangler', result.securityResults.headers.contentSecurityPolicy ? 'good' : 'warning', !result.securityResults.headers.contentSecurityPolicy ? 'Mangler CSP-header for XSS-beskyttelse.' : undefined)}
               />
+              </div>
               <MetricCard
                 icon={Shield}
                 title="X-Frame-Options"
-                description="Clickjacking-beskyttelse"
-                value={result.securityResults.headers.xFrameOptions ? 'Beskyttet mot iframe-embedding' : 'Siden kan embeddes i iframe'}
+                description="Forhindrer at andre sider viser din side i en ramme"
+                value={result.securityResults.headers.xFrameOptions ? 'Andre sider kan ikke vise denne siden i ramme' : 'Anbefales for å unngå misbruk'}
                 recommendation={result.securityResults.headers.xFrameOptions ? 'Satt' : 'Anbefalt'}
                 status={result.securityResults.headers.xFrameOptions ? 'good' : 'warning'}
                 onClick={() => fetchAISuggestion('X-Frame-Options', result.securityResults.headers.xFrameOptions ? 'Satt' : 'Mangler', result.securityResults.headers.xFrameOptions ? 'good' : 'warning', !result.securityResults.headers.xFrameOptions ? 'Mangler clickjacking-beskyttelse.' : undefined)}
@@ -624,8 +656,8 @@ export function OverviewTab({
               <MetricCard
                 icon={Shield}
                 title="X-Content-Type-Options"
-                description="MIME-sniffing"
-                value={result.securityResults.headers.xContentTypeOptions ? 'Forhindrer MIME-sniffing' : 'Nettleseren kan gjette filtyper'}
+                description="Sørger for at filer tolkes som riktig type"
+                value={result.securityResults.headers.xContentTypeOptions ? 'Filer behandles som angitt type' : 'Anbefales for sikrere oppførsel'}
                 recommendation={result.securityResults.headers.xContentTypeOptions ? 'Satt' : 'Anbefalt'}
                 status={result.securityResults.headers.xContentTypeOptions ? 'good' : 'warning'}
                 onClick={() => fetchAISuggestion('X-Content-Type-Options', result.securityResults.headers.xContentTypeOptions ? 'nosniff' : 'Mangler', result.securityResults.headers.xContentTypeOptions ? 'good' : 'warning', !result.securityResults.headers.xContentTypeOptions ? 'Mangler nosniff-header.' : undefined)}
@@ -633,8 +665,8 @@ export function OverviewTab({
               <MetricCard
                 icon={Shield}
                 title="Referrer-Policy"
-                description="Sporingskontroll"
-                value={result.securityResults.headers.referrerPolicy ? 'Kontrollerer referrer-informasjon' : 'Sender full referrer til alle'}
+                description="Styrer hva som sendes med når noen kommer fra din side"
+                value={result.securityResults.headers.referrerPolicy ? 'Begrenser hva andre sider får vite' : 'Anbefales for mer kontroll'}
                 recommendation={result.securityResults.headers.referrerPolicy ? 'Satt' : 'Anbefalt'}
                 status={result.securityResults.headers.referrerPolicy ? 'good' : 'warning'}
                 onClick={() => fetchAISuggestion('Referrer-Policy', result.securityResults.headers.referrerPolicy ? 'Satt' : 'Mangler', result.securityResults.headers.referrerPolicy ? 'good' : 'warning', !result.securityResults.headers.referrerPolicy ? 'Mangler Referrer-Policy header.' : undefined)}
@@ -643,7 +675,7 @@ export function OverviewTab({
           </div>
 
           {/* Performance / Core Web Vitals */}
-          <div>
+          <div data-metric="ytelse">
             <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2 flex items-center gap-2">
               <Zap className="w-3.5 h-3.5" />
               Ytelse (Core Web Vitals)
@@ -653,29 +685,33 @@ export function OverviewTab({
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               <MetricCard
-                icon={Gauge}
+                icon={loadingPageSpeed ? Loader2 : Gauge}
                 title={result.pageSpeedResults?.isEstimate ? 'Ytelsesestimat' : 'Performance (PageSpeed)'}
-                description={result.pageSpeedResults ? `${result.pageSpeedResults.performance}/100` : 'Ikke målt'}
+                description={
+                  loadingPageSpeed ? 'Måler…' : result.pageSpeedResults ? `${result.pageSpeedResults.performance}/100` : 'Ikke målt'
+                }
                 value={
-                  result.pageSpeedResults 
-                    ? result.pageSpeedResults.performance >= 90 
-                      ? 'Utmerket ytelse' 
-                      : result.pageSpeedResults.performance >= 50 
+                  loadingPageSpeed
+                    ? 'Måler hastighet…'
+                    : result.pageSpeedResults
+                    ? result.pageSpeedResults.performance >= 90
+                      ? 'Utmerket ytelse'
+                      : result.pageSpeedResults.performance >= 50
                         ? 'Trenger forbedring'
                         : 'Dårlig ytelse'
                     : 'Kjør ny analyse for å måle'
                 }
                 recommendation={
-                  result.pageSpeedResults
+                  loadingPageSpeed ? 'Vent…' : result.pageSpeedResults
                     ? result.pageSpeedResults.performance >= 90 ? 'Utmerket' : result.pageSpeedResults.performance >= 50 ? 'Kan forbedres' : 'Kritisk'
                     : 'Ikke tilgjengelig'
                 }
                 status={
-                  result.pageSpeedResults
+                  loadingPageSpeed ? 'warning' : result.pageSpeedResults
                     ? result.pageSpeedResults.performance >= 90 ? 'good' : result.pageSpeedResults.performance >= 50 ? 'warning' : 'bad'
                     : 'warning'
                 }
-                onClick={() => fetchAISuggestion(
+                onClick={loadingPageSpeed ? undefined : () => fetchAISuggestion(
                   'Performance Score',
                   result.pageSpeedResults ? `${result.pageSpeedResults.performance}/100` : 'Ikke målt',
                   result.pageSpeedResults && result.pageSpeedResults.performance >= 90 ? 'good' : 'warning',
@@ -685,6 +721,7 @@ export function OverviewTab({
                 )}
               />
               {!result.pageSpeedResults?.isEstimate && (
+              <div data-metric="lcp">
               <MetricCard
                 icon={Activity}
                 title="LCP (Largest Contentful Paint)"
@@ -715,8 +752,10 @@ export function OverviewTab({
                   'LCP måler hvor lang tid det tar før det største synlige elementet lastes. Mål: under 2.5 sekunder.'
                 )}
               />
+              </div>
               )}
               {!result.pageSpeedResults?.isEstimate && (
+              <div data-metric="cls">
               <MetricCard
                 icon={Activity}
                 title="CLS (Cumulative Layout Shift)"
@@ -747,6 +786,7 @@ export function OverviewTab({
                   'CLS måler visuell stabilitet – hvor mye elementer flytter seg under lasting. Mål: under 0.1.'
                 )}
               />
+              </div>
               )}
             </div>
           </div>
@@ -774,126 +814,7 @@ export function OverviewTab({
         </div>
       </div>
 
-      {/* Analyser en annen side - Premium */}
-      {isPremium && (() => {
-        const internalUrls = result.seoResults.links.internal?.urls ?? [];
-        let currentPath = '/';
-        let baseUrl = url;
-        try { 
-          const parsed = new URL(url);
-          currentPath = parsed.pathname || '/'; 
-          baseUrl = parsed.origin;
-        } catch { /* ignore */ }
-        const suggested = internalUrls.filter((p): p is string => !!p && p !== currentPath);
-        
-        return (
-          <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-            <div className="p-3 sm:p-4 border-b border-neutral-100">
-              <h3 className="font-medium text-neutral-900 flex items-center gap-2 text-sm">
-                <Link2 className="h-4 w-4 text-neutral-500" />
-                Analyser en annen side
-              </h3>
-            </div>
-            <div className="p-3 sm:p-4 space-y-3">
-              {/* Custom URL input with locked domain */}
-              <div className="flex flex-col sm:flex-row gap-2">
-                <div className="relative flex-1 flex">
-                  <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-neutral-200 bg-neutral-50 text-neutral-500 text-sm select-none whitespace-nowrap">
-                    {baseUrl}
-                  </span>
-                  <input
-                    type="text"
-                    placeholder="/din-side"
-                    className="flex-1 min-w-0 h-9 px-3 rounded-r-lg border border-neutral-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-transparent"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        const pathInput = e.currentTarget.value.trim();
-                        if (pathInput) {
-                          const cleanPath = pathInput.startsWith('/') ? pathInput : `/${pathInput}`;
-                          const fullUrl = `${baseUrl}${cleanPath}`;
-                          openSubpageDialog(fullUrl);
-                          e.currentTarget.value = '';
-                        }
-                      }
-                    }}
-                  />
-                </div>
-                <Button 
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="h-9 px-3 rounded-lg w-full sm:w-auto"
-                  onClick={(e) => {
-                    const container = e.currentTarget.parentElement;
-                    const input = container?.querySelector('input') as HTMLInputElement | null;
-                    const pathInput = input?.value.trim();
-                    if (pathInput) {
-                      const cleanPath = pathInput.startsWith('/') ? pathInput : `/${pathInput}`;
-                      const fullUrl = `${baseUrl}${cleanPath}`;
-                      openSubpageDialog(fullUrl);
-                      if (input) input.value = '';
-                    }
-                  }}
-                >
-                  Analyser
-                </Button>
-              </div>
-
-              {/* Suggested pages */}
-              {suggested.length > 0 && (
-                <>
-                  <div className="flex items-center gap-3">
-                    <div className="h-px flex-1 bg-neutral-100" />
-                    <span className="text-[10px] text-neutral-400">eller velg fra {suggested.length} funnet</span>
-                    <div className="h-px flex-1 bg-neutral-100" />
-                  </div>
-                  <div className="grid grid-cols-1 min-[401px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1.5">
-                    {suggested.slice(0, 10).map((pathname) => {
-                      // Handle both relative paths and full URLs
-                      let fullUrl = '';
-                      let label = pathname;
-                      try {
-                        if (pathname.startsWith('http://') || pathname.startsWith('https://')) {
-                          // Already a full URL
-                          fullUrl = pathname;
-                          const parsedUrl = new URL(pathname);
-                          label = parsedUrl.pathname === '/' ? 'Forside' : parsedUrl.pathname.replace(/^\//, '').replace(/-/g, ' ') || parsedUrl.hostname;
-                        } else {
-                          // Relative path - construct full URL
-                          fullUrl = `${baseUrl}${pathname.startsWith('/') ? '' : '/'}${pathname}`;
-                          label = pathname === '/' ? 'Forside' : pathname.replace(/^\//, '').replace(/-/g, ' ') || pathname;
-                        }
-                      } catch {
-                        // Fallback: just use baseUrl + pathname
-                        fullUrl = `${baseUrl}${pathname.startsWith('/') ? '' : '/'}${pathname}`;
-                        label = pathname.replace(/^\//, '').replace(/-/g, ' ') || pathname;
-                      }
-                      
-                      return (
-                        <button
-                          key={pathname}
-                          type="button"
-                          onClick={() => openSubpageDialog(fullUrl)}
-                          className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-neutral-50 hover:bg-neutral-100 border border-transparent hover:border-neutral-200 transition-all text-left group cursor-pointer"
-                          title={fullUrl}
-                        >
-                          <span className="text-xs text-neutral-600 truncate flex-1 group-hover:text-neutral-900">{label}</span>
-                          <ChevronRight className="w-3 h-3 text-neutral-400 group-hover:text-neutral-600 shrink-0" />
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {suggested.length > 10 && (
-                    <p className="text-[10px] text-neutral-400 text-center">+{suggested.length - 10} flere</p>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* Forslag til artikler – under Analyser en annen side */}
+      {/* Forslag til artikler */}
       {result && (
         <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0 mt-4 max-[400px]:mt-4 min-[401px]:mt-6">
           <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6 border-b border-neutral-100">
@@ -1102,113 +1023,119 @@ export function OverviewTab({
               <>
                 <section className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4 sm:p-5">
                   <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-3">Artikkel og bilde</h2>
-                  <h3 className="text-lg font-semibold text-neutral-900 mb-2">{generatedArticleResult.title}</h3>
-                  {(generatedArticleResult.featuredImageUrl || generatedArticleResult.featuredImageSuggestion) && (
-                    <div className="mt-3 space-y-2">
-                      {generatedArticleResult.featuredImageUrl && (
-                        <div className="rounded-lg overflow-hidden border border-neutral-200 bg-white">
-                          <div className="max-h-[420px] flex items-center justify-center bg-neutral-100">
-                            <img
-                              src={generatedArticleResult.featuredImageUrl}
-                              alt="Forslått featured image"
-                              className="w-full h-auto max-h-[420px] object-contain"
-                            />
-                          </div>
-                          <div className="px-3 py-2 flex flex-wrap items-center justify-between gap-2 bg-neutral-50 border-t border-neutral-100">
-                            {generatedArticleResult.featuredImageAttribution && (
-                              <a
-                                href={generatedArticleResult.featuredImageProfileUrl ?? 'https://unsplash.com/?utm_source=analyseverktyy&utm_medium=referral'}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-[11px] text-neutral-600 hover:underline"
+                  <h3 className="text-lg font-semibold text-neutral-900 mb-4">{generatedArticleResult.title}</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                    {/* Venstre: forslått featured image */}
+                    {(generatedArticleResult.featuredImageUrl || generatedArticleResult.featuredImageSuggestion) && (
+                      <div className="space-y-2 min-w-0">
+                        {generatedArticleResult.featuredImageSuggestion && (
+                          <p className="text-[11px] text-neutral-600">
+                            <span className="font-medium text-neutral-700">Forslag til fremhevet bilde:</span>{' '}
+                            {generatedArticleResult.featuredImageSuggestion}
+                          </p>
+                        )}
+                        {generatedArticleResult.featuredImageUrl && (
+                          <div className="rounded-lg overflow-hidden border border-neutral-200 bg-white">
+                            <div className="max-h-[200px] flex items-center justify-center bg-neutral-100">
+                              <img
+                                src={generatedArticleResult.featuredImageUrl}
+                                alt="Forslag til fremhevet bilde"
+                                className="w-full h-auto max-h-[200px] object-contain"
+                              />
+                            </div>
+                            <div className="px-3 py-2 flex flex-wrap items-center justify-between gap-2 bg-neutral-50 border-t border-neutral-100">
+                              {generatedArticleResult.featuredImageAttribution && (
+                                <a
+                                  href={generatedArticleResult.featuredImageProfileUrl ?? 'https://unsplash.com/?utm_source=analyseverktyy&utm_medium=referral'}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-[11px] text-neutral-600 hover:underline"
+                                >
+                                  {generatedArticleResult.featuredImageAttribution}
+                                </a>
+                              )}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="rounded-lg text-xs h-8"
+                                asChild
                               >
-                                {generatedArticleResult.featuredImageAttribution}
-                              </a>
-                            )}
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="rounded-lg text-xs h-8"
-                              asChild
-                            >
-                              <a
-                                href={generatedArticleResult.featuredImageUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download
-                              >
-                                <Download className="h-3.5 w-3.5 mr-1.5" />
-                                Last ned
-                              </a>
-                            </Button>
+                                <a
+                                  href={generatedArticleResult.featuredImageDownloadUrl ?? generatedArticleResult.featuredImageUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  download
+                                >
+                                  <Download className="h-3.5 w-3.5 mr-1.5" />
+                                  Last ned (full størrelse)
+                                </a>
+                              </Button>
+                            </div>
                           </div>
-                        </div>
-                      )}
-                      {generatedArticleResult.featuredImageSuggestion && !generatedArticleResult.featuredImageUrl && (
-                        <div className="flex items-start gap-2 p-3 rounded-lg bg-white border border-neutral-100">
-                          <Image className="h-4 w-4 text-neutral-500 shrink-0 mt-0.5" aria-hidden />
-                          <div>
-                            <p className="text-xs font-medium text-neutral-600 mb-0.5">Forslått featured image</p>
-                            <p className="text-sm text-neutral-800">{generatedArticleResult.featuredImageSuggestion}</p>
-                            <p className="text-[11px] text-neutral-500 mt-1">Bruk som søkeord på stock-bilder eller beskrivelse til illustratør.</p>
+                        )}
+                        {generatedArticleResult.featuredImageSuggestion && !generatedArticleResult.featuredImageUrl && (
+                          <div className="flex items-start gap-2 p-3 rounded-lg bg-white border border-neutral-100">
+                            <Image className="h-4 w-4 text-neutral-500 shrink-0 mt-0.5" aria-hidden />
+                            <div className="min-w-0">
+                              <p className="text-xs font-medium text-neutral-600 mb-0.5">Ingen bilde hentet</p>
+                              <p className="text-sm text-neutral-800">{generatedArticleResult.featuredImageSuggestion}</p>
+                              <p className="text-[11px] text-neutral-500 mt-1">Bruk søkeforslaget på stock-bilder (f.eks. Unsplash) eller til illustratør.</p>
+                            </div>
                           </div>
+                        )}
+                      </div>
+                    )}
+                    {/* Høyre: SEO og deling */}
+                    {(generatedArticleResult.metaTitle || generatedArticleResult.metaDescription) && (
+                      <div className="min-w-0">
+                        <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-3">SEO og deling</h2>
+                        <div className="space-y-3">
+                          {generatedArticleResult.metaTitle && (
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-xs font-medium text-neutral-600">Meta-tittel</label>
+                              <div className="flex items-center gap-2 min-w-0">
+                                <p className="text-sm text-neutral-800 truncate flex-1" title={generatedArticleResult.metaTitle}>
+                                  {generatedArticleResult.metaTitle}
+                                </p>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="shrink-0 h-8 w-8 p-0 rounded-lg"
+                                  onClick={() => copyMeta('Meta-tittel', generatedArticleResult!.metaTitle!)}
+                                  title="Kopier meta-tittel"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+                          {generatedArticleResult.metaDescription && (
+                            <div className="flex flex-col gap-1.5">
+                              <label className="text-xs font-medium text-neutral-600">Meta-beskrivelse</label>
+                              <div className="flex items-start gap-2 min-w-0">
+                                <p className="text-sm text-neutral-700 flex-1 line-clamp-3" title={generatedArticleResult.metaDescription}>
+                                  {generatedArticleResult.metaDescription}
+                                </p>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  className="shrink-0 h-8 w-8 p-0 rounded-lg"
+                                  onClick={() => copyMeta('Meta-beskrivelse', generatedArticleResult!.metaDescription!)}
+                                  title="Kopier meta-beskrivelse"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                          )}
                         </div>
-                      )}
-                      {generatedArticleResult.featuredImageSuggestion && generatedArticleResult.featuredImageUrl && (
-                        <p className="text-[11px] text-neutral-500">Søkeforslag: {generatedArticleResult.featuredImageSuggestion}</p>
-                      )}
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                 </section>
-                {/* SEO: meta tittel og beskrivelse */}
-                {(generatedArticleResult.metaTitle || generatedArticleResult.metaDescription) && (
-                  <section className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4 sm:p-5">
-                    <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-3">SEO og deling</h2>
-                    <div className="space-y-3">
-                      {generatedArticleResult.metaTitle && (
-                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                          <label className="text-xs font-medium text-neutral-600 shrink-0 sm:w-28">Meta-tittel</label>
-                          <div className="flex-1 flex items-center gap-2 min-w-0">
-                            <p className="text-sm text-neutral-800 truncate flex-1" title={generatedArticleResult.metaTitle}>
-                              {generatedArticleResult.metaTitle}
-                            </p>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="shrink-0 h-8 w-8 p-0 rounded-lg"
-                              onClick={() => copyMeta('Meta-tittel', generatedArticleResult!.metaTitle!)}
-                              title="Kopier meta-tittel"
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                      {generatedArticleResult.metaDescription && (
-                        <div className="flex flex-col sm:flex-row sm:items-start gap-2">
-                          <label className="text-xs font-medium text-neutral-600 shrink-0 sm:w-28">Meta-beskrivelse</label>
-                          <div className="flex-1 flex items-start gap-2 min-w-0">
-                            <p className="text-sm text-neutral-700 flex-1 line-clamp-3" title={generatedArticleResult.metaDescription}>
-                              {generatedArticleResult.metaDescription}
-                            </p>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              className="shrink-0 h-8 w-8 p-0 rounded-lg"
-                              onClick={() => copyMeta('Meta-beskrivelse', generatedArticleResult!.metaDescription!)}
-                              title="Kopier meta-beskrivelse"
-                            >
-                              <Copy className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </section>
-                )}
               </>
             )}
             {/* Artikkeltekst */}

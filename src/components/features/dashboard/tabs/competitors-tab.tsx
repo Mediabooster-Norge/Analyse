@@ -590,14 +590,14 @@ export function CompetitorsTab({
           <div className="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <TrendingUp className="w-8 h-8 text-neutral-400" />
           </div>
-          <h3 className="font-semibold text-neutral-900 mb-2">Ingen konkurrentanalyse</h3>
+          <h3 className="font-semibold text-neutral-900 mb-2">Sammenlign med konkurrenter</h3>
           <p className="text-sm text-neutral-500 max-w-md mx-auto mb-4">
-            Du valgte ingen konkurrenter i den opprinnelige analysen.
+            Legg til konkurrent-URL-er og hent data for å sammenligne med din nettside. Hvert oppslag bruker ett konkurrentoppdatering.
           </p>
           {(isPremium || remainingCompetitorUpdates > 0) && !editingCompetitors && (
             <Button variant="outline" onClick={startEditingCompetitors} className="rounded-xl">
               <Plus className="mr-2 h-4 w-4" />
-              Legg til konkurrenter
+              Legg til konkurrenter og hent data
               {!isPremium && (
                 <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
                   {remainingCompetitorUpdates}/{FREE_UPDATE_LIMIT}

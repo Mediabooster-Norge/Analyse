@@ -1,11 +1,15 @@
 'use client';
 
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+
 interface ScoreRingProps {
   score: number;
   label: string;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showStatus?: boolean;
   neutral?: boolean;
+  /** Forklaring som vises i tooltip ved hover */
+  title?: string;
 }
 
 const sizes = {
@@ -36,6 +40,7 @@ export function ScoreRing({
   size = 'md',
   showStatus = false,
   neutral = false,
+  title,
 }: ScoreRingProps) {
   const s = sizes[size];
   const radius = (s.ring - s.stroke * 2) / 2;
@@ -43,7 +48,7 @@ export function ScoreRing({
   const strokeDashoffset = circumference - (score / 100) * circumference;
   const scoreColor = getScoreColor(score, neutral);
 
-  return (
+  const content = (
     <div className="flex flex-col items-center gap-2">
       <div className="relative" style={{ width: s.ring, height: s.ring }}>
         <svg
@@ -91,4 +96,19 @@ export function ScoreRing({
       )}
     </div>
   );
+
+  if (title) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="cursor-help w-full flex flex-col items-center">{content}</div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[240px] text-center">
+          {title}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return content;
 }

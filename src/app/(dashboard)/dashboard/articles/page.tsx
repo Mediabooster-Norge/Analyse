@@ -267,72 +267,90 @@ export default function ArticlesPage() {
                   selectedArticle.featured_image_suggestion ||
                   selectedArticle.meta_title ||
                   selectedArticle.meta_description) && (
-                  <>
-                    {(selectedArticle.featured_image_url || selectedArticle.featured_image_suggestion) && (
-                      <section className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-2">Featured image</p>
-                        {selectedArticle.featured_image_url ? (
-                          <div className="rounded-lg overflow-hidden border border-neutral-200 bg-white">
-                            <div className="max-h-[420px] flex items-center justify-center bg-neutral-100">
-                              <img
-                                src={selectedArticle.featured_image_url}
-                                alt="Featured"
-                                className="w-full h-auto max-h-[420px] object-contain"
-                              />
-                            </div>
-                            <div className="px-3 py-2 flex flex-wrap items-center justify-between gap-2 bg-neutral-50 border-t border-neutral-100">
-                              {selectedArticle.featured_image_attribution && (
-                                <a
-                                  href="https://unsplash.com/?utm_source=analyseverktyy&utm_medium=referral"
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[11px] text-neutral-600 hover:underline"
-                                >
-                                  {selectedArticle.featured_image_attribution}
-                                </a>
-                              )}
-                              <Button type="button" variant="outline" size="sm" className="rounded-lg text-xs h-8" asChild>
-                                <a href={selectedArticle.featured_image_url} target="_blank" rel="noopener noreferrer" download>
-                                  <Download className="h-3.5 w-3.5 mr-1.5" />
-                                  Last ned
-                                </a>
-                              </Button>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex items-start gap-2 p-3 rounded-lg bg-white border border-neutral-100">
-                            <Image className="h-4 w-4 text-neutral-500 shrink-0 mt-0.5" aria-hidden />
-                            <p className="text-sm text-neutral-800">{selectedArticle.featured_image_suggestion}</p>
-                          </div>
-                        )}
-                      </section>
-                    )}
-                    {(selectedArticle.meta_title || selectedArticle.meta_description) && (
-                      <section className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4">
-                        <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-3">SEO og deling</p>
-                        <div className="space-y-3">
-                          {selectedArticle.meta_title && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-xs font-medium text-neutral-600 w-28 shrink-0">Meta-tittel</span>
-                              <p className="text-sm text-neutral-800 flex-1 truncate" title={selectedArticle.meta_title}>{selectedArticle.meta_title}</p>
-                              <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => copyMeta('Meta-tittel', selectedArticle.meta_title!)} title="Kopier">
-                                <Copy className="h-3.5 w-3.5" />
-                              </Button>
-                            </div>
+                  <section className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4 sm:p-5">
+                    <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-4">Artikkel og bilde</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+                      {/* Venstre: forslått featured image */}
+                      {(selectedArticle.featured_image_url || selectedArticle.featured_image_suggestion) && (
+                        <div className="space-y-2 min-w-0">
+                          {selectedArticle.featured_image_suggestion && (
+                            <p className="text-[11px] text-neutral-600">
+                              <span className="font-medium text-neutral-700">Forslag til fremhevet bilde:</span>{' '}
+                              {selectedArticle.featured_image_suggestion}
+                            </p>
                           )}
-                          {selectedArticle.meta_description && (
-                            <div className="flex items-start gap-2">
-                              <span className="text-xs font-medium text-neutral-600 w-28 shrink-0">Meta-beskrivelse</span>
-                              <p className="text-sm text-neutral-700 flex-1 line-clamp-2" title={selectedArticle.meta_description}>{selectedArticle.meta_description}</p>
-                              <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0" onClick={() => copyMeta('Meta-beskrivelse', selectedArticle.meta_description!)} title="Kopier">
-                                <Copy className="h-3.5 w-3.5" />
-                              </Button>
+                          {selectedArticle.featured_image_url ? (
+                            <div className="rounded-lg overflow-hidden border border-neutral-200 bg-white">
+                              <div className="max-h-[200px] flex items-center justify-center bg-neutral-100">
+                                <img
+                                  src={selectedArticle.featured_image_url}
+                                  alt="Forslag til fremhevet bilde"
+                                  className="w-full h-auto max-h-[200px] object-contain"
+                                />
+                              </div>
+                              <div className="px-3 py-2 flex flex-wrap items-center justify-between gap-2 bg-neutral-50 border-t border-neutral-100">
+                                {selectedArticle.featured_image_attribution && (
+                                  <a
+                                    href="https://unsplash.com/?utm_source=analyseverktyy&utm_medium=referral"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-[11px] text-neutral-600 hover:underline"
+                                  >
+                                    {selectedArticle.featured_image_attribution}
+                                  </a>
+                                )}
+                                <Button type="button" variant="outline" size="sm" className="rounded-lg text-xs h-8" asChild>
+                                  <a href={selectedArticle.featured_image_url} target="_blank" rel="noopener noreferrer" download>
+                                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                                    Last ned
+                                  </a>
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex items-start gap-2 p-3 rounded-lg bg-white border border-neutral-100">
+                              <Image className="h-4 w-4 text-neutral-500 shrink-0 mt-0.5" aria-hidden />
+                              <div className="min-w-0">
+                                <p className="text-xs font-medium text-neutral-600 mb-0.5">Ingen bilde lastet inn</p>
+                                <p className="text-sm text-neutral-800">{selectedArticle.featured_image_suggestion}</p>
+                                <p className="text-[11px] text-neutral-500 mt-1">Bruk søkeforslaget på stock-bilder (f.eks. Unsplash) eller til illustratør.</p>
+                              </div>
                             </div>
                           )}
                         </div>
-                      </section>
-                    )}
-                  </>
+                      )}
+                      {/* Høyre: SEO og deling */}
+                      {(selectedArticle.meta_title || selectedArticle.meta_description) && (
+                        <div className="min-w-0">
+                          <p className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-3">SEO og deling</p>
+                          <div className="space-y-3">
+                            {selectedArticle.meta_title && (
+                              <div className="flex flex-col gap-1.5">
+                                <span className="text-xs font-medium text-neutral-600">Meta-tittel</span>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  <p className="text-sm text-neutral-800 truncate flex-1" title={selectedArticle.meta_title}>{selectedArticle.meta_title}</p>
+                                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0 rounded-lg" onClick={() => copyMeta('Meta-tittel', selectedArticle.meta_title!)} title="Kopier meta-tittel">
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                            {selectedArticle.meta_description && (
+                              <div className="flex flex-col gap-1.5">
+                                <span className="text-xs font-medium text-neutral-600">Meta-beskrivelse</span>
+                                <div className="flex items-start gap-2 min-w-0">
+                                  <p className="text-sm text-neutral-700 flex-1 line-clamp-3" title={selectedArticle.meta_description}>{selectedArticle.meta_description}</p>
+                                  <Button type="button" variant="ghost" size="sm" className="h-8 w-8 p-0 shrink-0 rounded-lg" onClick={() => copyMeta('Meta-beskrivelse', selectedArticle.meta_description!)} title="Kopier meta-beskrivelse">
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </section>
                 )}
                 <article className="prose prose-neutral prose-sm sm:prose-base max-w-none">
                   <ReactMarkdown components={markdownComponents}>

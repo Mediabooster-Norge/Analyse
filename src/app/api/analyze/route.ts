@@ -188,6 +188,7 @@ export async function POST(request: NextRequest) {
     
     if (competitorUrls.length > 0) {
       const competitorAnalysis = await runCompetitorAnalysis(normalizedUrl, competitorUrls, {
+        includeAI,
         usePremiumAI,
         industry,
         targetKeywords: keywords,
@@ -208,6 +209,7 @@ export async function POST(request: NextRequest) {
         isPremium,
         cachedSecurityResults,
         cachedAiVisibility: cachedAiVisibilityByDomain[urlDomain],
+        skipPageSpeed: true, // Hastighet hentes i eget API-kall etterpå (holder første kall under 60s)
       });
     }
 

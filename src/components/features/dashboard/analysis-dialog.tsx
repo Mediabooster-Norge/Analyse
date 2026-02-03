@@ -9,12 +9,12 @@ import {
   Globe,
   Search,
   Sparkles,
-  BarChart3,
   Tag,
   X,
   Loader2,
   CheckCircle2,
   Clock,
+  BarChart3,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -55,6 +55,11 @@ export interface AnalysisDialogProps {
   FREE_COMPETITOR_LIMIT: number;
   FREE_KEYWORD_LIMIT: number;
   onRunAnalysis: () => void;
+  /** True mens hastighet (PageSpeed) hentes i eget kall – viser «Måler hastighet» og holder modalen åpen */
+  loadingPageSpeed?: boolean;
+  /** True mens konkurrenter hentes (ett API-kall per konkurrent) */
+  loadingCompetitors?: boolean;
+  competitorProgress?: { current: number; total: number } | null;
   /** Subpage mode: hides competitors, shows simplified header */
   isSubpageMode?: boolean;
 }
@@ -89,8 +94,19 @@ export function AnalysisDialog({
   FREE_COMPETITOR_LIMIT,
   FREE_KEYWORD_LIMIT,
   onRunAnalysis,
+  loadingPageSpeed = false,
+  loadingCompetitors = false,
+  competitorProgress = null,
   isSubpageMode = false,
 }: AnalysisDialogProps) {
+  const showPageSpeedStep = analyzing && loadingPageSpeed && !loadingCompetitors;
+  const showCompetitorsStep = analyzing && loadingCompetitors;
+  const showStepLabel = showCompetitorsStep ? 'Henter konkurrenter' : showPageSpeedStep ? 'Måler hastighet (PageSpeed)' : analysisSteps[analysisStep]?.label;
+  const showStepDesc = showCompetitorsStep && competitorProgress
+    ? `Konkurrent ${competitorProgress.current} av ${competitorProgress.total}`
+    : showPageSpeedStep
+      ? 'Henter ytelsesdata fra Google PageSpeed Insights'
+      : analysisSteps[analysisStep]?.description;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -105,9 +121,15 @@ export function AnalysisDialog({
                 </div>
                 <div className="flex-1 min-w-0">
                   <DialogHeader className="p-0 space-y-0">
-                    <DialogTitle className="text-sm sm:text-base font-semibold text-neutral-900">Analyserer nettside</DialogTitle>
+                    <DialogTitle className="text-sm sm:text-base font-semibold text-neutral-900">
+                      {showCompetitorsStep ? 'Henter konkurrenter' : showPageSpeedStep ? 'Måler hastighet' : 'Analyserer nettside'}
+                    </DialogTitle>
                     <DialogDescription className="text-xs text-neutral-500 truncate">
-                      {url || companyUrl || '—'}
+                      {showCompetitorsStep && competitorProgress
+                        ? `Konkurrent ${competitorProgress.current} av ${competitorProgress.total}`
+                        : showPageSpeedStep
+                          ? 'Fullfører PageSpeed-analyse – vanligvis under 1 min'
+                          : (url || companyUrl || '—')}
                     </DialogDescription>
                   </DialogHeader>
                 </div>
@@ -115,7 +137,7 @@ export function AnalysisDialog({
             </div>
 
             <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
-              {/* Current step with timer - subtle styling */}
+              {/* Current step or PageSpeed step */}
               <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-3 sm:p-4">
                 <div className="flex items-center gap-3 sm:gap-4">
                   {/* Progress ring - subtle */}
@@ -131,18 +153,20 @@ export function AnalysisDialog({
                         strokeWidth="3"
                         strokeLinecap="round"
                         className="transition-all duration-700 ease-out"
-                        strokeDasharray={`${((analysisStep + 1) / analysisSteps.length) * 150.8} 150.8`}
+                        strokeDasharray={showPageSpeedStep ? '150.8 150.8' : `${((analysisStep + 1) / analysisSteps.length) * 150.8} 150.8`}
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-neutral-700 text-xs sm:text-sm font-semibold">{analysisStep + 1}/{analysisSteps.length}</span>
+                      <span className="text-neutral-700 text-xs sm:text-sm font-semibold">
+                        {showPageSpeedStep ? '6/6' : `${analysisStep + 1}/${analysisSteps.length}`}
+                      </span>
                     </div>
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <p className="text-neutral-900 text-sm sm:text-base font-medium flex items-center gap-2">
-                        {analysisSteps[analysisStep]?.label}
+                        {showStepLabel}
                         <span className="inline-flex gap-0.5">
                           <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '0ms' }} />
                           <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '150ms' }} />
@@ -150,7 +174,9 @@ export function AnalysisDialog({
                         </span>
                       </p>
                     </div>
-                    <p className="text-neutral-500 text-xs sm:text-sm hidden sm:block">{analysisSteps[analysisStep]?.description}</p>
+                    <p className="text-neutral-500 text-xs sm:text-sm hidden sm:block">
+                      {showStepDesc}
+                    </p>
                   </div>
 
                   {/* Timer - subtle */}
@@ -168,8 +194,8 @@ export function AnalysisDialog({
                 <div className="divide-y divide-neutral-100">
                   {analysisSteps.map((step, index) => {
                     const StepIcon = step.icon;
-                    const isComplete = index < analysisStep;
-                    const isCurrent = index === analysisStep;
+                    const isComplete = showPageSpeedStep || showCompetitorsStep ? true : index < analysisStep;
+                    const isCurrent = showPageSpeedStep || showCompetitorsStep ? false : index === analysisStep;
                     return (
                       <div
                         key={index}
@@ -212,12 +238,35 @@ export function AnalysisDialog({
                       </div>
                     );
                   })}
+                  {showPageSpeedStep && (
+                    <div className="flex items-center gap-3 px-4 py-2.5 bg-neutral-50">
+                      <div className="relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 bg-neutral-200">
+                        <Loader2 className="h-3.5 w-3.5 text-neutral-700 animate-spin" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-neutral-900">Måler hastighet (PageSpeed)</p>
+                      </div>
+                      <span className="text-xs tabular-nums shrink-0 text-neutral-600">Pågår</span>
+                    </div>
+                  )}
+                  {showCompetitorsStep && competitorProgress && (
+                    <div className="flex items-center gap-3 px-4 py-2.5 bg-neutral-50">
+                      <div className="relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 bg-neutral-200">
+                        <Loader2 className="h-3.5 w-3.5 text-neutral-700 animate-spin" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-neutral-900">Henter konkurrenter</p>
+                        <p className="text-xs text-neutral-500">Konkurrent {competitorProgress.current} av {competitorProgress.total}</p>
+                      </div>
+                      <span className="text-xs tabular-nums shrink-0 text-neutral-600">Pågår</span>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Status message */}
               <p className="text-center text-xs text-neutral-400">
-                Vanligvis rundt 1 min
+                {showPageSpeedStep ? 'Vanligvis under 1 min' : 'Vanligvis rundt 1 min'}
               </p>
             </div>
           </>
@@ -241,7 +290,7 @@ export function AnalysisDialog({
               </div>
             </div>
             <div className="space-y-3 sm:space-y-4 px-4 sm:px-5 pb-4 sm:pb-5">
-              {/* URL input - compact (read-only in subpage mode) */}
+              {/* URL input – alltid først */}
               <div className="flex items-center gap-2">
                 <div className="relative flex-1">
                   <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
@@ -263,27 +312,23 @@ export function AnalysisDialog({
                   </button>
                 )}
               </div>
-              {/* Competitors section */}
+
+              {/* Competitors – under vår hoved-URL, nøytral styling */}
               <div className="p-3 rounded-lg bg-neutral-50 space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="competitor" className="text-xs font-medium text-neutral-700">
-                    {isSubpageMode ? 'Sammenlign med konkurrenters underside (valgfritt)' : 'Sammenlign med konkurrenter'}
+                    {isSubpageMode ? 'Legg til konkurrenter med tilsvarende side (valgfritt)' : 'Sammenlign med konkurrenter (valgfritt)'}
                   </Label>
                   <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-neutral-900 text-[10px] font-medium">
                     {competitorUrls.length}/{FREE_COMPETITOR_LIMIT}
                   </span>
                 </div>
-                {isSubpageMode && (
-                  <p className="text-[10px] text-neutral-500">
-                    Legg til konkurrenters tilsvarende side for sammenligning (f.eks. konkurrent.no/tjenester)
-                  </p>
-                )}
                 <div className="flex gap-2">
                   <div className="relative flex-1">
                     <BarChart3 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                     <Input
                       id="competitor"
-                      placeholder={isSubpageMode ? "konkurrent.no/tjenester" : "konkurrent.no"}
+                      placeholder={isSubpageMode ? 'konkurrent.no/tjenester/...' : 'konkurrent.no'}
                       value={competitorInput}
                       onChange={(e) => setCompetitorInput(e.target.value)}
                       onKeyDown={(e) => {
@@ -307,7 +352,6 @@ export function AnalysisDialog({
                     <Plus className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-                {/* Competitor chips - separate row, wraps nicely */}
                 {competitorUrls.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {competitorUrls.map((competitor) => (
@@ -331,7 +375,7 @@ export function AnalysisDialog({
                 )}
               </div>
 
-              {/* Keywords section - takes more space */}
+              {/* Keywords section */}
               <div className="p-4 rounded-xl bg-neutral-50 space-y-3 flex-1">
                 <div className="flex items-center justify-between">
                   <Label className="text-sm font-medium text-neutral-700">Nøkkelord for analyse</Label>

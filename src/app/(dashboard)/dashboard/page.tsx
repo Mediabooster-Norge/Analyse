@@ -40,6 +40,12 @@ import {
 
 // Extracted components
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import {
   ScoreRing,
   ActionPlanTabs,
   TabNavigation,
@@ -84,6 +90,9 @@ function DashboardPageContent() {
     analyzing,
     analysisStep,
     elapsedTime,
+    loadingPageSpeed,
+    loadingCompetitors,
+    competitorProgress,
     editCompetitorUrls,
     editCompetitorInput,
     setEditCompetitorInput,
@@ -215,58 +224,107 @@ function DashboardPageContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 max-[400px]:gap-3">
         <div className="min-w-0">
-          <h1 className="text-xl max-[400px]:text-lg min-[450px]:text-2xl font-semibold text-neutral-900 truncate">
-            {userName ? `Hei, ${userName}` : 'Dashboard'}
-          </h1>
-          <p className="text-neutral-500 text-sm max-[400px]:text-xs truncate">
+          <div className="flex flex-wrap items-center gap-2 gap-y-1">
+            <h1 className="text-xl max-[400px]:text-lg min-[450px]:text-2xl font-semibold text-neutral-900 truncate">
+              {userName ? `Hei, ${userName}` : 'Dashboard'}
+            </h1>
+            {isPremium && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] sm:text-xs font-medium border border-amber-200/60">
+                <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                Premium
+              </span>
+            )}
+          </div>
+          <p className="text-neutral-500 text-sm max-[400px]:text-xs truncate mt-0.5">
             {result ? 'Se din analyse og anbefalinger' : 'Start en analyse for å komme i gang'}
           </p>
         </div>
-        <AnalysisDialog
-          open={dialogOpen}
-          onOpenChange={setDialogOpen}
-          trigger={
+        <div className="flex flex-col gap-2 w-full sm:w-auto">
+          <AnalysisDialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+            trigger={
+              <Button
+                className="bg-neutral-900 hover:bg-neutral-800 text-white w-full sm:w-auto text-sm max-[400px]:text-xs max-[400px]:h-9"
+                disabled={!isPremium && remainingAnalyses === 0}
+              >
+                <Plus className="mr-1.5 max-[400px]:mr-1 h-4 w-4 max-[400px]:h-3.5 max-[400px]:w-3.5" />
+                Ny analyse
+                {!isPremium && remainingAnalyses < FREE_MONTHLY_LIMIT && (
+                  <span className="ml-1.5 max-[400px]:ml-1 px-1.5 max-[400px]:px-1 py-0.5 rounded-full bg-white/20 text-[10px] max-[400px]:text-[9px]">
+                    {remainingAnalyses} igjen
+                  </span>
+                )}
+              </Button>
+            }
+            analyzing={analyzing}
+            analysisStep={analysisStep}
+            analysisSteps={analysisSteps}
+            elapsedTime={elapsedTime}
+            url={url}
+            setUrl={setUrl}
+            companyUrl={companyUrl}
+            companyName={companyName}
+            competitorUrls={competitorUrls}
+            competitorInput={competitorInput}
+            setCompetitorInput={setCompetitorInput}
+            addCompetitor={addCompetitor}
+            removeCompetitor={removeCompetitor}
+            keywords={keywords}
+            keywordInput={keywordInput}
+            setKeywordInput={setKeywordInput}
+            addKeyword={addKeyword}
+            removeKeyword={removeKeyword}
+            clearKeywords={clearKeywords}
+            suggestedKeywordCount={suggestedKeywordCount}
+            setSuggestedKeywordCount={setSuggestedKeywordCount}
+            suggestingKeywords={suggestingKeywords}
+            suggestKeywords={suggestKeywords}
+            FREE_COMPETITOR_LIMIT={FREE_COMPETITOR_LIMIT}
+            FREE_KEYWORD_LIMIT={FREE_KEYWORD_LIMIT}
+            onRunAnalysis={runAnalysis}
+            loadingPageSpeed={loadingPageSpeed}
+            loadingCompetitors={loadingCompetitors}
+            competitorProgress={competitorProgress}
+            isSubpageMode={!!subpageUrl}
+          />
+          {result && (
             <Button
-              className="bg-neutral-900 hover:bg-neutral-800 text-white w-full sm:w-auto text-sm max-[400px]:text-xs max-[400px]:h-9"
-              disabled={!isPremium && remainingAnalyses === 0}
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="rounded-xl text-xs shrink-0 w-full sm:w-auto text-neutral-500 hover:text-neutral-900"
+              disabled={downloadingPdf}
+              onClick={async () => {
+                setDownloadingPdf(true);
+                try {
+                  await downloadAnalysisReportPdf({
+                    result,
+                    companyUrl: companyUrl || url || '',
+                    companyName: companyName || null,
+                  });
+                  toast.success('Rapport lastet ned');
+                } catch {
+                  toast.error('Kunne ikke generere PDF');
+                } finally {
+                  setDownloadingPdf(false);
+                }
+              }}
             >
-              <Plus className="mr-1.5 max-[400px]:mr-1 h-4 w-4 max-[400px]:h-3.5 max-[400px]:w-3.5" />
-              Ny analyse
-              {!isPremium && remainingAnalyses < FREE_MONTHLY_LIMIT && (
-                <span className="ml-1.5 max-[400px]:ml-1 px-1.5 max-[400px]:px-1 py-0.5 rounded-full bg-white/20 text-[10px] max-[400px]:text-[9px]">
-                  {remainingAnalyses} igjen
-                </span>
+              {downloadingPdf ? (
+                <>
+                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                  Genererer…
+                </>
+              ) : (
+                <>
+                  <FileDown className="h-3.5 w-3.5 mr-1.5" />
+                  Last ned rapport (PDF)
+                </>
               )}
             </Button>
-          }
-          analyzing={analyzing}
-          analysisStep={analysisStep}
-          analysisSteps={analysisSteps}
-          elapsedTime={elapsedTime}
-          url={url}
-          setUrl={setUrl}
-          companyUrl={companyUrl}
-          companyName={companyName}
-          competitorUrls={competitorUrls}
-          competitorInput={competitorInput}
-          setCompetitorInput={setCompetitorInput}
-          addCompetitor={addCompetitor}
-          removeCompetitor={removeCompetitor}
-          keywords={keywords}
-          keywordInput={keywordInput}
-          setKeywordInput={setKeywordInput}
-          addKeyword={addKeyword}
-          removeKeyword={removeKeyword}
-          clearKeywords={clearKeywords}
-          suggestedKeywordCount={suggestedKeywordCount}
-          setSuggestedKeywordCount={setSuggestedKeywordCount}
-          suggestingKeywords={suggestingKeywords}
-          suggestKeywords={suggestKeywords}
-          FREE_COMPETITOR_LIMIT={FREE_COMPETITOR_LIMIT}
-          FREE_KEYWORD_LIMIT={FREE_KEYWORD_LIMIT}
-          onRunAnalysis={runAnalysis}
-          isSubpageMode={!!subpageUrl}
-        />
+          )}
+        </div>
       </div>
 
       {/* Inline analysis progress - shown when analyzing without dialog */}
@@ -297,21 +355,8 @@ function DashboardPageContent() {
         </div>
       )}
 
-      {/* Monthly Usage & Premium Banner - Combined */}
-      {isPremium ? (
-        // Premium user - subtle inline indicator
-        result ? (
-          <div className="rounded-2xl bg-white border border-neutral-200 p-3 sm:p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                <span className="text-xs sm:text-sm font-medium text-neutral-900">Premium</span>
-                <span className="text-xs sm:text-sm text-neutral-500 hidden sm:inline">· Ubegrenset analyser</span>
-              </div>
-            </div>
-          </div>
-        ) : null
-      ) : remainingAnalyses === 0 ? (
+      {/* Monthly Usage – kun for gratis-brukere */}
+      {!isPremium && remainingAnalyses === 0 ? (
         <div className="rounded-2xl bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 p-4 sm:p-5">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
@@ -345,77 +390,189 @@ function DashboardPageContent() {
             </Button>
           </div>
         </div>
-      ) : result ? (
-        <div className="rounded-2xl bg-white border border-neutral-200 p-3 sm:p-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="flex items-center gap-2">
-                <span className="text-xs sm:text-sm font-medium text-neutral-900">{remainingAnalyses}</span>
-                <span className="text-xs sm:text-sm text-neutral-500">av {FREE_MONTHLY_LIMIT} igjen</span>
-              </div>
-              <div className="flex-1 sm:flex-none sm:w-24 h-2 bg-neutral-100 rounded-full overflow-hidden">
-                <div 
-                  className={`h-full rounded-full transition-all ${remainingAnalyses <= 1 ? 'bg-amber-500' : 'bg-neutral-900'}`}
-                  style={{ width: `${(remainingAnalyses / FREE_MONTHLY_LIMIT) * 100}%` }}
-                />
-              </div>
-            </div>
-            <a 
-              href="https://mediabooster.no/kontakt" 
-              target="_blank" 
-              rel="noopener noreferrer"
-              className="text-xs sm:text-sm text-neutral-500 hover:text-neutral-900 transition-colors"
-            >
-              Oppgrader til ubegrenset →
-            </a>
+      ) : !isPremium && result ? (
+        <div className="rounded-xl bg-neutral-50 border border-neutral-100 px-3 py-2 flex flex-wrap items-center gap-2 gap-y-1">
+          <span className="text-xs font-medium text-neutral-700">{remainingAnalyses} av {FREE_MONTHLY_LIMIT} igjen</span>
+          <div className="flex-1 min-w-[80px] max-w-[120px] h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all ${remainingAnalyses <= 1 ? 'bg-amber-500' : 'bg-neutral-700'}`}
+              style={{ width: `${(remainingAnalyses / FREE_MONTHLY_LIMIT) * 100}%` }}
+            />
           </div>
+          <a
+            href="https://mediabooster.no/kontakt"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-neutral-500 hover:text-neutral-800"
+          >
+            Oppgrader →
+          </a>
         </div>
       ) : null}
 
       {/* Results or Empty State */}
       {result ? (
         <>
-          {/* Tab Navigation + PDF download */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          {/* Analyser en annen side – øverst over fanene (kun Premium) */}
+          {isPremium && (() => {
+            const normalizePathForCompare = (path: string): string => {
+              try {
+                const decoded = decodeURIComponent(path);
+                const segments = decoded.split('/').filter(Boolean);
+                const normalized = segments
+                  .map((s) => s.trim().replace(/\s+/g, '-').toLowerCase())
+                  .join('/');
+                return '/' + normalized || '/';
+              } catch {
+                return path.replace(/\/$/, '') || '/';
+              }
+            };
+            const internalUrls = result.seoResults.links.internal?.urls ?? [];
+            let currentPathNorm = '/';
+            let baseUrl = url;
+            try {
+              const parsed = new URL(url);
+              const raw = (parsed.pathname || '/').replace(/\/$/, '') || '/';
+              baseUrl = parsed.origin;
+              currentPathNorm = normalizePathForCompare(raw);
+            } catch { /* ignore */ }
+            const toPath = (p: string): string => {
+              if (!p) return '/';
+              try {
+                if (p.startsWith('http://') || p.startsWith('https://')) {
+                  const u = new URL(p);
+                  return normalizePathForCompare((u.pathname || '/').replace(/\/$/, '') || '/');
+                }
+                const path = (p.startsWith('/') ? p : `/${p}`).replace(/\/$/, '') || '/';
+                return normalizePathForCompare(path);
+              } catch {
+                return normalizePathForCompare((p.startsWith('/') ? p : `/${p}`).replace(/\/$/, '') || '/');
+              }
+            };
+            const suggested = internalUrls.filter((p): p is string => !!p && toPath(p) !== currentPathNorm);
+            return (
+              <Accordion type="single" collapsible defaultValue="" className="rounded-2xl border border-neutral-200 bg-white overflow-hidden mb-4">
+                <AccordionItem value="analyser" className="border-none">
+                  <AccordionTrigger className="px-3 sm:px-4 py-3 hover:no-underline hover:bg-neutral-50 [&[data-state=open]]:border-b [&[data-state=open]]:border-neutral-100">
+                    <span className="font-medium text-neutral-900 flex items-center gap-2 text-sm">
+                      <Link2 className="h-4 w-4 text-neutral-500" />
+                      Analyser en annen side
+                    </span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    <div className="p-3 sm:p-4 pt-0 space-y-3">
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <div className="relative flex-1 flex">
+                      <span className="inline-flex items-center px-3 rounded-l-lg border border-r-0 border-neutral-200 bg-neutral-50 text-neutral-500 text-sm select-none whitespace-nowrap">
+                        {baseUrl}
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="/din-side"
+                        className="flex-1 min-w-0 h-9 px-3 rounded-r-lg border border-neutral-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-neutral-300 focus:border-transparent"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            const pathInput = e.currentTarget.value.trim();
+                            if (pathInput) {
+                              const cleanPath = pathInput.startsWith('/') ? pathInput : `/${pathInput}`;
+                              openSubpageDialog(`${baseUrl}${cleanPath}`);
+                              e.currentTarget.value = '';
+                            }
+                          }
+                        }}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-9 px-3 rounded-lg w-full sm:w-auto"
+                      onClick={(e) => {
+                        const container = e.currentTarget.parentElement;
+                        const input = container?.querySelector('input') as HTMLInputElement | null;
+                        const pathInput = input?.value.trim();
+                        if (pathInput) {
+                          const cleanPath = pathInput.startsWith('/') ? pathInput : `/${pathInput}`;
+                          openSubpageDialog(`${baseUrl}${cleanPath}`);
+                          if (input) input.value = '';
+                        }
+                      }}
+                    >
+                      Analyser
+                    </Button>
+                  </div>
+                  {suggested.length > 0 && (
+                    <>
+                      <div className="flex items-center gap-3">
+                        <div className="h-px flex-1 bg-neutral-100" />
+                        <span className="text-[10px] text-neutral-400">eller velg fra {suggested.length} funnet</span>
+                        <div className="h-px flex-1 bg-neutral-100" />
+                      </div>
+                      <div className="grid grid-cols-1 min-[401px]:grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-1.5">
+                        {suggested.slice(0, 10).map((pathname) => {
+                          let fullUrl = '';
+                          let label = pathname;
+                          try {
+                            if (pathname.startsWith('http://') || pathname.startsWith('https://')) {
+                              fullUrl = pathname;
+                              const parsedUrl = new URL(pathname);
+                              label = parsedUrl.pathname === '/' ? 'Forside' : parsedUrl.pathname.replace(/^\//, '').replace(/-/g, ' ') || parsedUrl.hostname;
+                            } else {
+                              fullUrl = `${baseUrl}${pathname.startsWith('/') ? '' : '/'}${pathname}`;
+                              label = pathname === '/' ? 'Forside' : pathname.replace(/^\//, '').replace(/-/g, ' ') || pathname;
+                            }
+                          } catch {
+                            fullUrl = `${baseUrl}${pathname.startsWith('/') ? '' : '/'}${pathname}`;
+                            label = pathname.replace(/^\//, '').replace(/-/g, ' ') || pathname;
+                          }
+                          return (
+                            <button
+                              key={pathname}
+                              type="button"
+                              onClick={() => openSubpageDialog(fullUrl)}
+                              className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-neutral-50 hover:bg-neutral-100 border border-transparent hover:border-neutral-200 transition-all text-left group cursor-pointer"
+                              title={fullUrl}
+                            >
+                              <span className="text-xs text-neutral-600 truncate flex-1 group-hover:text-neutral-900">{label}</span>
+                              <ChevronRight className="w-3 h-3 text-neutral-400 group-hover:text-neutral-600 shrink-0" />
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {suggested.length > 10 && (
+                        <p className="text-[10px] text-neutral-400 text-center">+{suggested.length - 10} flere</p>
+                      )}
+                    </>
+                  )}
+                    </div>
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+            );
+          })()}
+
+          {/* Hvilken side som er analysert – synlig på alle faner */}
+          <div className="flex items-center gap-2 py-2 px-0">
+            <Globe className="h-4 w-4 text-neutral-400 shrink-0" />
+            <span className="text-xs text-neutral-500 truncate min-w-0">Analysert:</span>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-neutral-700 hover:text-neutral-900 truncate min-w-0 underline decoration-neutral-300 hover:decoration-neutral-500"
+            >
+              {url}
+            </a>
+            <ExternalLink className="h-3 w-3 text-neutral-400 shrink-0" />
+          </div>
+
+          {/* Tab Navigation */}
+          <div className="mb-4">
             <TabNavigation
               activeTab={activeTab}
               onTabChange={setActiveTab}
               competitorCount={result.competitors?.length}
             />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="rounded-xl text-xs shrink-0 w-full sm:w-auto"
-              disabled={downloadingPdf}
-              onClick={async () => {
-                setDownloadingPdf(true);
-                try {
-                  await downloadAnalysisReportPdf({
-                    result,
-                    companyUrl: companyUrl || url || '',
-                    companyName: companyName || null,
-                  });
-                  toast.success('Rapport lastet ned');
-                } catch {
-                  toast.error('Kunne ikke generere PDF');
-                } finally {
-                  setDownloadingPdf(false);
-                }
-              }}
-            >
-              {downloadingPdf ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  Genererer…
-                </>
-              ) : (
-                <>
-                  <FileDown className="h-3.5 w-3.5 mr-1.5" />
-                  Last ned rapport (PDF)
-                </>
-              )}
-            </Button>
           </div>
 
           {/* Tab Content */}
@@ -439,6 +596,7 @@ function DashboardPageContent() {
               fetchGenerateArticle={fetchGenerateArticle}
               setGeneratedArticle={setGeneratedArticle}
               analysisHistory={analysisHistory}
+              loadingPageSpeed={loadingPageSpeed}
             />
           )}
 

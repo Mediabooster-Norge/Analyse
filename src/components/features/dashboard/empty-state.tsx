@@ -28,6 +28,9 @@ export function DashboardEmptyState({ isPremium, monthlyLimit, onStartAnalysis }
             {isPremium ? 'Start analyse' : 'Start din første analyse'}
           </Button>
         </div>
+        <p className="text-neutral-400 text-center text-[11px] max-[400px]:text-[10px] min-[401px]:text-xs mt-3">
+          Skriv inn nettside-URL i dialogen og trykk Start analyse.
+        </p>
         <div className="flex flex-wrap items-center justify-center gap-3 max-[400px]:gap-2 min-[401px]:gap-4 sm:gap-6 mt-6 max-[400px]:mt-5 min-[401px]:mt-6 sm:mt-8 text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs sm:text-sm text-neutral-400">
           <div className="flex items-center gap-1.5 max-[400px]:gap-1">
             <CheckCircle2 className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-green-500" />

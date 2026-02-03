@@ -130,6 +130,87 @@
   }
 }
 
+/* Landing page – bakgrunnselementer og grid (synlige, men diskré) */
+.bg-grid-subtle {
+  background-image:
+    linear-gradient(to right, rgb(0 0 0 / 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.08) 1px, transparent 1px);
+  background-size: 32px 32px;
+}
+
+/* Hero grid: flere lag med ulik størrelse/offset for mindre forutsigbar, mer interessant look */
+.bg-grid-subtle-hero {
+  background-image:
+    linear-gradient(to right, rgb(0 0 0 / 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.05) 1px, transparent 1px),
+    linear-gradient(to right, rgb(0 0 0 / 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.03) 1px, transparent 1px),
+    linear-gradient(to right, rgb(0 0 0 / 0.04) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(0 0 0 / 0.04) 1px, transparent 1px);
+  background-size:
+    56px 56px,
+    56px 56px,
+    38px 44px,
+    38px 44px,
+    92px 88px,
+    92px 88px;
+  background-position:
+    0 0,
+    0 0,
+    12px 7px,
+    12px 7px,
+    4px 10px,
+    4px 10px;
+}
+
+/* Seksjonsseparatorer: én horisontal linje full bredde + vertikale som kobler opp (peec-stil) */
+
+.section-separator-top {
+  border-top: 1px solid rgb(0 0 0 / 0.08);
+}
+.section-separator-v {
+  border-left: 1px solid rgb(0 0 0 / 0.08);
+}
+
+/* Dobbel vertikal linje – for Hva du får (Gratis vs Premium) */
+.section-separator-v-double {
+  position: relative;
+}
+.section-separator-v-double::before,
+.section-separator-v-double::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  pointer-events: none;
+  z-index: 0;
+}
+.section-separator-v-double::before {
+  left: 0;
+  background: rgb(0 0 0 / 0.1);
+}
+.section-separator-v-double::after {
+  left: 5px;
+  background: rgb(0 0 0 / 0.06);
+}
+.section-separator-v-double > * {
+  position: relative;
+  z-index: 1;
+}
+
+.bg-grid-dark {
+  background-image:
+    linear-gradient(to right, rgb(255 255 255 / 0.08) 1px, transparent 1px),
+    linear-gradient(to bottom, rgb(255 255 255 / 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.bg-dots-subtle {
+  background-image: radial-gradient(rgb(0 0 0 / 0.1) 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
 /* Custom utilities for landing page */
 @layer utilities {
   .text-balance {
@@ -156,6 +237,12 @@
   .body-lg {
     @apply text-lg md:text-xl text-neutral-500 leading-relaxed;
   }
+}
+
+/* Scroll targets: leave space under sticky header when scrolling from Forbedringer */
+[data-section="detailed-metrics"],
+[data-metric] {
+  scroll-margin-top: 5rem;
 }
 
 /* Hide scrollbar utility */

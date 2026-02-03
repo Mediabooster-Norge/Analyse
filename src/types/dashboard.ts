@@ -266,8 +266,10 @@ export interface GeneratedArticleResult {
   metaTitle?: string;
   metaDescription?: string;
   featuredImageSuggestion?: string;
-  /** Actual image URL from Unsplash when UNSPLASH_ACCESS_KEY is set */
+  /** Preview image URL from Unsplash (e.g. regular size) */
   featuredImageUrl?: string;
+  /** Full-size image URL for download (only in fresh response) */
+  featuredImageDownloadUrl?: string;
   /** e.g. "Photo by Name on Unsplash" for attribution */
   featuredImageAttribution?: string;
   /** Photographer profile URL for attribution link (only in fresh response, not stored) */

@@ -43,6 +43,12 @@ interface DashboardState {
   result: DashboardAnalysisResult | null;
   analysisStep: number;
   elapsedTime: number;
+  /** True mens hastighet (PageSpeed) hentes i eget kall etter hovedanalyse */
+  loadingPageSpeed: boolean;
+  /** True mens konkurrenter hentes i egne kall (ett per konkurrent) */
+  loadingCompetitors: boolean;
+  /** Fremdrift: konkurrent X av Y */
+  competitorProgress: { current: number; total: number } | null;
   
   // UI state
   dialogOpen: boolean;
@@ -160,6 +166,9 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     result: null,
     analysisStep: 0,
     elapsedTime: 0,
+    loadingPageSpeed: false,
+    loadingCompetitors: false,
+    competitorProgress: null,
     dialogOpen: showNewDialog,
     subpageUrl: null,
     activeTab: 'overview',
@@ -566,6 +575,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     };
     
     const stepTimeout = setTimeout(advanceStep, stepTimings[0]);
+    let willFetchPageSpeed = false;
+    let willFetchCompetitors = false;
 
     try {
       const normalizedUrl = state.url.startsWith('http') ? state.url : `https://${state.url}`;
@@ -577,8 +588,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         body: JSON.stringify({
           url: state.url,
           websiteName,
-          // For subpage: send any manually added competitors (cleared by default in openSubpageDialog)
-          competitorUrls: state.competitorUrls,
+          // Alltid uten konkurrenter: hovedanalysen kjører i egen batch (under 60s). Konkurrenter legges til etterpå via «Sammenlign med konkurrenter».
+          competitorUrls: [],
           keywords: state.keywords.length > 0 ? state.keywords : undefined,
           includeAI: true,
         }),
@@ -611,17 +622,102 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       }
 
       const data = await response.json();
+      const analysisId = data.analysisId ?? undefined;
+      const competitorUrlsToFetch = state.competitorUrls.slice();
+      willFetchPageSpeed = !!analysisId;
+      willFetchCompetitors = !!analysisId && competitorUrlsToFetch.length > 0;
       updateState({
         result: data,
+        currentAnalysisId: analysisId ?? state.currentAnalysisId,
         companyUrl: normalizedUrl,
         companyName: websiteName,
         remainingAnalyses: Math.max(0, state.remainingAnalyses - 1),
-        dialogOpen: false,
+        dialogOpen: willFetchPageSpeed || willFetchCompetitors,
         subpageUrl: null,
-        // Clear article suggestions for subpage (they were for previous page)
+        loadingPageSpeed: willFetchPageSpeed,
+        loadingCompetitors: willFetchCompetitors,
+        competitorProgress: willFetchCompetitors ? { current: 0, total: competitorUrlsToFetch.length } : null,
         ...(isSubpage ? { articleSuggestions: null, articleSuggestionsSavedAt: null } : {}),
       });
-      toast.success('Analyse fullført!');
+      if (!willFetchPageSpeed && !willFetchCompetitors) toast.success('Analyse fullført!');
+
+      const tryCloseDialog = () => {
+        setState((prev) => {
+          if (prev.loadingPageSpeed || prev.loadingCompetitors) return prev;
+          return { ...prev, dialogOpen: false, analyzing: false };
+        });
+      };
+
+      if (analysisId) {
+        if (willFetchPageSpeed) {
+          fetch('/api/analyze/pagespeed', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ analysisId }),
+          })
+            .then((res) => (res.ok ? res.json() : Promise.reject(new Error('PageSpeed failed'))))
+            .then(({ pageSpeedResults, overallScore }) => {
+              setState((prev) => ({
+                ...prev,
+                loadingPageSpeed: false,
+                result: prev.result
+                  ? {
+                      ...prev.result,
+                      pageSpeedResults: pageSpeedResults ?? undefined,
+                      overallScore: overallScore ?? prev.result.overallScore,
+                    }
+                  : null,
+              }));
+              tryCloseDialog();
+              if (!willFetchCompetitors) {
+                toast.success(pageSpeedResults ? 'Analyse fullført med hastighetsmåling!' : 'Analyse fullført!');
+              }
+            })
+            .catch(() => {
+              updateState({ loadingPageSpeed: false });
+              tryCloseDialog();
+              if (!willFetchCompetitors) toast.success('Analyse fullført (hastighet kunne ikke måles)');
+            });
+        }
+
+        if (willFetchCompetitors) {
+          (async () => {
+            let competitors: Array<{ url: string; results: unknown }> = data.competitors ?? [];
+            for (let i = 0; i < competitorUrlsToFetch.length; i++) {
+              try {
+                const res = await fetch('/api/analyze/competitor', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ analysisId, competitorUrl: competitorUrlsToFetch[i] }),
+                });
+                const body = res.ok ? await res.json() : null;
+                if (body?.competitor) {
+                  competitors = [...competitors, body.competitor];
+                  setState((prev) => ({
+                    ...prev,
+                    result: prev.result ? { ...prev.result, competitors } : null,
+                    competitorProgress: { current: i + 1, total: competitorUrlsToFetch.length },
+                  }));
+                }
+              } catch {
+                // skip failed competitor
+              }
+            }
+            setState((prev) => ({
+              ...prev,
+              loadingCompetitors: false,
+              competitorProgress: null,
+            }));
+            tryCloseDialog();
+            const msg = competitors.length > 0
+              ? `Analyse fullført med hastighet og ${competitors.length} konkurrent${competitors.length > 1 ? 'er' : ''}!`
+              : willFetchPageSpeed
+                ? 'Analyse fullført med hastighetsmåling!'
+                : 'Analyse fullført!';
+            toast.success(msg);
+          })();
+        }
+      }
     } catch (error) {
       const msg = error instanceof Error ? error.message : '';
       const isTimeoutOrNetwork =
@@ -635,7 +731,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       }
     } finally {
       clearTimeout(stepTimeout);
-      updateState({ analyzing: false });
+      if (!willFetchPageSpeed && !willFetchCompetitors) updateState({ analyzing: false });
     }
   }, [state.url, state.subpageUrl, state.competitorUrls, state.keywords, state.remainingAnalyses, updateState]);
 
@@ -756,6 +852,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             metaDescription: data.metaDescription,
             featuredImageSuggestion: data.featuredImageSuggestion,
             featuredImageUrl: data.featuredImageUrl,
+            featuredImageDownloadUrl: data.featuredImageDownloadUrl,
             featuredImageAttribution: data.featuredImageAttribution,
             featuredImageProfileUrl: data.featuredImageProfileUrl,
           },
@@ -818,8 +915,10 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
 
   const startEditingCompetitors = useCallback(() => {
     const currentCompetitors = state.result?.competitors?.map((c) => c.url) || [];
-    updateState({ editCompetitorUrls: currentCompetitors, editingCompetitors: true });
-  }, [state.result?.competitors, updateState]);
+    // Ved første gang (ingen konkurrenter ennå): bruk URL-er brukeren la inn i dialogen
+    const editUrls = currentCompetitors.length > 0 ? currentCompetitors : state.competitorUrls;
+    updateState({ editCompetitorUrls: editUrls, editingCompetitors: true });
+  }, [state.result?.competitors, state.competitorUrls, updateState]);
 
   const addEditCompetitor = useCallback(() => {
     const trimmed = state.editCompetitorInput.trim().toLowerCase();
