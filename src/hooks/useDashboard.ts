@@ -895,7 +895,13 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           currentValue,
           status,
           issue,
-          context: { url: state.companyUrl },
+          context: {
+            url: state.companyUrl ?? undefined,
+            companyName: state.companyName ?? undefined,
+            siteDescription: state.result?.aiSummary?.overallAssessment
+              ? state.result.aiSummary.overallAssessment.slice(0, 300)
+              : undefined,
+          },
         }),
       });
 
@@ -912,7 +918,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     } finally {
       updateState({ loadingSuggestion: false });
     }
-  }, [state.companyUrl, updateState]);
+  }, [state.companyUrl, state.companyName, state.result?.aiSummary?.overallAssessment, updateState]);
 
   const startEditingCompetitors = useCallback(() => {
     const currentCompetitors = state.result?.competitors?.map((c) => c.url) || [];

@@ -14,6 +14,8 @@ interface SuggestionRequest {
   context?: {
     url?: string;
     industry?: string;
+    companyName?: string;
+    siteDescription?: string;
   };
 }
 

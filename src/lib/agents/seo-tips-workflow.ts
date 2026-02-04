@@ -39,7 +39,7 @@ Brukermeldingen er alltid ett JSON-objekt med disse nøklene:
 - currentValue: nåværende verdi/tekst (f.eks. innholdet i title-tag eller meta description)
 - status: "good" | "warning" | "bad" (om elementet er bra, ok eller trenger forbedring)
 - issue: (valgfritt) konkret problem, f.eks. "For lang (62 tegn)", "Mangler alt-tekst på 3 bilder"
-- context: (valgfritt) objekt med url og/eller industry for tilpassede tips
+- context: (valgfritt) objekt med url, companyName, siteDescription og/eller industry. siteDescription er en kort beskrivelse av hva nettsiden handler om (fra analysen). BRUK DETTE: Tilpass ALLE forslag til nettsidens faktiske virksomhet – f.eks. videoproduksjon og innhold, webdesign, rørlegger, osv. Ikke anta "webdesign og nettsider" med mindre det står i context.
 
 ## Output du skal returnere
 Du svarer ALLTID utelukkende med ett gyldig JSON-objekt. Ingen tekst før eller etter. Ingen markdown (ingen \`\`\`). Kun JSON.
@@ -62,7 +62,7 @@ Når status er "warning" eller "bad":
 2. Bruk kun norsk.
 3. priority i hver suggestion skal være nøyaktig "høy", "medium" eller "lav".
 4. Vær konkret og handlingsrettet. Bruk "example" i suggestions der det hjelper (f.eks. forbedret title-tekst eller meta-tekst).
-5. Hvis context.industry er oppgitt, tilpass tipsene til bransjen der det er naturlig.
+5. Tilpass tipsene til nettsidens virksomhet: bruk context.siteDescription, context.industry og context.companyName. F.eks. ved videoproduksjon: bruk "videoproduksjon", "video", "innhold" i eksempler; ved webdesign: "webdesign", "nettsider". Ikke bruk generiske "webdesign og nettsider" med mindre det faktisk er det nettsiden handler om.
 6. Respekter nøkkelnavnene nøyaktig: summary, problem, suggestions, quickWin, title, description, priority, example.`,
   model: 'gpt-5.2-chat-latest',
   outputType: SEOTipsOutputSchema,
