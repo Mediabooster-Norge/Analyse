@@ -391,7 +391,7 @@ export default function LandingPage() {
         <div className="relative">
           {/* Bakgrunn med mask så den fader ut midt i dashboard-området */}
           <div
-            className="absolute inset-0 z-0 opacity-60 rounded-b-2xl sm:rounded-b-3xl pointer-events-none"
+            className="absolute inset-0 z-0 opacity-30 rounded-b-2xl sm:rounded-b-3xl pointer-events-none"
             style={{
               maskImage: 'linear-gradient(to bottom, black 0%, black 45%, transparent 75%)',
               WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 45%, transparent 75%)',
@@ -1413,8 +1413,8 @@ export default function LandingPage() {
       <section className="relative z-10 py-12 sm:py-16 md:py-20 bg-neutral-50 overflow-hidden section-separator-top">
         {/* Vertikale linjer venstre og høyre – hele seksjonen opp og ned */}
         <div className="hidden lg:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-full max-w-6xl px-3 sm:px-4 md:px-6 pointer-events-none z-0" aria-hidden>
-          <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-300" />
-          <div className="absolute right-0 top-0 bottom-0 w-px bg-neutral-300" />
+          <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-200" />
+          <div className="absolute right-0 top-0 bottom-0 w-px bg-neutral-200" />
         </div>
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 relative z-10">
           <motion.div 
@@ -1439,13 +1439,13 @@ export default function LandingPage() {
               className="relative flex gap-0 lg:gap-6"
             >
               <div className="hidden lg:flex flex-col items-center shrink-0 pt-8 pb-2 w-6" aria-hidden>
-                <div className="w-px flex-1 min-h-[2rem] bg-neutral-300/70" />
+                <div className="w-px flex-1 min-h-[2rem] bg-neutral-200/80" />
                 <div className="w-2 h-2 rounded-full bg-neutral-400 shrink-0 -mt-px ring-4 ring-neutral-50" />
-                <div className="w-px flex-1 min-h-[4rem] bg-neutral-300/70" />
+                <div className="w-px flex-1 min-h-[4rem] bg-neutral-200/80" />
                 <div className="w-2 h-2 rounded-full bg-neutral-400 shrink-0 -mt-px ring-4 ring-neutral-50" />
-                <div className="w-px flex-1 min-h-[4rem] bg-neutral-300/70" />
+                <div className="w-px flex-1 min-h-[4rem] bg-neutral-200/80" />
                 <div className="w-2 h-2 rounded-full bg-neutral-400 shrink-0 -mt-px ring-4 ring-neutral-50" />
-                <div className="w-px flex-1 min-h-[2rem] bg-neutral-300/70" />
+                <div className="w-px flex-1 min-h-[2rem] bg-neutral-200/80" />
               </div>
               <div className="space-y-1 sm:space-y-2 flex-1 min-w-0">
               <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-green-600 mb-1 sm:mb-1.5 px-1">
@@ -1720,11 +1720,11 @@ export default function LandingPage() {
       </section>
 
       {/* Hva du får – Gratis vs Premium. Vertikale linjer i full seksjonshøyde. */}
-      <section className="relative z-10 py-12 sm:py-16 md:py-20 bg-neutral-50 section-separator-top border-t border-neutral-300">
+      <section className="relative z-10 py-12 sm:py-16 md:py-20 bg-neutral-50 section-separator-top border-t border-neutral-200">
         {/* Vertikale linjer: venstre kant, mellom kortene, høyre kant – hele seksjonen opp og ned (kun to-kolonne) */}
         <div className="hidden md:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl pointer-events-none z-0" aria-hidden>
-          <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-300" />
-          <div className="absolute right-0 top-0 bottom-0 w-px bg-neutral-300" />
+          <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-200" />
+          <div className="absolute right-0 top-0 bottom-0 w-px bg-neutral-200" />
         </div>
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 relative z-10">
           <motion.div
@@ -1744,8 +1744,8 @@ export default function LandingPage() {
 
           <div className="relative w-full">
             {/* Horisontale linjer – hele bredden av innholdsområdet */}
-            <div className="absolute top-0 left-0 right-0 h-px bg-neutral-300 z-0 hidden md:block" aria-hidden />
-            <div className="absolute bottom-0 left-0 right-0 h-px bg-neutral-300 z-0 hidden md:block" aria-hidden />
+            <div className="absolute top-0 left-0 right-0 h-px bg-neutral-200 z-0 hidden md:block" aria-hidden />
+            <div className="absolute bottom-0 left-0 right-0 h-px bg-neutral-200 z-0 hidden md:block" aria-hidden />
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
