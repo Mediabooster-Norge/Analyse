@@ -97,9 +97,16 @@ export function CompetitorsTab({
           </div>
 
           <div className="p-4 space-y-4">
-            <p className="text-sm text-neutral-600">
-              Legg til konkurrenter du vil sammenligne med. Trykk Enter eller &quot;Legg til&quot; etter hver URL.
-            </p>
+            <div className="space-y-1">
+              <p className="text-sm text-neutral-600">
+                Legg til konkurrenter du vil sammenligne med. Trykk Enter eller &quot;Legg til&quot; etter hver URL.
+              </p>
+              {!isPremium && (
+                <p className="text-xs text-neutral-500">
+                  Du kan endre konkurrenter opptil {FREE_UPDATE_LIMIT} ganger per analyse.
+                </p>
+              )}
+            </div>
 
             <div className="flex gap-2">
               <div className="relative flex-1">

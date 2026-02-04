@@ -54,7 +54,7 @@ import {
   AnalysisDialog,
 } from '@/components/features/dashboard';
 import { downloadAnalysisReportPdf } from '@/components/features/dashboard/analysis-report-pdf';
-import { OverviewTab, CompetitorsTab, KeywordsTab, AiTab, AiVisibilityTab } from '@/components/features/dashboard/tabs';
+import { OverviewTab, CompetitorsTab, KeywordsTab, AiTab, AiVisibilityTab, ArticlesTab } from '@/components/features/dashboard/tabs';
 
 function DashboardPageContent() {
   const searchParams = useSearchParams();
@@ -293,35 +293,14 @@ function DashboardPageContent() {
               type="button"
               variant="ghost"
               size="sm"
-              className="rounded-xl text-xs shrink-0 w-full sm:w-auto text-neutral-500 hover:text-neutral-900"
-              disabled={downloadingPdf}
-              onClick={async () => {
-                setDownloadingPdf(true);
-                try {
-                  await downloadAnalysisReportPdf({
-                    result,
-                    companyUrl: companyUrl || url || '',
-                    companyName: companyName || null,
-                  });
-                  toast.success('Rapport lastet ned');
-                } catch {
-                  toast.error('Kunne ikke generere PDF');
-                } finally {
-                  setDownloadingPdf(false);
-                }
-              }}
+              className="rounded-xl text-xs shrink-0 w-full sm:w-auto text-neutral-400 cursor-not-allowed"
+              disabled
             >
-              {downloadingPdf ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  Genererer…
-                </>
-              ) : (
-                <>
-                  <FileDown className="h-3.5 w-3.5 mr-1.5" />
-                  Last ned rapport (PDF)
-                </>
-              )}
+              <FileDown className="h-3.5 w-3.5 mr-1.5" />
+              Last ned rapport (PDF)
+              <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-[10px] font-medium">
+                Kommer snart
+              </span>
             </Button>
           )}
         </div>
@@ -663,6 +642,22 @@ function DashboardPageContent() {
               companyName={companyName}
               checkingAiVisibility={checkingAiVisibility}
               onCheckAiVisibility={checkAiVisibility}
+            />
+          )}
+
+          {activeTab === 'articles' && (
+            <ArticlesTab
+              articleSuggestions={articleSuggestions}
+              loadingArticleSuggestions={loadingArticleSuggestions}
+              articleSuggestionsSavedAt={articleSuggestionsSavedAt}
+              fetchArticleSuggestions={fetchArticleSuggestions}
+              hasCompetitors={Boolean(result?.competitors?.length)}
+              remainingArticleGenerations={remainingArticleGenerations}
+              articleGenerationsLimit={articleGenerationsLimit}
+              generatedArticleResult={generatedArticleResult}
+              generatingArticleIndex={generatingArticleIndex}
+              fetchGenerateArticle={fetchGenerateArticle}
+              setGeneratedArticle={setGeneratedArticle}
             />
           )}
         </>

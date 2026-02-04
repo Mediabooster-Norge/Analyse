@@ -64,11 +64,11 @@ export function KeywordsTab({
     <>
       {/* Edit Keywords Panel */}
       {editingKeywords && (
-        <div className="rounded-2xl max-[400px]:rounded-xl border border-purple-200 bg-purple-50/30 overflow-hidden mb-4 max-[400px]:mb-4 min-[401px]:mb-6 min-w-0">
-          <div className="flex items-center justify-between p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-4 border-b border-purple-200 bg-purple-50/50">
+        <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-neutral-50/50 overflow-hidden mb-4 max-[400px]:mb-4 min-[401px]:mb-6 min-w-0">
+          <div className="flex items-center justify-between p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-4 border-b border-neutral-200 bg-neutral-50">
             <div className="flex items-center gap-2 max-[400px]:gap-2 min-[401px]:gap-3 min-w-0">
-              <h3 className="inline-flex items-center gap-1.5 max-[400px]:gap-1.5 px-2 max-[400px]:px-2 min-[401px]:px-3 py-1 max-[400px]:py-1 min-[401px]:py-1.5 rounded-full bg-purple-100 text-neutral-900 text-xs max-[400px]:text-[11px] min-[401px]:text-sm font-medium">
-                <Tag className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-purple-600" />
+              <h3 className="inline-flex items-center gap-1.5 max-[400px]:gap-1.5 px-2 max-[400px]:px-2 min-[401px]:px-3 py-1 max-[400px]:py-1 min-[401px]:py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-xs max-[400px]:text-[11px] min-[401px]:text-sm font-medium">
+                <Tag className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-neutral-600" />
                 Rediger nøkkelord
               </h3>
               {!isPremium && (
@@ -80,16 +80,23 @@ export function KeywordsTab({
             <button
               onClick={cancelEditingKeywords}
               disabled={updatingKeywords}
-              className="p-1.5 rounded-lg hover:bg-purple-100 text-neutral-500 hover:text-neutral-700 transition-colors disabled:opacity-50 cursor-pointer"
+              className="p-1.5 rounded-lg hover:bg-neutral-200 text-neutral-500 hover:text-neutral-700 transition-colors disabled:opacity-50 cursor-pointer"
             >
               <X className="h-5 w-5" />
             </button>
           </div>
 
           <div className="p-4 space-y-4">
-            <p className="text-sm text-neutral-600">
-              Legg til nøkkelord du vil analysere. Trykk Enter eller &quot;Legg til&quot; etter hvert nøkkelord.
-            </p>
+            <div className="space-y-1">
+              <p className="text-sm text-neutral-600">
+                Legg til nøkkelord du vil analysere. Trykk Enter eller &quot;Legg til&quot; etter hvert nøkkelord.
+              </p>
+              {!isPremium && (
+                <p className="text-xs text-neutral-500">
+                  Du kan endre nøkkelord opptil {FREE_UPDATE_LIMIT} ganger per analyse.
+                </p>
+              )}
+            </div>
 
             <div className="flex gap-2">
               <div className="relative flex-1">
@@ -112,7 +119,7 @@ export function KeywordsTab({
                 type="button"
                 onClick={addEditKeyword}
                 disabled={editKeywords.length >= FREE_KEYWORD_LIMIT || !editKeywordInput.trim()}
-                className="h-11 px-4 rounded-xl bg-purple-600 hover:bg-purple-700 text-white"
+                className="h-11 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white"
               >
                 <Plus className="h-4 w-4 mr-1.5" />
                 Legg til
@@ -427,7 +434,7 @@ export function KeywordsTab({
                           <span
                             className={`px-2.5 py-1 rounded-full text-xs font-medium text-neutral-900 ${
                               kw.intent === 'transactional'
-                                ? 'bg-purple-100'
+                                ? 'bg-green-100'
                                 : kw.intent === 'commercial'
                                   ? 'bg-blue-100'
                                   : kw.intent === 'informational'
@@ -484,7 +491,7 @@ export function KeywordsTab({
               </div>
               <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
                 <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Beste mulighet</p>
-                <p className="text-xs sm:text-sm font-semibold text-purple-600 mt-1 truncate">
+                <p className="text-xs sm:text-sm font-semibold text-neutral-900 mt-1 truncate">
                   {result.keywordResearch.reduce(
                     (best, kw) => ((kw.searchVolume / (kw.difficulty + 1)) > (best.searchVolume / (best.difficulty + 1)) ? kw : best)
                   ).keyword}

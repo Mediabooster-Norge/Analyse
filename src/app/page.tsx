@@ -52,6 +52,8 @@ import {
   Eye,
   Lightbulb,
   Clock,
+  User as UserIcon,
+  PenLine,
 } from 'lucide-react';
 
 
@@ -339,7 +341,7 @@ function FloatingAICard() {
 export default function LandingPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [demoTab, setDemoTab] = useState<'oversikt' | 'konkurrenter' | 'nokkelord' | 'ai' | 'ai-sok'>('oversikt');
+  const [demoTab, setDemoTab] = useState<'oversikt' | 'konkurrenter' | 'nokkelord' | 'artikler' | 'ai' | 'ai-sok'>('oversikt');
   const [selectedIssue, setSelectedIssue] = useState<string | null>('meta');
   const [selectedStep, setSelectedStep] = useState<number>(1);
 
@@ -484,6 +486,7 @@ export default function LandingPage() {
                     { id: 'oversikt', label: 'Oversikt', icon: BarChart3 },
                     { id: 'konkurrenter', label: 'Konkurrenter', icon: Globe },
                     { id: 'nokkelord', label: 'Nøkkelord', icon: Tag },
+                    { id: 'artikler', label: 'Artikler', icon: FileText },
                     { id: 'ai', label: 'AI-analyse', icon: Sparkles },
                   ].map((tab) => (
                     <button
@@ -813,6 +816,112 @@ export default function LandingPage() {
                 </motion.div>
               )}
 
+              {/* Artikler Tab */}
+              {demoTab === 'artikler' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4"
+                >
+                  {/* Header */}
+                  <div>
+                    <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-2">
+                      <FileText className="h-4 w-4 text-neutral-600" />
+                      AI-genererte artikler
+                    </h3>
+                    <p className="text-sm text-neutral-600">Få forslag til artikler basert på analysen og generer full artikkel med ett klikk</p>
+                  </div>
+
+                  {/* Settings bar */}
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-2.5 rounded-xl bg-neutral-50 border border-neutral-100 text-xs">
+                    <span className="text-neutral-500 font-medium">Innstillinger</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-neutral-400">Lengde:</span>
+                      <select className="px-2 py-1 rounded-md border border-neutral-200 bg-white text-neutral-700 font-medium cursor-pointer">
+                        <option>Kort (300-500)</option>
+                        <option selected>Medium (800-1200)</option>
+                        <option>Lang (1200-1500)</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-neutral-400">Tone:</span>
+                      <select className="px-2 py-1 rounded-md border border-neutral-200 bg-white text-neutral-700 font-medium cursor-pointer">
+                        <option selected>Profesjonell</option>
+                        <option>Uformell</option>
+                        <option>Pedagogisk</option>
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-neutral-400">For:</span>
+                      <select className="px-2 py-1 rounded-md border border-neutral-200 bg-white text-neutral-700 font-medium cursor-pointer">
+                        <option selected>Alle</option>
+                        <option>Nybegynnere</option>
+                        <option>Eksperter</option>
+                        <option>Bedriftsledere</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {/* Article Suggestions */}
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {[
+                      { 
+                        title: 'Slik optimaliserer du meta description for bedre CTR', 
+                        priority: 'høy',
+                        rationale: 'Analysen viser at meta description mangler. En god beskrivelse kan øke klikkraten betydelig.'
+                      },
+                      { 
+                        title: '5 tips for å øke innholdsmengden uten å miste kvalitet', 
+                        priority: 'høy',
+                        rationale: 'Med kun 847 ord har siden for lite innhold. Google foretrekker mer omfattende artikler.'
+                      },
+                      { 
+                        title: 'Hvorfor alt-tekst på bilder er viktig for SEO', 
+                        priority: 'medium',
+                        rationale: '3 bilder mangler alt-tekst. Dette påvirker både SEO og tilgjengelighet.'
+                      },
+                      { 
+                        title: 'Guide til strukturert data for lokale bedrifter', 
+                        priority: 'lav',
+                        rationale: 'Schema markup kan øke synligheten i søkeresultater med rich snippets.'
+                      },
+                    ].map((article, i) => (
+                      <div key={i} className="p-3 bg-white rounded-xl border border-neutral-200 hover:border-neutral-300 transition-colors">
+                        <div className="flex items-start gap-2.5">
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-xs font-semibold text-neutral-600">
+                            {i + 1}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-neutral-900 mb-1">{article.title}</p>
+                            <span className={`inline-block text-[10px] px-1.5 py-0.5 rounded font-medium mb-1.5 ${
+                              article.priority === 'høy' ? 'bg-amber-100 text-amber-700' :
+                              article.priority === 'medium' ? 'bg-neutral-200 text-neutral-700' :
+                              'bg-neutral-100 text-neutral-600'
+                            }`}>
+                              {article.priority} prioritet
+                            </span>
+                            <p className="text-[11px] text-neutral-500 leading-relaxed">{article.rationale}</p>
+                            <button className="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-xs font-medium text-white transition-colors cursor-pointer">
+                              <PenLine className="h-3 w-3" />
+                              Generer artikkel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Bottom info */}
+                  <div className="flex items-center justify-between pt-2 border-t border-neutral-100">
+                    <span className="text-xs text-neutral-500">Gratis: 5 artikler/mnd · Premium: 30 artikler/mnd</span>
+                    <a href="/dashboard/articles" className="text-xs text-neutral-600 hover:text-neutral-900 underline cursor-pointer">
+                      Se mine artikler →
+                    </a>
+                  </div>
+                </motion.div>
+              )}
+
               {/* AI-analyse Tab */}
               {demoTab === 'ai' && (
                 <motion.div
@@ -903,29 +1012,40 @@ export default function LandingPage() {
       </section>
 
       <div className="relative">
-      {/* Trusted by - Scrolling Logo Carousel (vertikale linjer skjult – kun horisontal) */}
-      <section className="relative z-10 bg-white pt-8 sm:pt-12 md:pt-16 pb-12 sm:pb-16 md:pb-20 overflow-hidden section-separator-top">
+      {/* Testimonials - Scrolling Cards */}
+      <section className="relative z-10 bg-white py-10 sm:py-12 md:py-16 overflow-hidden section-separator-top">
+        {/* Title */}
         <motion.p 
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
-          className="text-center text-[10px] sm:text-xs uppercase tracking-widest text-neutral-400 mb-4 sm:mb-8 px-4"
+          className="text-center text-sm sm:text-base text-neutral-500 mb-6 sm:mb-8 px-4"
         >
-          Brukes av norske bedrifter
+          Hva brukerne sier
         </motion.p>
-        
+
         {/* Fade edges */}
         <div className="absolute left-0 top-0 bottom-0 w-16 sm:w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none" />
         <div className="absolute right-0 top-0 bottom-0 w-16 sm:w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
         
         {/* Row 1 - scrolling left */}
-        <div className="relative mb-4">
+        <div className="relative mb-3 sm:mb-4">
           <div className="flex animate-scroll-left">
-            {[...Array(3)].map((_, setIndex) => (
-              <div key={setIndex} className="flex shrink-0 items-center gap-16 px-8">
-                {[...Array(6)].map((_, i) => (
-                  <div key={`${setIndex}-${i}`} className="flex items-center opacity-40 hover:opacity-70 transition-opacity">
-                    <img src="/logo.svg" alt="" className="h-6 sm:h-8 w-auto brightness-0" aria-hidden />
+            {[...Array(2)].map((_, setIndex) => (
+              <div key={setIndex} className="flex shrink-0 items-center gap-3 sm:gap-4 px-1.5 sm:px-2">
+                {[
+                  { quote: "Fikset alle SEO-feil på en time. Veldig fornøyd!", name: "Martin", role: "Daglig leder", color: "bg-blue-100 text-blue-500" },
+                  { quote: "Endelig en analyse jeg faktisk forstår og kan bruke.", name: "Lise", role: "Markedsfører", color: "bg-violet-100 text-violet-500" },
+                  { quote: "Sparte oss for tusenvis i konsulenttimer.", name: "Erik", role: "Gründer", color: "bg-emerald-100 text-emerald-500" },
+                  { quote: "AI-tipsene var overraskende presise og nyttige.", name: "Camilla", role: "Markedssjef", color: "bg-amber-100 text-amber-500" },
+                  { quote: "Beste SEO-verktøyet jeg har prøvd så langt.", name: "Jonas", role: "Utvikler", color: "bg-rose-100 text-rose-500" },
+                ].map((t, i) => (
+                  <div key={`${setIndex}-${i}`} className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 transition-colors whitespace-nowrap">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${t.color.split(' ')[0]}`}>
+                      <UserIcon className={`w-4 h-4 ${t.color.split(' ')[1]}`} />
+                    </div>
+                    <span className="text-sm text-neutral-600">&ldquo;{t.quote}&rdquo;</span>
+                    <span className="text-xs text-neutral-400 border-l border-neutral-200 pl-3">{t.name}, {t.role}</span>
                   </div>
                 ))}
               </div>
@@ -934,13 +1054,48 @@ export default function LandingPage() {
         </div>
 
         {/* Row 2 - scrolling right */}
-        <div className="relative">
+        <div className="relative mb-3 sm:mb-4">
           <div className="flex animate-scroll-right">
-            {[...Array(3)].map((_, setIndex) => (
-              <div key={setIndex} className="flex shrink-0 items-center gap-16 px-8">
-                {[...Array(6)].map((_, i) => (
-                  <div key={`${setIndex}-${i}`} className="flex items-center opacity-40 hover:opacity-70 transition-opacity">
-                    <img src="/logo.svg" alt="" className="h-6 sm:h-8 w-auto brightness-0" aria-hidden />
+            {[...Array(2)].map((_, setIndex) => (
+              <div key={setIndex} className="flex shrink-0 items-center gap-3 sm:gap-4 px-1.5 sm:px-2">
+                {[
+                  { quote: "Konkurrentanalysen ga oss et tydelig forsprang.", name: "Sofie", role: "CEO", color: "bg-cyan-100 text-cyan-500" },
+                  { quote: "Rapporten var klar på under et minutt. Imponerende!", name: "Anders", role: "Konsulent", color: "bg-orange-100 text-orange-500" },
+                  { quote: "Perfekt for små bedrifter uten stort budsjett.", name: "Nina", role: "Innehaver", color: "bg-pink-100 text-pink-500" },
+                  { quote: "Fant feil jeg aldri hadde oppdaget selv.", name: "Thomas", role: "Webdesigner", color: "bg-indigo-100 text-indigo-500" },
+                  { quote: "Bruker det til alle kundene mine nå.", name: "Maria", role: "Frilanser", color: "bg-teal-100 text-teal-500" },
+                ].map((t, i) => (
+                  <div key={`${setIndex}-${i}`} className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 transition-colors whitespace-nowrap">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${t.color.split(' ')[0]}`}>
+                      <UserIcon className={`w-4 h-4 ${t.color.split(' ')[1]}`} />
+                    </div>
+                    <span className="text-sm text-neutral-600">&ldquo;{t.quote}&rdquo;</span>
+                    <span className="text-xs text-neutral-400 border-l border-neutral-200 pl-3">{t.name}, {t.role}</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Row 3 - scrolling left (slower) */}
+        <div className="relative">
+          <div className="flex animate-scroll-left-slow">
+            {[...Array(2)].map((_, setIndex) => (
+              <div key={setIndex} className="flex shrink-0 items-center gap-3 sm:gap-4 px-1.5 sm:px-2">
+                {[
+                  { quote: "Nøkkelordanalysen hjalp oss å rangere høyere.", name: "Henrik", role: "SEO-spesialist", color: "bg-lime-100 text-lime-600" },
+                  { quote: "Enkel og rask – akkurat det vi trengte.", name: "Ingrid", role: "Prosjektleder", color: "bg-purple-100 text-purple-500" },
+                  { quote: "Gir mer innsikt enn mye dyrere verktøy.", name: "Ole", role: "Digital rådgiver", color: "bg-sky-100 text-sky-500" },
+                  { quote: "Anbefaler til alle som driver egen nettside.", name: "Kari", role: "Blogger", color: "bg-fuchsia-100 text-fuchsia-500" },
+                  { quote: "Sikkerhetssjekken avslørte hull vi ikke visste om.", name: "Per", role: "IT-ansvarlig", color: "bg-red-100 text-red-500" },
+                ].map((t, i) => (
+                  <div key={`${setIndex}-${i}`} className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 transition-colors whitespace-nowrap">
+                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${t.color.split(' ')[0]}`}>
+                      <UserIcon className={`w-4 h-4 ${t.color.split(' ')[1]}`} />
+                    </div>
+                    <span className="text-sm text-neutral-600">&ldquo;{t.quote}&rdquo;</span>
+                    <span className="text-xs text-neutral-400 border-l border-neutral-200 pl-3">{t.name}, {t.role}</span>
                   </div>
                 ))}
               </div>
@@ -951,17 +1106,24 @@ export default function LandingPage() {
         <style jsx>{`
           @keyframes scroll-left {
             0% { transform: translateX(0); }
-            100% { transform: translateX(-33.33%); }
+            100% { transform: translateX(-50%); }
           }
           @keyframes scroll-right {
-            0% { transform: translateX(-33.33%); }
+            0% { transform: translateX(-50%); }
             100% { transform: translateX(0); }
           }
+          @keyframes scroll-left-slow {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-50%); }
+          }
           .animate-scroll-left {
-            animation: scroll-left 30s linear infinite;
+            animation: scroll-left 35s linear infinite;
           }
           .animate-scroll-right {
-            animation: scroll-right 30s linear infinite;
+            animation: scroll-right 40s linear infinite;
+          }
+          .animate-scroll-left-slow {
+            animation: scroll-left-slow 45s linear infinite;
           }
         `}</style>
       </section>
@@ -1827,7 +1989,7 @@ export default function LandingPage() {
               </div>
               <div className="mb-4 mt-2">
                 <p className="text-xs font-medium uppercase tracking-wider text-neutral-500">Premium</p>
-                <p className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-0.5">89 kr</p>
+                <p className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-0.5">69 kr</p>
                 <p className="text-xs text-neutral-500 mt-0.5">per måned</p>
               </div>
               <p className="text-sm font-medium text-neutral-800 mb-3">Alt i Gratis, pluss:</p>
@@ -1835,7 +1997,7 @@ export default function LandingPage() {
                 {[
                   'Ubegrenset analyser per måned',
                   '30 AI-genererte artikler per måned',
-                  'Tilpasset til ditt bruk',
+                  'Forslag til undersider',
                   'Prioritert support',
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-2">

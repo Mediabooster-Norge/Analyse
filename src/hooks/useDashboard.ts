@@ -147,7 +147,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
   const FREE_MONTHLY_LIMIT = limits.monthlyAnalyses;
   const FREE_KEYWORD_LIMIT = limits.keywords;
   const FREE_COMPETITOR_LIMIT = limits.competitors;
-  const FREE_UPDATE_LIMIT = isPremium ? 999 : 2;
+  const FREE_UPDATE_LIMIT = isPremium ? 999 : 5;
   const ARTICLE_GENERATIONS_LIMIT = limits.articleGenerationsPerMonth ?? 1;
 
   // State
@@ -379,8 +379,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             companyUrl: analysis.website_url || null,
             url: analysis.website_url || '',
             companyName: analysis.website_name || null,
-            remainingCompetitorUpdates: analysis.remaining_competitor_updates ?? 2,
-            remainingKeywordUpdates: analysis.remaining_keyword_updates ?? 2,
+            remainingCompetitorUpdates: analysis.remaining_competitor_updates ?? 5,
+            remainingKeywordUpdates: analysis.remaining_keyword_updates ?? 5,
             remainingAnalyses: Math.max(0, FREE_MONTHLY_LIMIT - analysisCount),
             remainingArticleGenerations: remainingArticleGens,
             articleGenerationsLimit: ARTICLE_GENERATIONS_LIMIT,
@@ -816,7 +816,15 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     }
   }, [state.companyUrl, state.url, state.companyName, state.keywords, state.result?.competitors, state.result?.keywordResearch, state.currentAnalysisId, updateState]);
 
-  const fetchGenerateArticle = useCallback(async (suggestion: { title: string; rationale?: string }, index: number) => {
+  const fetchGenerateArticle = useCallback(async (
+    suggestion: { title: string; rationale?: string },
+    index: number,
+    options?: {
+      length?: 'short' | 'medium' | 'long';
+      tone?: 'professional' | 'casual' | 'educational';
+      audience?: 'general' | 'beginners' | 'experts' | 'business';
+    }
+  ) => {
     if (state.remainingArticleGenerations <= 0) {
       toast.error('Du har brukt opp artikkelgenereringer denne måneden.');
       return;
@@ -832,6 +840,9 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           companyName: state.companyName ?? undefined,
           websiteUrl: state.companyUrl ?? undefined,
           websiteName: state.companyName ?? undefined,
+          length: options?.length ?? 'medium',
+          tone: options?.tone ?? 'professional',
+          audience: options?.audience ?? 'general',
         }),
       });
       const data = await response.json();

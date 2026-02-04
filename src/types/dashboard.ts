@@ -210,7 +210,7 @@ export interface DashboardAnalysisResult {
 /**
  * Dashboard tab types
  */
-export type DashboardTab = 'overview' | 'competitors' | 'keywords' | 'ai' | 'ai-visibility';
+export type DashboardTab = 'overview' | 'competitors' | 'keywords' | 'ai' | 'ai-visibility' | 'articles';
 
 /**
  * Analysis step for progress indicator

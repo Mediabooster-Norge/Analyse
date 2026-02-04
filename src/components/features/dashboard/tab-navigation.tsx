@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, TrendingUp, Tag, Sparkles, Eye } from 'lucide-react';
+import { BarChart3, TrendingUp, Tag, Sparkles, Eye, FileText } from 'lucide-react';
 import type { DashboardTab } from '@/types/dashboard';
 
 const AI_VISIBILITY_ENABLED = false;
@@ -15,6 +15,7 @@ const allTabs = [
   { id: 'overview' as const, label: 'Oversikt', shortLabel: 'Oversikt', icon: BarChart3 },
   { id: 'competitors' as const, label: 'Konkurrenter', shortLabel: 'Konk.', icon: TrendingUp, showCount: true },
   { id: 'keywords' as const, label: 'Nøkkelord', shortLabel: 'Nøkkel', icon: Tag },
+  { id: 'articles' as const, label: 'Artikler', shortLabel: 'Artikler', icon: FileText },
   { id: 'ai' as const, label: 'AI-analyse', shortLabel: 'AI', icon: Sparkles },
   { id: 'ai-visibility' as const, label: 'AI-synlighet', shortLabel: 'AI-syn', icon: Eye, disabled: true },
 ];

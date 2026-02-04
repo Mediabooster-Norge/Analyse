@@ -153,12 +153,12 @@ export function AnalysisDialog({
                         strokeWidth="3"
                         strokeLinecap="round"
                         className="transition-all duration-700 ease-out"
-                        strokeDasharray={showPageSpeedStep ? '150.8 150.8' : `${((analysisStep + 1) / analysisSteps.length) * 150.8} 150.8`}
+                        strokeDasharray={`${((showPageSpeedStep ? 6 : analysisStep + 1) / 6) * 150.8} 150.8`}
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
                       <span className="text-neutral-700 text-xs sm:text-sm font-semibold">
-                        {showPageSpeedStep ? '6/6' : `${analysisStep + 1}/${analysisSteps.length}`}
+                        {`${showPageSpeedStep ? 6 : analysisStep + 1}/6`}
                       </span>
                     </div>
                   </div>

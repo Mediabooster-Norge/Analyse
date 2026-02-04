@@ -49,9 +49,6 @@ export function AiVisibilityTab({
             <h3 className="inline-flex items-center gap-1.5 max-[400px]:gap-1.5 px-2 max-[400px]:px-2 min-[401px]:px-3 py-1 max-[400px]:py-1 min-[401px]:py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-xs max-[400px]:text-[11px] min-[401px]:text-sm font-medium mb-2 max-[400px]:mb-2">
               <Eye className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-neutral-600" />
               AI-synlighet
-              <span className="px-1.5 max-[400px]:px-1 min-[401px]:px-2 py-0.5 rounded-full bg-violet-100 text-violet-700 text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs font-medium">
-                Kommer snart
-              </span>
             </h3>
             <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs sm:text-sm text-neutral-600">Hvor godt AI kjenner bedriften din</p>
           </div>

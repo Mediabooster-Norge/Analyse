@@ -136,7 +136,7 @@ export async function checkPremiumStatus(user: User | null): Promise<{
 export const PREMIUM_LIMITS = {
   free: {
     monthlyAnalyses: 5,
-    competitors: 1,
+    competitors: 2,
     keywords: 10, // Max nøkkelord per analyse
     keywordUpdates: 5,
     competitorUpdates: 5,

@@ -29,6 +29,7 @@ import {
   RefreshCw,
   Users,
   TrendingUp,
+  Tag,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { usePremium, getPremiumLimits } from '@/hooks/usePremium';
@@ -389,14 +390,14 @@ export default function SettingsPage() {
                     <Layers className="h-4 w-4 text-neutral-500" />
                     <span className="text-xs font-medium text-neutral-600">Konkurrenter</span>
                   </div>
-                  <p className="text-lg font-bold text-neutral-900">{limits.competitors}</p>
+                  <p className="text-sm text-neutral-900">Opptil <span className="font-bold">{limits.competitors}</span> per analyse</p>
                 </div>
                 <div className="p-3 rounded-xl bg-neutral-50 border border-neutral-100">
                   <div className="flex items-center gap-2 mb-1">
                     <FileText className="h-4 w-4 text-neutral-500" />
                     <span className="text-xs font-medium text-neutral-600">Nøkkelord</span>
                   </div>
-                  <p className="text-lg font-bold text-neutral-900">{limits.keywords}</p>
+                  <p className="text-sm text-neutral-900">Opptil <span className="font-bold">{limits.keywords}</span> per analyse</p>
                 </div>
               </div>
 
@@ -464,11 +465,17 @@ export default function SettingsPage() {
               </div>
               <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-100">
                 <div className="flex items-center gap-2 mb-2">
+                  <Tag className="h-5 w-5 text-neutral-700" />
+                  <h4 className="font-medium text-neutral-900">Flere søkeord</h4>
+                </div>
+                <p className="text-sm text-neutral-500">
+                  Analyser opptil 50 søkeord per analyse, mot 10 i gratisversjonen.
+                </p>
+              </div>
+              <div className="p-4 bg-neutral-50 rounded-lg border border-neutral-100">
+                <div className="flex items-center gap-2 mb-2">
                   <Layers className="h-5 w-5 text-neutral-700" />
                   <h4 className="font-medium text-neutral-900">Foreslåtte undersider</h4>
-                  <Badge variant="secondary" className="text-xs bg-neutral-200 text-neutral-600 border-0">
-                    Kommer snart
-                  </Badge>
                 </div>
                 <p className="text-sm text-neutral-500">
                   Etter at et domene er analysert, får du automatisk forslag på andre viktige sider på samme domene å sjekke – f.eks. tjenester, kontakt og produktsider.
