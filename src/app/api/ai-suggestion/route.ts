@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { runSeoTipsWorkflow } from '@/lib/agents/seo-tips-workflow';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -20,6 +21,28 @@ export async function POST(request: NextRequest) {
   try {
     const body: SuggestionRequest = await request.json();
     const { element, currentValue, status, issue, context } = body;
+
+    // Bruk Agent Builder-workflow hvis OPENAI_AGENT_WORKFLOW_ID er satt
+    if (process.env.OPENAI_AGENT_WORKFLOW_ID) {
+      const inputAsText = JSON.stringify({
+        element,
+        currentValue,
+        status,
+        ...(issue !== undefined && { issue }),
+        ...(context !== undefined && { context }),
+      });
+      const result = await runSeoTipsWorkflow({ input_as_text: inputAsText });
+      return NextResponse.json(
+        {
+          success: true,
+          data: result.output_parsed,
+          tokens: 0, // Agents SDK gir ikke token-telling her
+        },
+        {
+          headers: { 'X-AI-Source': 'agent-workflow' },
+        }
+      );
+    }
 
     const statusText = status === 'good' ? 'bra' : status === 'warning' ? 'ok, men kan forbedres' : 'trenger forbedring';
     
