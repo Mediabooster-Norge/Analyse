@@ -16,6 +16,8 @@ interface SuggestionRequest {
     industry?: string;
     companyName?: string;
     siteDescription?: string;
+    /** Fra siden: tittel, meta description, H1 – brukes for å forstå virksomhet (f.eks. videoproduksjon) */
+    pageSignals?: string;
   };
 }
 

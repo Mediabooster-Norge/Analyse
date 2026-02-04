@@ -895,13 +895,21 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           currentValue,
           status,
           issue,
-          context: {
-            url: state.companyUrl ?? undefined,
-            companyName: state.companyName ?? undefined,
-            siteDescription: state.result?.aiSummary?.overallAssessment
-              ? state.result.aiSummary.overallAssessment.slice(0, 300)
-              : undefined,
-          },
+          context: (() => {
+            const r = state.result?.seoResults;
+            const parts: string[] = [];
+            if (r?.meta?.title?.content) parts.push(`Tittel på siden: ${r.meta.title.content}`);
+            if (r?.meta?.description?.content) parts.push(`Meta description: ${r.meta.description.content}`);
+            if (r?.headings?.h1?.contents?.length) parts.push(`H1: ${r.headings.h1.contents.slice(0, 3).join(' | ')}`);
+            return {
+              url: state.companyUrl ?? undefined,
+              companyName: state.companyName ?? undefined,
+              siteDescription: state.result?.aiSummary?.overallAssessment
+                ? state.result.aiSummary.overallAssessment.slice(0, 300)
+                : undefined,
+              pageSignals: parts.length > 0 ? parts.join('. ') : undefined,
+            };
+          })(),
         }),
       });
 
@@ -918,7 +926,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     } finally {
       updateState({ loadingSuggestion: false });
     }
-  }, [state.companyUrl, state.companyName, state.result?.aiSummary?.overallAssessment, updateState]);
+  }, [state.companyUrl, state.companyName, state.result?.aiSummary?.overallAssessment, state.result?.seoResults, updateState]);
 
   const startEditingCompetitors = useCallback(() => {
     const currentCompetitors = state.result?.competitors?.map((c) => c.url) || [];
