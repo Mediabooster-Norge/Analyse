@@ -4,7 +4,7 @@ import type { User } from '@supabase/supabase-js';
 const PREMIUM_EMAILS = ['web@mediabooster.no'];
 
 /** Article generations per month: free 1, premium 30 */
-const ARTICLE_GENERATIONS = { free: 1, premium: 30 };
+const ARTICLE_GENERATIONS = { free: 5, premium: 30 };
 
 /**
  * Server-side premium check. Use this in API routes and Server Components.
@@ -16,7 +16,7 @@ export async function getPremiumStatusServer(user: User | null): Promise<{
   articleGenerationsPerMonth: number;
 }> {
   if (!user) {
-    return { isPremium: false, monthlyAnalysisLimit: 3, articleGenerationsPerMonth: ARTICLE_GENERATIONS.free };
+    return { isPremium: false, monthlyAnalysisLimit: 5, articleGenerationsPerMonth: ARTICLE_GENERATIONS.free };
   }
 
   if (user.email && PREMIUM_EMAILS.includes(user.email)) {
@@ -32,7 +32,7 @@ export async function getPremiumStatusServer(user: User | null): Promise<{
     .maybeSingle();
 
   if (error || !data) {
-    return { isPremium: false, monthlyAnalysisLimit: 3, articleGenerationsPerMonth: ARTICLE_GENERATIONS.free };
+    return { isPremium: false, monthlyAnalysisLimit: 5, articleGenerationsPerMonth: ARTICLE_GENERATIONS.free };
   }
 
   const isPremium = data.is_premium ?? false;

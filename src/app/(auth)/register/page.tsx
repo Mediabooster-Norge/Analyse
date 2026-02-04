@@ -230,28 +230,6 @@ export default function RegisterPage() {
           </Button>
         </form>
 
-        {/* Feature highlights */}
-        <div className="mt-6 pt-6 border-t">
-          <p className="text-xs text-muted-foreground text-center mb-3">Med en gratis konto får du:</p>
-          <div className="grid grid-cols-2 gap-2">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <BarChart3 className="h-3.5 w-3.5 text-blue-500" />
-              <span>3 analyser/mnd</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Sparkles className="h-3.5 w-3.5 text-violet-500" />
-              <span>AI-anbefalinger</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Shield className="h-3.5 w-3.5 text-green-500" />
-              <span>Sikkerhetssjekk</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <Eye className="h-3.5 w-3.5 text-cyan-500" />
-              <span>AI-synlighet</span>
-            </div>
-          </div>
-        </div>
       </CardContent>
       <CardFooter className="justify-center">
         <p className="text-sm text-muted-foreground">

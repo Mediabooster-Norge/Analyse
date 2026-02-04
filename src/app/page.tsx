@@ -1595,7 +1595,7 @@ export default function LandingPage() {
                         <div className="grid grid-cols-2 gap-2">
                           <div className="flex items-center gap-1.5 text-xs text-neutral-600">
                             <div className="w-1 h-1 rounded-full bg-blue-500" />
-                            3 analyser/mnd
+                            5 analyser/mnd
                           </div>
                           <div className="flex items-center gap-1.5 text-xs text-neutral-600">
                             <div className="w-1 h-1 rounded-full bg-violet-500" />
@@ -1808,7 +1808,7 @@ export default function LandingPage() {
               </ul>
               <div className="mt-4 pt-4 border-t border-neutral-100 space-y-1.5">
                 <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Grenser</p>
-                <p className="text-sm text-neutral-700">3 analyser og 1 AI-artikkel per måned</p>
+                <p className="text-sm text-neutral-700">5 analyser og 5 AI-artikler per måned</p>
               </div>
               <Button variant="outline" className="mt-6 w-full border-neutral-300 text-neutral-700 hover:bg-neutral-100 hover:border-neutral-400" size="lg" asChild>
                 <Link href="/register">
@@ -1922,7 +1922,7 @@ export default function LandingPage() {
               {[
                 {
                   q: 'Er dette virkelig gratis?',
-                  a: 'Ja. Med gratis konto får du 3 analyser og 1 AI-generert artikkel per måned, samt full tilgang til SEO-, sikkerhets-, innholds- og hastighetsanalyse med AI-anbefalinger. Premium (89 kr/mnd) gir ubegrenset analyser og 30 AI-artikler per måned.',
+                  a: 'Ja. Med gratis konto får du 5 analyser og 5 AI-genererte artikler per måned, samt full tilgang til SEO-, sikkerhets-, innholds- og hastighetsanalyse med AI-anbefalinger. Premium (89 kr/mnd) gir ubegrenset analyser og 30 AI-artikler per måned.',
                 },
                 {
                   q: 'Hva analyserer dere?',
@@ -1930,7 +1930,7 @@ export default function LandingPage() {
                 },
                 {
                   q: 'Hva er grensen for gratis?',
-                  a: 'Gratis: 3 analyser per måned og 1 AI-generert artikkel per måned. Premium: ubegrenset analyser og 30 AI-artikler per måned for 89 kr/mnd.',
+                  a: 'Gratis: 5 analyser og 5 AI-artikler per måned. Premium: ubegrenset analyser og 30 AI-artikler per måned for 89 kr/mnd.',
                 },
                 {
                   q: 'Hva er nøkkelordanalysen?',

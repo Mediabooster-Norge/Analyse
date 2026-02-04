@@ -17,7 +17,7 @@ const PREMIUM_EMAILS = ['web@mediabooster.no'];
 export function usePremium(): PremiumStatus {
   const [status, setStatus] = useState<PremiumStatus>({
     isPremium: false,
-    monthlyAnalysisLimit: 3,
+    monthlyAnalysisLimit: 5,
     premiumExpiresAt: null,
     loading: true,
   });
@@ -33,7 +33,7 @@ export function usePremium(): PremiumStatus {
         if (!user) {
           setStatus({
             isPremium: false,
-            monthlyAnalysisLimit: 3,
+            monthlyAnalysisLimit: 5,
             premiumExpiresAt: null,
             loading: false,
           });
@@ -59,7 +59,7 @@ export function usePremium(): PremiumStatus {
           console.warn('Premium status check failed, using fallback:', error.message);
           setStatus({
             isPremium: false,
-            monthlyAnalysisLimit: 3,
+            monthlyAnalysisLimit: 5,
             premiumExpiresAt: null,
             loading: false,
           });
@@ -77,7 +77,7 @@ export function usePremium(): PremiumStatus {
         } else {
           setStatus({
             isPremium: false,
-            monthlyAnalysisLimit: 3,
+            monthlyAnalysisLimit: 5,
             premiumExpiresAt: null,
             loading: false,
           });
@@ -86,7 +86,7 @@ export function usePremium(): PremiumStatus {
         console.error('Error checking premium status:', error);
         setStatus({
           isPremium: false,
-          monthlyAnalysisLimit: 3,
+          monthlyAnalysisLimit: 5,
           premiumExpiresAt: null,
           loading: false,
         });
@@ -135,13 +135,13 @@ export async function checkPremiumStatus(user: User | null): Promise<{
 // Premium feature limits
 export const PREMIUM_LIMITS = {
   free: {
-    monthlyAnalyses: 3,
+    monthlyAnalyses: 5,
     competitors: 1,
     keywords: 10, // Max nøkkelord per analyse
-    keywordUpdates: 2,
-    competitorUpdates: 2,
+    keywordUpdates: 5,
+    competitorUpdates: 5,
     aiVisibilityChecks: 1,
-    articleGenerationsPerMonth: 1, // Full artikkelgenerering per måned (free)
+    articleGenerationsPerMonth: 5, // Full artikkelgenerering per måned (free)
   },
   premium: {
     monthlyAnalyses: 999, // Unlimited
