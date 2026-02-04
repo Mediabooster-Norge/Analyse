@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, Globe, Loader2, Copy, Calendar, Image, Download } from 'lucide-react';
+import { FileText, Globe, Loader2, Copy, Calendar, Image, Download, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 
@@ -71,6 +71,8 @@ export default function ArticlesPage() {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<ArticleFull | null>(null);
   const [loadingArticle, setLoadingArticle] = useState(false);
+  const [articleToDelete, setArticleToDelete] = useState<ArticleListItem | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -145,6 +147,25 @@ export default function ArticlesPage() {
     );
   };
 
+  const deleteArticle = async () => {
+    if (!articleToDelete) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/generated-articles/${articleToDelete.id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Kunne ikke slette artikkel');
+      setArticles((prev) => prev.filter((a) => a.id !== articleToDelete.id));
+      toast.success('Artikkel slettet');
+      setArticleToDelete(null);
+    } catch {
+      toast.error('Kunne ikke slette artikkel');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -196,30 +217,43 @@ export default function ArticlesPage() {
         <ul className="space-y-3">
           {articles.map((a) => (
             <li key={a.id}>
-              <button
-                type="button"
-                onClick={() => openArticle(a.id)}
-                className="w-full text-left p-4 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 hover:border-neutral-300 transition-all"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100">
-                    <FileText className="h-5 w-5 text-neutral-600" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-neutral-900 truncate">{a.title}</p>
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-neutral-500">
-                      <span className="flex items-center gap-1">
-                        <Globe className="h-3.5 w-3.5" />
-                        {domainLabel(a)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3.5 w-3.5" />
-                        {formatDate(a.created_at)}
-                      </span>
+              <div className="relative group">
+                <button
+                  type="button"
+                  onClick={() => openArticle(a.id)}
+                  className="w-full text-left p-4 rounded-xl border border-neutral-200 bg-white hover:bg-neutral-50 hover:border-neutral-300 transition-all cursor-pointer"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-neutral-100">
+                      <FileText className="h-5 w-5 text-neutral-600" />
+                    </span>
+                    <div className="min-w-0 flex-1 pr-8">
+                      <p className="font-medium text-neutral-900 truncate">{a.title}</p>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-neutral-500">
+                        <span className="flex items-center gap-1">
+                          <Globe className="h-3.5 w-3.5" />
+                          {domainLabel(a)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          {formatDate(a.created_at)}
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </button>
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setArticleToDelete(a);
+                  }}
+                  className="absolute top-4 right-4 p-2 rounded-lg text-neutral-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer"
+                  title="Slett artikkel"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </li>
           ))}
         </ul>
@@ -360,6 +394,60 @@ export default function ArticlesPage() {
               </div>
             </>
           ) : null}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={!!articleToDelete} onOpenChange={(open) => !open && setArticleToDelete(null)}>
+        <DialogContent showCloseButton className="sm:max-w-md overflow-hidden">
+          <div className="space-y-4">
+            <DialogHeader>
+              <DialogTitle>Slett artikkel?</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-2">
+              <p className="text-sm text-neutral-600">
+                Er du sikker på at du vil slette denne artikkelen?
+              </p>
+              {articleToDelete && (
+                <p className="text-sm font-medium text-neutral-900 break-words">
+                  {articleToDelete.title}
+                </p>
+              )}
+              <p className="text-xs text-neutral-500">
+                Artikkelen teller fortsatt som generert mot månedlig grense.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setArticleToDelete(null)}
+                disabled={deleting}
+                className="rounded-lg cursor-pointer"
+              >
+                Avbryt
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={deleteArticle}
+                disabled={deleting}
+                className="rounded-lg cursor-pointer"
+              >
+                {deleting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sletter...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Slett
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

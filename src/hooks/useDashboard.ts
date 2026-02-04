@@ -141,14 +141,14 @@ const defaultSecurityResults = {
 };
 
 export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardOptions) {
-  const { isPremium, loading: premiumLoading } = usePremium();
+  const { isPremium, articleGenerationsPerMonth, loading: premiumLoading } = usePremium();
   const limits = getPremiumLimits(isPremium);
   
   const FREE_MONTHLY_LIMIT = limits.monthlyAnalyses;
   const FREE_KEYWORD_LIMIT = limits.keywords;
   const FREE_COMPETITOR_LIMIT = limits.competitors;
   const FREE_UPDATE_LIMIT = isPremium ? 999 : 5;
-  const ARTICLE_GENERATIONS_LIMIT = limits.articleGenerationsPerMonth ?? 1;
+  const ARTICLE_GENERATIONS_LIMIT = articleGenerationsPerMonth;
 
   // State
   const [state, setState] = useState<DashboardState>({

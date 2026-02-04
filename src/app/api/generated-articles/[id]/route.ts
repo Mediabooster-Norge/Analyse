@@ -40,3 +40,38 @@ export async function GET(
 
   return NextResponse.json(data);
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  if (!id) {
+    return NextResponse.json({ error: 'Mangler artikkel-id' }, { status: 400 });
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Du må være logget inn' }, { status: 401 });
+  }
+
+  // Delete only the article content, not the article_generations record
+  // This way the generation still counts toward the user's limit
+  const { error } = await supabase
+    .from('generated_articles')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('generated-article delete error:', error);
+    return NextResponse.json(
+      { error: 'Kunne ikke slette artikkel' },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ success: true });
+}

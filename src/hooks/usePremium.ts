@@ -7,6 +7,7 @@ import { User } from '@supabase/supabase-js';
 interface PremiumStatus {
   isPremium: boolean;
   monthlyAnalysisLimit: number;
+  articleGenerationsPerMonth: number;
   premiumExpiresAt: Date | null;
   loading: boolean;
 }
@@ -14,10 +15,14 @@ interface PremiumStatus {
 // Premium emails for testing (before database is set up)
 const PREMIUM_EMAILS = ['web@mediabooster.no'];
 
+// Emails with unlimited article generations
+const UNLIMITED_ARTICLE_EMAILS = ['web@mediabooster.no'];
+
 export function usePremium(): PremiumStatus {
   const [status, setStatus] = useState<PremiumStatus>({
     isPremium: false,
     monthlyAnalysisLimit: 5,
+    articleGenerationsPerMonth: PREMIUM_LIMITS.free.articleGenerationsPerMonth,
     premiumExpiresAt: null,
     loading: true,
   });
@@ -34,6 +39,7 @@ export function usePremium(): PremiumStatus {
           setStatus({
             isPremium: false,
             monthlyAnalysisLimit: 5,
+            articleGenerationsPerMonth: PREMIUM_LIMITS.free.articleGenerationsPerMonth,
             premiumExpiresAt: null,
             loading: false,
           });
@@ -42,9 +48,11 @@ export function usePremium(): PremiumStatus {
 
         // First check hardcoded premium emails (for testing)
         if (user.email && PREMIUM_EMAILS.includes(user.email)) {
+          const hasUnlimitedArticles = UNLIMITED_ARTICLE_EMAILS.includes(user.email);
           setStatus({
             isPremium: true,
             monthlyAnalysisLimit: 999,
+            articleGenerationsPerMonth: hasUnlimitedArticles ? 999 : PREMIUM_LIMITS.premium.articleGenerationsPerMonth,
             premiumExpiresAt: null,
             loading: false,
           });
@@ -60,6 +68,7 @@ export function usePremium(): PremiumStatus {
           setStatus({
             isPremium: false,
             monthlyAnalysisLimit: 5,
+            articleGenerationsPerMonth: PREMIUM_LIMITS.free.articleGenerationsPerMonth,
             premiumExpiresAt: null,
             loading: false,
           });
@@ -68,9 +77,11 @@ export function usePremium(): PremiumStatus {
 
         if (data && data.length > 0) {
           const profile = data[0];
+          const isPremium = profile.is_premium ?? false;
           setStatus({
-            isPremium: profile.is_premium ?? false,
+            isPremium,
             monthlyAnalysisLimit: profile.monthly_analysis_limit ?? 3,
+            articleGenerationsPerMonth: isPremium ? PREMIUM_LIMITS.premium.articleGenerationsPerMonth : PREMIUM_LIMITS.free.articleGenerationsPerMonth,
             premiumExpiresAt: profile.premium_expires_at ? new Date(profile.premium_expires_at) : null,
             loading: false,
           });
@@ -78,6 +89,7 @@ export function usePremium(): PremiumStatus {
           setStatus({
             isPremium: false,
             monthlyAnalysisLimit: 5,
+            articleGenerationsPerMonth: PREMIUM_LIMITS.free.articleGenerationsPerMonth,
             premiumExpiresAt: null,
             loading: false,
           });
@@ -87,6 +99,7 @@ export function usePremium(): PremiumStatus {
         setStatus({
           isPremium: false,
           monthlyAnalysisLimit: 5,
+          articleGenerationsPerMonth: PREMIUM_LIMITS.free.articleGenerationsPerMonth,
           premiumExpiresAt: null,
           loading: false,
         });

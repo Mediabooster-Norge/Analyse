@@ -3,8 +3,11 @@ import type { User } from '@supabase/supabase-js';
 
 const PREMIUM_EMAILS = ['web@mediabooster.no'];
 
-/** Article generations per month: free 1, premium 30 */
-const ARTICLE_GENERATIONS = { free: 5, premium: 30 };
+/** Emails with unlimited article generations */
+const UNLIMITED_ARTICLE_EMAILS = ['web@mediabooster.no'];
+
+/** Article generations per month: free 5, premium 30, unlimited 999 */
+const ARTICLE_GENERATIONS = { free: 5, premium: 30, unlimited: 999 };
 
 /**
  * Server-side premium check. Use this in API routes and Server Components.
@@ -20,7 +23,12 @@ export async function getPremiumStatusServer(user: User | null): Promise<{
   }
 
   if (user.email && PREMIUM_EMAILS.includes(user.email)) {
-    return { isPremium: true, monthlyAnalysisLimit: 999, articleGenerationsPerMonth: ARTICLE_GENERATIONS.premium };
+    const hasUnlimitedArticles = UNLIMITED_ARTICLE_EMAILS.includes(user.email);
+    return { 
+      isPremium: true, 
+      monthlyAnalysisLimit: 999, 
+      articleGenerationsPerMonth: hasUnlimitedArticles ? ARTICLE_GENERATIONS.unlimited : ARTICLE_GENERATIONS.premium 
+    };
   }
 
   const supabase = await createClient();
