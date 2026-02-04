@@ -356,8 +356,8 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-100">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 h-14 sm:h-16 flex items-center justify-between gap-2">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-200/40">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center min-w-0 flex-shrink">
             <img src="/logo.svg" alt="Mediabooster" className="h-5 sm:h-6 w-auto brightness-0" />
           </Link>
@@ -386,20 +386,9 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section - Centered with Dashboard Demo */}
-      <section className="pt-20 pb-6 sm:pt-24 sm:pb-8 md:pt-28 md:pb-12 relative overflow-hidden">
+      <section className="pt-20 sm:pt-24 md:pt-28 relative overflow-hidden">
         {/* Hero tekst + dashboard – bakgrunn stopper midt i dashboard-fremvisningen */}
         <div className="relative">
-          {/* Bakgrunn med mask så den fader ut midt i dashboard-området */}
-          <div
-            className="absolute inset-0 z-0 opacity-30 rounded-b-2xl sm:rounded-b-3xl pointer-events-none"
-            style={{
-              maskImage: 'linear-gradient(to bottom, black 0%, black 45%, transparent 75%)',
-              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 45%, transparent 75%)',
-            }}
-            aria-hidden
-          >
-            <div className="absolute inset-0 bg-grid-subtle-hero rounded-b-2xl sm:rounded-b-3xl" />
-          </div>
           <div
             className="absolute inset-0 -z-10 overflow-hidden rounded-b-2xl sm:rounded-b-3xl pointer-events-none"
             style={{
@@ -411,14 +400,17 @@ export default function LandingPage() {
             <div className="absolute bottom-0 left-0 w-[280px] sm:w-[400px] h-[280px] sm:h-[400px] rounded-full bg-gradient-to-tr from-neutral-100/25 via-transparent to-transparent blur-[80px] sm:blur-[100px]" />
           </div>
 
-          <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 relative z-10 pb-8 sm:pb-10 md:pb-12">
-            {/* Hero Text - Centered */}
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 relative z-10">
+            {/* Hero Text – strekene er her og går helt opp til header og ned til horisontallinjen */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-            className="text-center max-w-3xl mx-auto mb-6 sm:mb-8"
+              className="relative text-center max-w-6xl mx-auto px-4 sm:px-6 md:px-8 -mt-20 sm:-mt-24 md:-mt-28 pt-20 sm:pt-24 md:pt-28 pb-6 sm:pb-8"
             >
+              {/* Vertikale linjer – helt opp til header, helt ned til neste seksjon */}
+              <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-200/40 pointer-events-none" aria-hidden />
+              <div className="absolute right-0 top-0 bottom-0 w-px bg-neutral-200/40 pointer-events-none" aria-hidden />
               <Badge variant="outline" className="mb-3 sm:mb-4 text-xs sm:text-sm text-neutral-600 border-neutral-300">
               Din digitale CMO – og AI-kollega
               </Badge>
@@ -451,6 +443,8 @@ export default function LandingPage() {
                   </>
                 )}
               </div>
+              {/* Horisontal linje – nederst i hero, full bredde ut til sidene */}
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-screen h-px bg-neutral-200/40 pointer-events-none" aria-hidden />
             </motion.div>
           </div>
 
@@ -459,7 +453,7 @@ export default function LandingPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="relative z-10 overflow-hidden max-w-6xl mx-auto px-3 sm:px-4 md:px-6"
+            className="relative z-10 overflow-hidden max-w-6xl mx-auto px-4 sm:px-6 md:px-8 py-0"
           >
             {/* Top part with border and shadow */}
             <div className="rounded-t-2xl sm:rounded-t-3xl border border-b-0 border-neutral-200 shadow-xl sm:shadow-2xl shadow-neutral-200/50 overflow-hidden bg-white min-w-0">
@@ -908,13 +902,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Vertikale linjer som går gjennom seksjonene (opp og ned) */}
       <div className="relative">
-        <div className="absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-full max-w-6xl px-3 sm:px-4 md:px-6 pointer-events-none z-0" aria-hidden>
-          <div className="absolute left-1/3 top-0 bottom-0 w-px bg-neutral-200/80" />
-          <div className="absolute left-2/3 top-0 bottom-0 w-px bg-neutral-200/80" />
-        </div>
-
       {/* Trusted by - Scrolling Logo Carousel (vertikale linjer skjult – kun horisontal) */}
       <section className="relative z-10 bg-white pt-8 sm:pt-12 md:pt-16 pb-12 sm:pb-16 md:pb-20 overflow-hidden section-separator-top">
         <motion.p 
@@ -985,7 +973,7 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="text-center mb-8 sm:mb-12"
+              className="relative text-center mb-8 sm:mb-12 pb-6 sm:pb-8"
             >
             <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-2 sm:mb-3">
               AI finner svakheter<br />
@@ -994,9 +982,14 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl mx-auto px-2">
               Basert på analysen gir AI deg konkrete forslag du kan ta i bruk med én gang.
             </p>
+            {/* Horisontal strek under overskriften – full bredde ut til kantene */}
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-screen h-px bg-neutral-200/40 pointer-events-none" aria-hidden />
             </motion.div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 relative -mt-60 sm:-mt-72 md:-mt-80 pt-60 sm:pt-72 md:pt-80 -mb-12 sm:-mb-16 md:-mb-20 pb-12 sm:pb-16 md:pb-20">
+            {/* Vertikale linjer – helt opp (over overskrift) og helt ned (til seksjonens bunn) */}
+            <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-200/40 pointer-events-none" aria-hidden />
+            <div className="absolute right-0 top-0 bottom-0 w-px bg-neutral-200/40 pointer-events-none" aria-hidden />
             {/* Problem cards - narrower */}
             <motion.div
               initial={{ opacity: 0, x: -20 }}
@@ -1179,7 +1172,21 @@ export default function LandingPage() {
       </section>
 
       {/* Bento Grid Features – kompakt */}
-      <section className="relative z-10 py-12 sm:py-16 md:py-20 section-separator-top">
+      <section className="relative z-10 pt-12 sm:pt-16 md:pt-20 pb-6 sm:pb-8 md:pb-10 section-separator-top">
+        {/* Bakgrunnstekstur i mellomrommet under seksjonen – stopper ved vertikale linjene */}
+        <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-full max-w-6xl px-3 sm:px-4 md:px-6 h-20 pointer-events-none" aria-hidden>
+          <div 
+            className="w-full h-full"
+            style={{
+              backgroundImage: 'url(/bg-texture.png)',
+              backgroundRepeat: 'repeat-x',
+              backgroundPosition: 'top center',
+              backgroundSize: 'auto 100px',
+              opacity: 0.03,
+              filter: 'invert(1)',
+            }}
+          />
+        </div>
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -1196,7 +1203,20 @@ export default function LandingPage() {
             </p>
           </motion.div>
 
-          {/* Bento Grid */}
+          {/* Wrapper for vertikale streker – streker helt opp og ned, grid uendret under */}
+          <div className="relative -mt-60 sm:-mt-72 md:-mt-80 pt-60 sm:pt-72 md:pt-80">
+            {/* Vertikale linjer – venstre og høyre (wrapper) */}
+            <div className="absolute inset-0 pointer-events-none w-full" aria-hidden>
+              <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-200/40" />
+              <div className="absolute -right-px top-0 bottom-0 w-px bg-neutral-200/40" />
+            </div>
+          {/* Bento Grid – horisontale linjer i wrapper utenfor grid-layout */}
+          <div className="relative">
+            {/* Horisontale linjer – oppe og nede, helt ut til kantene */}
+            <div className="absolute inset-0 pointer-events-none" aria-hidden>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-screen h-px bg-neutral-200/40" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-screen h-px bg-neutral-200/40" />
+            </div>
           <motion.div 
             className="grid md:grid-cols-3 gap-1.5 sm:gap-2 [&>*:nth-child(3n+2)]:md:section-separator-v [&>*:nth-child(3n+2)]:md:border-l [&>*:nth-child(3n+2)]:md:pl-2 [&>*:nth-child(3n+3)]:md:section-separator-v [&>*:nth-child(3n+3)]:md:border-l [&>*:nth-child(3n+3)]:md:pl-2"
             variants={containerVariants}
@@ -1406,16 +1426,13 @@ export default function LandingPage() {
             </motion.div>
 
           </motion.div>
+          </div>
+          </div>
         </div>
       </section>
 
-      {/* How it works - Two column layout. Vertikale linjer i full seksjonshøyde. */}
+      {/* How it works - Two column layout */}
       <section className="relative z-10 py-12 sm:py-16 md:py-20 bg-neutral-50 overflow-hidden section-separator-top">
-        {/* Vertikale linjer venstre og høyre – hele seksjonen opp og ned */}
-        <div className="hidden lg:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-full max-w-6xl px-3 sm:px-4 md:px-6 pointer-events-none z-0" aria-hidden>
-          <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-200" />
-          <div className="absolute right-0 top-0 bottom-0 w-px bg-neutral-200" />
-        </div>
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 relative z-10">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -1430,23 +1447,23 @@ export default function LandingPage() {
             <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl mx-auto">Lim inn nettside-URL – analysen er klar på under ett minutt.</p>
           </motion.div>
 
-          <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-start">
+          {/* Wrapper for vertikale linjer – helt opp og ned som resten av nettsiden */}
+          <div className="relative -mt-60 sm:-mt-72 md:-mt-80 pt-60 sm:pt-72 md:pt-80 -mb-12 sm:-mb-16 md:-mb-20 pb-12 sm:pb-16 md:pb-20">
+            {/* Vertikale linjer – venstre og høyre */}
+            <div className="absolute inset-0 pointer-events-none w-full" aria-hidden>
+              <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-200/40" />
+              <div className="absolute -right-px top-0 bottom-0 w-px bg-neutral-200/40" />
+            </div>
+          <div className="grid lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 items-start relative">
+            {/* Horisontal linje på toppen – helt ut */}
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-screen h-px bg-neutral-200/40 pointer-events-none" aria-hidden />
             {/* Left - Steps */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="relative flex gap-0 lg:gap-6"
+              className="relative"
             >
-              <div className="hidden lg:flex flex-col items-center shrink-0 pt-8 pb-2 w-6" aria-hidden>
-                <div className="w-px flex-1 min-h-[2rem] bg-neutral-200/80" />
-                <div className="w-2 h-2 rounded-full bg-neutral-400 shrink-0 -mt-px ring-4 ring-neutral-50" />
-                <div className="w-px flex-1 min-h-[4rem] bg-neutral-200/80" />
-                <div className="w-2 h-2 rounded-full bg-neutral-400 shrink-0 -mt-px ring-4 ring-neutral-50" />
-                <div className="w-px flex-1 min-h-[4rem] bg-neutral-200/80" />
-                <div className="w-2 h-2 rounded-full bg-neutral-400 shrink-0 -mt-px ring-4 ring-neutral-50" />
-                <div className="w-px flex-1 min-h-[2rem] bg-neutral-200/80" />
-              </div>
               <div className="space-y-1 sm:space-y-2 flex-1 min-w-0">
               <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-green-600 mb-1 sm:mb-1.5 px-1">
                 <span>Klikk for å utforske</span>
@@ -1716,45 +1733,60 @@ export default function LandingPage() {
               </div>
               </motion.div>
           </div>
+          </div>
         </div>
       </section>
 
-      {/* Hva du får – Gratis vs Premium. Vertikale linjer i full seksjonshøyde. */}
+      {/* Hva du får – Gratis vs Premium. 3-kolonne layout. */}
       <section className="relative z-10 py-12 sm:py-16 md:py-20 bg-neutral-50 section-separator-top border-t border-neutral-200">
-        {/* Vertikale linjer: venstre kant, mellom kortene, høyre kant – hele seksjonen opp og ned (kun to-kolonne) */}
-        <div className="hidden md:block absolute top-0 bottom-0 left-1/2 -translate-x-1/2 w-full max-w-4xl pointer-events-none z-0" aria-hidden>
-          <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-200" />
-          <div className="absolute right-0 top-0 bottom-0 w-px bg-neutral-200" />
+        {/* Bakgrunnstekstur i mellomrommet – stopper ved vertikale linjene */}
+        <div className="absolute top-1 left-1/2 -translate-x-1/2 w-full max-w-6xl px-3 sm:px-4 md:px-6 h-20 pointer-events-none" aria-hidden>
+          <div 
+            className="w-full h-full"
+            style={{
+              backgroundImage: 'url(/bg-texture.png)',
+              backgroundRepeat: 'repeat-x',
+              backgroundPosition: 'top center',
+              backgroundSize: 'auto 100px',
+              opacity: 0.03,
+              filter: 'invert(1)',
+            }}
+          />
         </div>
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 relative z-10">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-8 sm:mb-12"
-          >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-2 sm:mb-3">
-              Hva du får<br />
-              <span className="text-neutral-400">Gratis og Premium.</span>
-            </h2>
-            <p className="text-sm sm:text-base md:text-lg text-neutral-500 max-w-xl mx-auto">
-              Samme analyseverktøy – ulike grenser avhengig av plan.
-            </p>
-          </motion.div>
-
-          <div className="relative w-full">
-            {/* Horisontale linjer – hele bredden av innholdsområdet */}
-            <div className="absolute top-0 left-0 right-0 h-px bg-neutral-200 z-0 hidden md:block" aria-hidden />
-            <div className="absolute bottom-0 left-0 right-0 h-px bg-neutral-200 z-0 hidden md:block" aria-hidden />
+          {/* Wrapper for vertikale linjer – helt opp og ned */}
+          <div className="relative -mt-60 sm:-mt-72 md:-mt-80 pt-60 sm:pt-72 md:pt-80 -mb-12 sm:-mb-16 md:-mb-20 pb-12 sm:pb-16 md:pb-20">
+            {/* Vertikale linjer – venstre og høyre */}
+            <div className="absolute inset-0 pointer-events-none w-full" aria-hidden>
+              <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-200/40" />
+              <div className="absolute -right-px top-0 bottom-0 w-px bg-neutral-200/40" />
+            </div>
+            {/* Horisontale linjer og grid i wrapper */}
+            <div className="relative">
+              {/* Horisontale linjer – helt ut til kantene */}
+              <div className="absolute inset-0 pointer-events-none" aria-hidden>
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-screen h-px bg-neutral-200/40" />
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-screen h-px bg-neutral-200/40" />
+              </div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="relative z-10 grid md:grid-cols-2 gap-4 sm:gap-6 max-w-4xl mx-auto"
+              className="relative z-10 grid md:grid-cols-3 gap-4 sm:gap-6 items-stretch"
             >
+            {/* Tittel og beskrivelse – venstre kolonne */}
+            <div className="md:pr-4">
+              <h2 className="text-4xl md:text-5xl font-medium tracking-tight mb-3">
+                Hva du får<br />
+                <span className="text-neutral-400">Gratis og Premium.</span>
+              </h2>
+              <p className="text-sm sm:text-base text-neutral-500">
+                Samme analyseverktøy – ulike grenser avhengig av plan.
+              </p>
+            </div>
             {/* Gratis */}
-            <div className="relative z-10 rounded-2xl border border-neutral-200 bg-white shadow-sm p-5 sm:p-6 flex flex-col">
+            <div className="relative z-10 rounded-2xl border border-neutral-200 bg-white shadow-sm p-5 sm:p-6 flex flex-col transition-all duration-200 hover:shadow-md hover:border-neutral-300">
               <div className="mb-4">
                 <p className="text-xs font-medium uppercase tracking-wider text-neutral-500">Gratis</p>
                 <p className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-0.5">0 kr</p>
@@ -1769,7 +1801,7 @@ export default function LandingPage() {
                   'Rapport som PDF',
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-neutral-400 shrink-0 mt-0.5" />
                     <span>{item}</span>
                   </li>
                 ))}
@@ -1778,7 +1810,7 @@ export default function LandingPage() {
                 <p className="text-xs font-medium text-neutral-500 uppercase tracking-wider">Grenser</p>
                 <p className="text-sm text-neutral-700">3 analyser og 1 AI-artikkel per måned</p>
               </div>
-              <Button className="mt-6 w-full bg-neutral-900 hover:bg-neutral-800" size="lg" asChild>
+              <Button variant="outline" className="mt-6 w-full border-neutral-300 text-neutral-700 hover:bg-neutral-100 hover:border-neutral-400" size="lg" asChild>
                 <Link href="/register">
                   Kom i gang gratis
                   <ArrowRight className="ml-2 w-4 h-4" />
@@ -1787,13 +1819,13 @@ export default function LandingPage() {
             </div>
 
             {/* Premium */}
-            <div className="relative z-10 rounded-2xl border-2 border-neutral-900 bg-white shadow-md p-5 sm:p-6 flex flex-col md:pl-6">
-              <div className="absolute top-3 right-3">
-                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 text-[10px] sm:text-xs font-medium">
+            <div className="relative z-10 rounded-2xl border-2 border-neutral-900 bg-gradient-to-b from-white to-neutral-50 shadow-lg p-5 sm:p-6 flex flex-col transition-all duration-200 hover:shadow-xl hover:-translate-y-0.5">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                <span className="px-3 py-1 rounded-full bg-neutral-900 text-white text-[10px] sm:text-xs font-medium shadow-sm">
                   Anbefalt
                 </span>
               </div>
-              <div className="mb-4">
+              <div className="mb-4 mt-2">
                 <p className="text-xs font-medium uppercase tracking-wider text-neutral-500">Premium</p>
                 <p className="text-2xl sm:text-3xl font-semibold text-neutral-900 mt-0.5">89 kr</p>
                 <p className="text-xs text-neutral-500 mt-0.5">per måned</p>
@@ -1807,12 +1839,12 @@ export default function LandingPage() {
                   'Prioritert support',
                 ].map((item, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <CheckCircle2 className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
+                    <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0 mt-0.5" />
                     <span>{item}</span>
                   </li>
                 ))}
               </ul>
-              <Button variant="outline" className="mt-6 w-full border-neutral-900 text-neutral-900 hover:bg-neutral-900 hover:text-white" size="lg" asChild>
+              <Button className="mt-6 w-full bg-neutral-900 hover:bg-neutral-800 shadow-sm" size="lg" asChild>
                 <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
                   Kom i gang nå
                   <ArrowRight className="ml-2 w-4 h-4" />
@@ -1820,14 +1852,41 @@ export default function LandingPage() {
               </Button>
             </div>
             </motion.div>
+            </div>
           </div>
+        </div>
+        {/* Bakgrunnstekstur i mellomrommet nederst – stopper ved vertikale linjene */}
+        <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-full max-w-6xl px-3 sm:px-4 md:px-6 h-20 pointer-events-none" aria-hidden>
+          <div 
+            className="w-full h-full"
+            style={{
+              backgroundImage: 'url(/bg-texture.png)',
+              backgroundRepeat: 'repeat-x',
+              backgroundPosition: 'bottom center',
+              backgroundSize: 'auto 100px',
+              opacity: 0.03,
+              filter: 'invert(1)',
+            }}
+          />
         </div>
       </section>
 
       {/* FAQ - Two column layout */}
       <section className="relative z-10 py-12 sm:py-16 md:py-20 overflow-hidden section-separator-top">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="grid md:grid-cols-5 gap-8 items-start">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
+          {/* Wrapper for vertikale linjer – helt opp og ned */}
+          <div className="relative -mt-60 sm:-mt-72 md:-mt-80 pt-60 sm:pt-72 md:pt-80 -mb-12 sm:-mb-16 md:-mb-20 pb-12 sm:pb-16 md:pb-20">
+            {/* Vertikale linjer – venstre og høyre */}
+            <div className="absolute inset-0 pointer-events-none w-full" aria-hidden>
+              <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-200/40" />
+              <div className="absolute -right-px top-0 bottom-0 w-px bg-neutral-200/40" />
+            </div>
+            {/* Horisontale linjer – topp og bunn */}
+            <div className="absolute inset-0 pointer-events-none" aria-hidden>
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-screen h-px bg-neutral-200/40" />
+              <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-screen h-px bg-neutral-200/40" />
+            </div>
+            <div className="grid md:grid-cols-5 gap-8 items-start">
             {/* Left side - Title */}
             <motion.div 
               initial={{ opacity: 0, x: -20 }}
@@ -1910,6 +1969,7 @@ export default function LandingPage() {
                 </motion.div>
               ))}
             </motion.div>
+          </div>
           </div>
         </div>
       </section>
@@ -2026,9 +2086,11 @@ export default function LandingPage() {
       </div>
 
       {/* Footer - Modern minimal */}
-      <footer className="py-10 sm:py-12">
+      <footer className="py-10 sm:py-12 relative">
+        {/* Horisontal linje som går helt ut til kantene */}
+        <div className="absolute top-0 left-0 right-0 h-px bg-neutral-200/40" aria-hidden />
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-4 sm:py-6 border-t border-neutral-100">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-4 sm:py-6">
             <motion.div 
               initial={{ opacity: 0 }}
               whileInView={{ opacity: 1 }}
