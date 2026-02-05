@@ -814,24 +814,26 @@ export function OverviewTab({
         </div>
       </div>
 
-      {/* Upgrade CTA */}
-      <div className="rounded-2xl bg-neutral-900 p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
-          <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
-            <Sparkles className="w-5 h-5 text-white" />
+      {/* Upgrade CTA - only for non-premium users */}
+      {!isPremium && (
+        <div className="rounded-2xl bg-neutral-900 p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
+            <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
+              <Sparkles className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-white text-sm sm:text-base">Få mer ut av analyseverktøyet</h3>
+              <p className="text-xs sm:text-sm text-neutral-400">Ubegrenset analyser, 30 AI-artikler og mye mer med Premium.</p>
+            </div>
           </div>
-          <div>
-            <h3 className="font-semibold text-white text-sm sm:text-base">Få mer ut av analyseverktøyet</h3>
-            <p className="text-xs sm:text-sm text-neutral-400">Ubegrenset analyser, 30 AI-artikler og mye mer med Premium.</p>
-          </div>
+          <Button className="bg-white text-neutral-900 hover:bg-neutral-100 w-full sm:w-auto" asChild>
+            <a href="/#priser">
+              Oppgrader til Premium
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </a>
+          </Button>
         </div>
-        <Button className="bg-white text-neutral-900 hover:bg-neutral-100 w-full sm:w-auto" asChild>
-          <a href="/#priser">
-            Oppgrader til Premium
-            <ChevronRight className="ml-2 h-4 w-4" />
-          </a>
-        </Button>
-      </div>
+      )}
     </>
   );
 }

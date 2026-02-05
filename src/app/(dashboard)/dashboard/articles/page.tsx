@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
-import { FileText, Globe, Loader2, Copy, Calendar, Image, Download, Trash2 } from 'lucide-react';
+import { FileText, Globe, Loader2, Copy, Calendar, Image, Download, Trash2, RefreshCw } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 
@@ -28,7 +28,29 @@ interface ArticleFull extends ArticleListItem {
   featured_image_suggestion?: string | null;
   featured_image_url?: string | null;
   featured_image_attribution?: string | null;
+  article_length?: string | null;
+  article_tone?: string | null;
+  article_audience?: string | null;
 }
+
+const LENGTH_LABELS: Record<string, string> = {
+  short: 'Kort',
+  medium: 'Medium',
+  long: 'Lang',
+};
+
+const TONE_LABELS: Record<string, string> = {
+  professional: 'Profesjonell',
+  casual: 'Uformell',
+  educational: 'Pedagogisk',
+};
+
+const AUDIENCE_LABELS: Record<string, string> = {
+  general: 'Alle',
+  beginners: 'Nybegynnere',
+  experts: 'Eksperter',
+  business: 'Bedriftsledere',
+};
 
 const markdownComponents = {
   h1: ({ children }: { children?: React.ReactNode }) => <h1 className="text-xl sm:text-2xl font-bold text-neutral-900 mt-0 mb-4">{children}</h1>,
@@ -73,6 +95,7 @@ export default function ArticlesPage() {
   const [loadingArticle, setLoadingArticle] = useState(false);
   const [articleToDelete, setArticleToDelete] = useState<ArticleListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [regeneratingImage, setRegeneratingImage] = useState(false);
 
   const fetchList = useCallback(async () => {
     setLoading(true);
@@ -163,6 +186,58 @@ export default function ArticlesPage() {
       toast.error('Kunne ikke slette artikkel');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const regenerateImage = async () => {
+    if (!selectedArticle?.featured_image_suggestion) {
+      toast.error('Ingen bildesøk tilgjengelig');
+      return;
+    }
+
+    setRegeneratingImage(true);
+    try {
+      // Fetch new image from Unsplash
+      const response = await fetch('/api/regenerate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ searchQuery: selectedArticle.featured_image_suggestion }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        toast.error(data.error || 'Kunne ikke hente nytt bilde');
+        return;
+      }
+
+      // Save the new image to the database
+      const saveResponse = await fetch(`/api/generated-articles/${selectedArticle.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          featured_image_url: data.featuredImageUrl,
+          featured_image_attribution: data.featuredImageAttribution,
+        }),
+      });
+
+      if (!saveResponse.ok) {
+        console.error('Failed to save image to database');
+        // Still update locally even if save fails
+      }
+
+      // Update the selected article with the new image
+      setSelectedArticle({
+        ...selectedArticle,
+        featured_image_url: data.featuredImageUrl,
+        featured_image_attribution: data.featuredImageAttribution,
+      });
+      
+      toast.success('Nytt bilde lagret');
+    } catch {
+      toast.error('Kunne ikke hente nytt bilde');
+    } finally {
+      setRegeneratingImage(false);
     }
   };
 
@@ -288,7 +363,30 @@ export default function ArticlesPage() {
                     <Calendar className="h-4 w-4" />
                     {formatDate(selectedArticle.created_at)}
                   </span>
+                  <span className="flex items-center gap-1">
+                    <FileText className="h-4 w-4" />
+                    {selectedArticle.content.split(/\s+/).filter(w => w.length > 0).length} ord
+                  </span>
                 </div>
+                {(selectedArticle.article_length || selectedArticle.article_tone || selectedArticle.article_audience) && (
+                  <div className="flex flex-wrap items-center gap-2 mt-2">
+                    {selectedArticle.article_length && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-600 text-xs">
+                        {LENGTH_LABELS[selectedArticle.article_length] || selectedArticle.article_length}
+                      </span>
+                    )}
+                    {selectedArticle.article_tone && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-600 text-xs">
+                        {TONE_LABELS[selectedArticle.article_tone] || selectedArticle.article_tone}
+                      </span>
+                    )}
+                    {selectedArticle.article_audience && (
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-600 text-xs">
+                        For: {AUDIENCE_LABELS[selectedArticle.article_audience] || selectedArticle.article_audience}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="flex gap-2 mt-3">
                   <Button type="button" variant="outline" size="sm" onClick={copyArticle} className="rounded-lg text-xs">
                     <Copy className="h-3.5 w-3.5 mr-1.5" />
@@ -333,12 +431,27 @@ export default function ArticlesPage() {
                                     {selectedArticle.featured_image_attribution}
                                   </a>
                                 )}
-                                <Button type="button" variant="outline" size="sm" className="rounded-lg text-xs h-8" asChild>
-                                  <a href={selectedArticle.featured_image_url} target="_blank" rel="noopener noreferrer" download>
-                                    <Download className="h-3.5 w-3.5 mr-1.5" />
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={regenerateImage}
+                                    disabled={regeneratingImage}
+                                    className="inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer disabled:opacity-50"
+                                  >
+                                    <RefreshCw className={`h-3 w-3 ${regeneratingImage ? 'animate-spin' : ''}`} />
+                                    {regeneratingImage ? 'Henter nytt bilde...' : 'Ikke fornøyd? Generer et nytt bilde'}
+                                  </button>
+                                  <a 
+                                    href={selectedArticle.featured_image_url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer" 
+                                    download
+                                    className="inline-flex items-center gap-1 text-[11px] text-neutral-600 hover:text-neutral-900 transition-colors cursor-pointer"
+                                  >
+                                    <Download className="h-3 w-3" />
                                     Last ned
                                   </a>
-                                </Button>
+                                </div>
                               </div>
                             </div>
                           ) : (

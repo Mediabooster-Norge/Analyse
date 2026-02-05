@@ -669,6 +669,21 @@ function DashboardPageContent() {
         />
       )}
 
+      {/* Help section */}
+      <div className="text-center py-6 border-t border-neutral-200 mt-8">
+        <p className="text-sm text-neutral-500">
+          Trenger du hjelp med verktøyet?{' '}
+          <a 
+            href="https://mediabooster.no/kontakt" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="text-neutral-700 hover:text-neutral-900 underline cursor-pointer"
+          >
+            Kontakt oss
+          </a>
+        </p>
+      </div>
+
       <AISuggestionDialog
         open={suggestionSheetOpen}
         onOpenChange={setSuggestionSheetOpen}

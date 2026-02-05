@@ -21,7 +21,7 @@ export async function GET(
 
   const { data, error } = await supabase
     .from('generated_articles')
-    .select('id, title, content, website_url, website_name, meta_title, meta_description, featured_image_suggestion, featured_image_url, featured_image_attribution, created_at')
+    .select('*')
     .eq('id', id)
     .eq('user_id', user.id)
     .maybeSingle();
@@ -39,6 +39,54 @@ export async function GET(
   }
 
   return NextResponse.json(data);
+}
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  if (!id) {
+    return NextResponse.json({ error: 'Mangler artikkel-id' }, { status: 400 });
+  }
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: 'Du må være logget inn' }, { status: 401 });
+  }
+
+  const body = await request.json();
+  const { featured_image_url, featured_image_attribution } = body as {
+    featured_image_url?: string;
+    featured_image_attribution?: string;
+  };
+
+  // Only allow updating image fields for now
+  const updates: Record<string, string> = {};
+  if (featured_image_url) updates.featured_image_url = featured_image_url;
+  if (featured_image_attribution) updates.featured_image_attribution = featured_image_attribution;
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: 'Ingen felter å oppdatere' }, { status: 400 });
+  }
+
+  const { error } = await supabase
+    .from('generated_articles')
+    .update(updates)
+    .eq('id', id)
+    .eq('user_id', user.id);
+
+  if (error) {
+    console.error('generated-article patch error:', error);
+    return NextResponse.json(
+      { error: 'Kunne ikke oppdatere artikkel' },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ success: true });
 }
 
 export async function DELETE(

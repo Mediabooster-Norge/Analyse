@@ -261,6 +261,8 @@ export interface ArticleSuggestion {
  * Result from article generation: body + suggested meta and featured image
  */
 export interface GeneratedArticleResult {
+  /** Database ID of the saved article (if saved successfully) */
+  articleId?: string;
   title: string;
   article: string;
   metaTitle?: string;
@@ -274,4 +276,10 @@ export interface GeneratedArticleResult {
   featuredImageAttribution?: string;
   /** Photographer profile URL for attribution link (only in fresh response, not stored) */
   featuredImageProfileUrl?: string;
+  /** Article length setting: short, medium, long */
+  articleLength?: string;
+  /** Article tone setting: professional, casual, educational */
+  articleTone?: string;
+  /** Article audience setting: general, beginners, experts, business */
+  articleAudience?: string;
 }

@@ -18,6 +18,7 @@ import {
   PenLine,
   Loader2,
   Download,
+  RefreshCw,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
@@ -98,6 +99,7 @@ export function ArticlesTab({
   const [selectedTone, setSelectedTone] = useState<ArticleTone>('professional');
   const [selectedAudience, setSelectedAudience] = useState<ArticleAudience>('general');
   const [usedSettings, setUsedSettings] = useState<{ length: ArticleLength; tone: ArticleTone; audience: ArticleAudience } | null>(null);
+  const [regeneratingImage, setRegeneratingImage] = useState(false);
 
   // Rotate suggestion messages
   useEffect(() => {
@@ -137,6 +139,63 @@ export function ArticlesTab({
   ) => {
     setUsedSettings({ length: selectedLength, tone: selectedTone, audience: selectedAudience });
     fetchGenerateArticle(suggestion, index, { length: selectedLength, tone: selectedTone, audience: selectedAudience });
+  };
+
+  const regenerateImage = async () => {
+    if (!generatedArticleResult) return;
+    
+    // Use the search query from the article result, or fall back to the suggestion text
+    const searchQuery = generatedArticleResult.featuredImageSuggestion;
+    if (!searchQuery) {
+      toast.error('Ingen bildesøk tilgjengelig');
+      return;
+    }
+
+    setRegeneratingImage(true);
+    try {
+      const response = await fetch('/api/regenerate-image', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ searchQuery }),
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        toast.error(data.error || 'Kunne ikke hente nytt bilde');
+        return;
+      }
+
+      // Save the new image to the database if we have an article ID
+      if (generatedArticleResult.articleId) {
+        const saveResponse = await fetch(`/api/generated-articles/${generatedArticleResult.articleId}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            featured_image_url: data.featuredImageUrl,
+            featured_image_attribution: data.featuredImageAttribution,
+          }),
+        });
+
+        if (!saveResponse.ok) {
+          console.error('Failed to save image to database');
+        }
+      }
+
+      // Update the generated article result with the new image
+      setGeneratedArticle({
+        ...generatedArticleResult,
+        featuredImageUrl: data.featuredImageUrl,
+        featuredImageAttribution: data.featuredImageAttribution,
+        featuredImageProfileUrl: data.featuredImageProfileUrl,
+      });
+      
+      toast.success('Nytt bilde lagret');
+    } catch {
+      toast.error('Kunne ikke hente nytt bilde');
+    } finally {
+      setRegeneratingImage(false);
+    }
   };
 
   return (
@@ -410,6 +469,11 @@ export function ArticlesTab({
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700">
                   {AUDIENCE_OPTIONS.find(o => o.value === usedSettings.audience)?.label}
                 </span>
+                {generatedArticleResult?.article && (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700">
+                    {generatedArticleResult.article.split(/\s+/).filter(w => w.length > 0).length} ord
+                  </span>
+                )}
               </div>
             )}
             <div className="flex flex-wrap gap-2 mt-3">
@@ -455,16 +519,27 @@ export function ArticlesTab({
                                   {generatedArticleResult.featuredImageAttribution}
                                 </a>
                               )}
-                              <a
-                                href={generatedArticleResult.featuredImageUrl}
-                                download={`featured-image-${generatedArticleResult.title?.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() || 'article'}.jpg`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-[11px] text-neutral-600 hover:text-neutral-900 transition-colors"
-                              >
-                                <Download className="h-3 w-3" />
-                                Last ned
-                              </a>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  type="button"
+                                  onClick={regenerateImage}
+                                  disabled={regeneratingImage}
+                                  className="inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer disabled:opacity-50"
+                                >
+                                  <RefreshCw className={`h-3 w-3 ${regeneratingImage ? 'animate-spin' : ''}`} />
+                                  {regeneratingImage ? 'Henter nytt bilde...' : 'Ikke fornøyd? Generer et nytt bilde'}
+                                </button>
+                                <a
+                                  href={generatedArticleResult.featuredImageUrl}
+                                  download={`featured-image-${generatedArticleResult.title?.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() || 'article'}.jpg`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-[11px] text-neutral-600 hover:text-neutral-900 transition-colors cursor-pointer"
+                                >
+                                  <Download className="h-3 w-3" />
+                                  Last ned
+                                </a>
+                              </div>
                             </div>
                           </div>
                         )}

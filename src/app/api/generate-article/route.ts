@@ -241,7 +241,7 @@ Returner JSON med article, metaTitle, metaDescription, featuredImageSuggestion o
       );
     }
 
-    const { error: articleInsertError } = await supabase
+    const { data: insertedArticle, error: articleInsertError } = await supabase
       .from('generated_articles')
       .insert({
         user_id: user.id,
@@ -254,7 +254,12 @@ Returner JSON med article, metaTitle, metaDescription, featuredImageSuggestion o
         featured_image_suggestion: featuredImageSuggestion || null,
         featured_image_url: featuredImageUrl || null,
         featured_image_attribution: featuredImageAttribution || null,
-      });
+        article_length: length || 'medium',
+        article_tone: tone || 'professional',
+        article_audience: audience || 'general',
+      })
+      .select('id')
+      .single();
 
     if (articleInsertError) {
       console.error('generated_articles insert error:', articleInsertError);
@@ -265,6 +270,7 @@ Returner JSON med article, metaTitle, metaDescription, featuredImageSuggestion o
 
     return NextResponse.json({
       success: true,
+      articleId: insertedArticle?.id,
       title: title.trim(),
       article,
       metaTitle: metaTitle || undefined,
@@ -274,6 +280,9 @@ Returner JSON med article, metaTitle, metaDescription, featuredImageSuggestion o
       featuredImageDownloadUrl: featuredImageDownloadUrl || undefined,
       featuredImageAttribution: featuredImageAttribution || undefined,
       featuredImageProfileUrl: featuredImageProfileUrl || undefined,
+      articleLength: length || 'medium',
+      articleTone: tone || 'professional',
+      articleAudience: audience || 'general',
       remaining,
       limit,
     });
