@@ -93,12 +93,8 @@ function LoginPageContent() {
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <Label htmlFor="password">Passord</Label>
-              <Link
-                href="/forgot-password"
-                className="text-sm text-neutral-500 hover:text-neutral-900 hover:underline"
-              >
-                Glemt passord?
-              </Link>
+              {/* Glemt passord skjult inntil eget domene er koblet (Resend onboarding@resend.dev kan kun sende til Resend-konto-epost) */}
+              {/* <Link href="/forgot-password" className="text-sm text-neutral-500 hover:text-neutral-900 hover:underline">Glemt passord?</Link> */}
             </div>
             <Input
               id="password"

@@ -209,11 +209,6 @@ export function OverviewTab({
                   <>
                     <ScoreRing score={result.pageSpeedResults.performance} label="Speed" size="md" showStatus title={`Hastighet: ${result.pageSpeedResults.performance} – PageSpeed (innlasting, ytelse)`} />
                     <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Hastighet</p>
-                    {!result.pageSpeedResults.isEstimate && (
-                      <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[8px] min-[401px]:text-[9px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
-                        Full PageSpeed
-                      </span>
-                    )}
                   </>
                 ) : (
                   <>
@@ -703,7 +698,7 @@ export function OverviewTab({
                 }
                 recommendation={
                   loadingPageSpeed ? 'Vent…' : result.pageSpeedResults
-                    ? result.pageSpeedResults.performance >= 90 ? 'Utmerket' : result.pageSpeedResults.performance >= 50 ? 'Kan forbedres' : 'Kritisk'
+                    ? result.pageSpeedResults.performance >= 90 ? 'Utmerket' : result.pageSpeedResults.performance >= 50 ? 'Kan forbedres – score kan variere mellom målinger' : 'Kritisk – score kan variere mellom målinger'
                     : 'Ikke tilgjengelig'
                 }
                 status={

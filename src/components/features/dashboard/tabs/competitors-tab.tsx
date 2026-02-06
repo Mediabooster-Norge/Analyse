@@ -19,7 +19,6 @@ import {
   Sparkles,
   TrendingUp,
   Zap,
-  Clock,
 } from 'lucide-react';
 
 // Feature flag: Set to true when AI visibility is ready
@@ -248,6 +247,11 @@ export function CompetitorsTab({
               );
             })()}
 
+            {/* Estimate & variance info */}
+            <p className="text-xs text-neutral-500 leading-relaxed px-1">
+              Hastighetsscoren for konkurrenter er estimert basert på responstid, HTML-størrelse, render-blocking ressurser, lazy loading og komprimering. Din egen score bruker Google PageSpeed Insights. Hastighetsscore kan variere mellom målinger.
+            </p>
+
             <div className="overflow-x-auto -mx-3 max-[400px]:-mx-3 min-[401px]:-mx-4 sm:mx-0 scrollbar-hide touch-pan-x">
               <div className="min-w-[580px] max-[400px]:min-w-[520px] px-3 max-[400px]:px-3 min-[401px]:px-4 sm:px-0">
                 <div className="overflow-hidden rounded-xl border border-neutral-200">
@@ -300,7 +304,6 @@ export function CompetitorsTab({
                               Speed
                               {competitorSort?.column === 'speed' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />) : <ArrowUpDown className="h-3 w-3 text-neutral-300" />}
                             </span>
-                            <span className="text-[9px] font-normal text-neutral-400">Din: PageSpeed · Konk.: est.</span>
                           </button>
                         </th>
                         {AI_VISIBILITY_ENABLED && (
@@ -492,7 +495,7 @@ export function CompetitorsTab({
                                   <div className="h-full rounded-full bg-neutral-400" style={{ width: `${competitor.results.pageSpeedResults.performance}%` }} />
                                 </div>
                                 {competitor.results.pageSpeedResults?.isEstimate && (
-                                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 font-medium">Estimat</span>
+                                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 font-medium">Estimat</span>
                                 )}
                               </div>
                             ) : (

@@ -21,7 +21,6 @@ import {
   FileText,
   Layers,
   Sparkles,
-  LogOut,
   Save,
   Loader2,
   CheckCircle2,
@@ -139,15 +138,6 @@ export default function SettingsPage() {
     }
     
     setSaving(false);
-  };
-
-  const handleSignOut = async () => {
-    const supabase = createClient();
-    // Clear session storage cache
-    sessionStorage.clear();
-    await supabase.auth.signOut();
-    router.push('/');
-    router.refresh();
   };
 
   if (loading) {
@@ -502,30 +492,6 @@ export default function SettingsPage() {
         </Card>
       )}
 
-      {/* Logout */}
-      <Card className="border-neutral-200">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <LogOut className="h-5 w-5 text-neutral-500" />
-            <CardTitle className="text-neutral-900">Logg ut</CardTitle>
-          </div>
-          <CardDescription className="text-neutral-500">Avslutt økten din</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 bg-neutral-50 rounded-lg border border-neutral-100">
-            <div>
-              <p className="font-medium text-neutral-900">Logg ut av kontoen</p>
-              <p className="text-sm text-neutral-500">
-                Du vil bli logget ut og sendt til forsiden
-              </p>
-            </div>
-            <Button variant="outline" onClick={handleSignOut} className="border-neutral-300 hover:bg-neutral-100">
-              <LogOut className="mr-2 h-4 w-4" />
-              Logg ut
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 }

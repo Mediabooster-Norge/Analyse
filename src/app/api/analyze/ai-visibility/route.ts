@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       searchQueries.map(async (query) => {
         try {
           const response = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
+            model: 'gpt-5.2',
             messages: [
               {
                 role: 'system',
@@ -65,8 +65,7 @@ Hold svaret kort og konsist (2-3 setninger).`,
                 content: query,
               },
             ],
-            max_tokens: 200,
-            temperature: 0.3,
+            max_completion_tokens: 400, // GPT-5.2 has no reasoning overhead, but buffer
           });
 
           const content = response.choices[0]?.message?.content || '';

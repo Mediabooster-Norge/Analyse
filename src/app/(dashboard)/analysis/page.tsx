@@ -22,6 +22,8 @@ import {
   Trash2,
   AlertTriangle,
   Zap,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -35,6 +37,7 @@ interface AnalysisRaw {
   seo_results: { score: number } | null;
   content_results: { score: number } | null;
   security_results: { score: number } | null;
+  pagespeed_results: { performance: number } | null;
   created_at: string;
   status: string;
   website_url: string | null;
@@ -48,6 +51,7 @@ interface Analysis {
   seo_score: number;
   content_score: number;
   security_score: number;
+  performance_score: number | null;
   created_at: string;
   status: string;
 }
@@ -63,6 +67,18 @@ export default function AnalysisPage() {
   const [rerunElapsedTime, setRerunElapsedTime] = useState(0);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; url: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [page, setPage] = useState(1);
+
+  const ANALYSES_PER_PAGE = 15;
+  const totalPages = Math.max(1, Math.ceil(analyses.length / ANALYSES_PER_PAGE));
+  const paginatedAnalyses = analyses.slice((page - 1) * ANALYSES_PER_PAGE, page * ANALYSES_PER_PAGE);
+  const from = analyses.length === 0 ? 0 : (page - 1) * ANALYSES_PER_PAGE + 1;
+  const to = Math.min(page * ANALYSES_PER_PAGE, analyses.length);
+
+  // Reset to page 1 if current page is beyond last page (e.g. after deleting items)
+  useEffect(() => {
+    if (totalPages > 0 && page > totalPages) setPage(1);
+  }, [analyses.length, totalPages, page]);
 
   const RERUN_STEPS = [
     { label: 'Henter nettside', description: 'Laster inn og scraper innhold fra nettsiden', duration: '~5s', icon: Globe },
@@ -70,6 +86,7 @@ export default function AnalysisPage() {
     { label: 'Sjekker sikkerhet', description: 'Tester SSL-sertifikat og sikkerhetsheaders', duration: '~15s', icon: Shield },
     { label: 'Måler ytelse', description: 'Henter Google PageSpeed-score og Core Web Vitals', duration: '~30s', icon: Zap },
     { label: 'Genererer rapport', description: 'AI sammenligner resultater og lager anbefalinger', duration: '~20s', icon: Sparkles },
+    { label: 'Hastighet og konkurrenter', description: 'PageSpeed og konkurrentsammenligning', duration: '~30s', icon: Zap },
   ];
 
   // Timer og steg-fremdrift mens «Kjør på nytt» kjører
@@ -118,7 +135,7 @@ export default function AnalysisPage() {
       // Hent analyser på user_id (ikke company_id)
       const { data: analysesData, error } = await supabase
         .from('analyses')
-        .select('id, overall_score, seo_results, content_results, security_results, created_at, status, website_url, website_name')
+        .select('id, overall_score, seo_results, content_results, security_results, pagespeed_results, created_at, status, website_url, website_name')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
 
@@ -134,6 +151,7 @@ export default function AnalysisPage() {
           seo_score: a.seo_results?.score || 0,
           content_score: a.content_results?.score || 0,
           security_score: a.security_results?.score || 0,
+          performance_score: a.pagespeed_results?.performance ?? null,
           created_at: a.created_at,
           status: a.status,
         }));
@@ -188,8 +206,24 @@ export default function AnalysisPage() {
         return;
       }
 
+      const analysisId = data.analysisId as string | undefined;
+      if (analysisId) {
+        try {
+          const speedRes = await fetch('/api/analyze/pagespeed', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ analysisId }),
+          });
+          if (!speedRes.ok) {
+            console.warn('PageSpeed-måling feilet ved rerun, analysen er lagret uten hastighet');
+          }
+        } catch {
+          console.warn('PageSpeed-måling feilet ved rerun, analysen er lagret uten hastighet');
+        }
+      }
+
       toast.success('Analysen er ferdig.');
-      router.push(`/dashboard?analysisId=${data.analysisId}`);
+      router.push(`/dashboard?analysisId=${analysisId ?? data.analysisId}`);
     } catch (error) {
       const msg = error instanceof Error ? error.message : '';
       const isTimeoutOrNetwork = /timeout|timed out|network|failed to fetch|load failed/i.test(msg);
@@ -319,120 +353,126 @@ export default function AnalysisPage() {
     <div className="space-y-8">
       {/* Modal mens «Kjør på nytt» kjører */}
       <Dialog open={!!rerunningAnalysis} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0" showCloseButton={false}>
+        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 mx-1 min-[401px]:mx-2 sm:mx-auto rounded-xl w-[calc(100vw-0.5rem)] min-[401px]:w-[calc(100vw-1rem)] sm:w-full max-w-[95vw]" showCloseButton={false}>
           {rerunningAnalysis && (
             <>
-              <div className="p-6 pb-0">
-                <div className="flex items-center gap-3 mb-1">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-neutral-900 to-neutral-700 flex items-center justify-center">
-                    {(() => {
-                      const StepIcon = RERUN_STEPS[rerunStep]?.icon || Loader2;
-                      return <StepIcon className="h-5 w-5 text-white animate-pulse" />;
-                    })()}
+              {/* Header – samme som original analyse-dialog */}
+              <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-9 sm:w-10 h-9 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
+                    <Loader2 className="h-4 sm:h-5 w-4 sm:w-5 text-neutral-600 animate-spin" />
                   </div>
-                  <div>
+                  <div className="flex-1 min-w-0">
                     <DialogHeader className="p-0 space-y-0">
-                      <DialogTitle className="text-lg">Kjører analyse på nytt</DialogTitle>
-                      <DialogDescription className="text-sm">
-                        {RERUN_STEPS[rerunStep]?.label} · SEO, sikkerhet, innhold og bilderelevans
+                      <DialogTitle className="text-sm sm:text-base font-semibold text-neutral-900">
+                        Kjører analyse på nytt
+                      </DialogTitle>
+                      <DialogDescription className="text-xs text-neutral-500 truncate">
+                        {rerunningAnalysis.url}
                       </DialogDescription>
                     </DialogHeader>
                   </div>
-                  <div className="ml-auto flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-lg bg-neutral-100 text-neutral-700 text-sm font-medium tabular-nums">
-                      {Math.floor(rerunElapsedTime / 60)}:{(rerunElapsedTime % 60).toString().padStart(2, '0')}
-                    </span>
-                  </div>
                 </div>
               </div>
-              <div className="space-y-5 p-6 pt-4">
-                <div className="p-4 bg-neutral-50 rounded-xl border border-neutral-200">
-                  <div className="flex items-center gap-3">
-                    <Globe className="h-5 w-5 text-neutral-400" />
-                    <span className="font-medium text-neutral-900 truncate">{rerunningAnalysis.url}</span>
+
+              <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
+                {/* Nåværende steg – samme boks som original */}
+                <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-3 sm:p-4">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="relative w-12 sm:w-14 h-12 sm:h-14 shrink-0">
+                      <svg className="w-12 sm:w-14 h-12 sm:h-14 -rotate-90" viewBox="0 0 56 56">
+                        <circle cx="28" cy="28" r="24" fill="none" stroke="#e5e5e5" strokeWidth="3" />
+                        <circle
+                          cx="28"
+                          cy="28"
+                          r="24"
+                          fill="none"
+                          stroke="#737373"
+                          strokeWidth="3"
+                          strokeLinecap="round"
+                          className="transition-all duration-700 ease-out"
+                          strokeDasharray={`${((rerunStep + 1) / RERUN_STEPS.length) * 150.8} 150.8`}
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="text-neutral-700 text-xs sm:text-sm font-semibold">
+                          {rerunStep + 1}/{RERUN_STEPS.length}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="text-neutral-900 text-sm sm:text-base font-medium flex items-center gap-2">
+                          {RERUN_STEPS[rerunStep]?.label}
+                          <span className="inline-flex gap-0.5">
+                            <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                            <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                            <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                          </span>
+                        </p>
+                      </div>
+                      <p className="text-neutral-500 text-xs sm:text-sm hidden sm:block">
+                        {RERUN_STEPS[rerunStep]?.description}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-white border border-neutral-200">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                      <span className="text-xs sm:text-sm font-medium text-neutral-700 tabular-nums">
+                        {Math.floor(rerunElapsedTime / 60)}:{(rerunElapsedTime % 60).toString().padStart(2, '0')}
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-6 p-4 rounded-xl bg-neutral-50 border border-neutral-200">
-                  <div className="relative w-14 h-14 shrink-0">
-                    <div className="absolute inset-0 rounded-full border-2 border-neutral-200" />
-                    <svg className="absolute inset-0 w-14 h-14 -rotate-90" viewBox="0 0 56 56">
-                      <circle
-                        cx="28"
-                        cy="28"
-                        r="25"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        className="text-neutral-900 transition-all duration-500"
-                        strokeDasharray={`${((rerunStep + 1) / RERUN_STEPS.length) * 157} 157`}
-                      />
-                    </svg>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-neutral-900">{RERUN_STEPS[rerunStep]?.label}</p>
-                    <p className="text-sm text-neutral-500 mt-0.5">{RERUN_STEPS[rerunStep]?.description}</p>
-                  </div>
-                </div>
-
-                <div className="rounded-xl border border-neutral-200 overflow-hidden">
-                  <div className="relative">
-                    <div className="absolute left-5 top-0 bottom-0 w-px bg-neutral-200" />
-                    <div
-                      className="absolute left-5 top-0 w-px bg-neutral-900 transition-all duration-500"
-                      style={{ height: `${(rerunStep / Math.max(1, RERUN_STEPS.length - 1)) * 100}%` }}
-                    />
-                    <div className="divide-y divide-neutral-100">
-                      {RERUN_STEPS.map((step, index) => {
-                        const StepIcon = step.icon;
-                        const isComplete = index < rerunStep;
-                        const isCurrent = index === rerunStep;
-                        const isPending = index > rerunStep;
-                        return (
+                {/* Steg-liste – samme styling som original */}
+                <div className="rounded-xl border border-neutral-200 overflow-hidden bg-white">
+                  <div className="divide-y divide-neutral-100">
+                    {RERUN_STEPS.map((step, index) => {
+                      const StepIcon = step.icon;
+                      const isComplete = index < rerunStep;
+                      const isCurrent = index === rerunStep;
+                      return (
+                        <div
+                          key={index}
+                          className={`flex items-center gap-3 px-4 py-2.5 transition-all duration-300 ${isCurrent ? 'bg-neutral-50 border-l-2 border-l-neutral-400 animate-pulse' : ''}`}
+                        >
                           <div
-                            key={index}
-                            className={`relative flex items-center gap-4 px-4 py-3 transition-colors ${isCurrent ? 'bg-neutral-50' : ''}`}
+                            className={`relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all duration-300 ${
+                              isComplete ? 'bg-green-100' : isCurrent ? 'bg-neutral-200' : 'bg-neutral-100'
+                            }`}
                           >
-                            <div
-                              className={`relative z-10 w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
-                                isComplete ? 'bg-neutral-900' : isCurrent ? 'bg-neutral-900' : 'bg-neutral-100'
-                              }`}
-                            >
-                              {isComplete ? (
-                                <CheckCircle2 className="h-5 w-5 text-white" />
-                              ) : isCurrent ? (
-                                <StepIcon className="h-5 w-5 text-white animate-pulse" />
-                              ) : (
-                                <StepIcon className={`h-5 w-5 ${isPending ? 'text-neutral-400' : 'text-neutral-600'}`} />
-                              )}
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className={`font-medium text-sm ${isComplete ? 'text-neutral-700' : isCurrent ? 'text-neutral-900' : 'text-neutral-400'}`}>
-                                {step.label}
-                              </p>
-                              <p className="text-xs text-neutral-500">{step.description}</p>
-                            </div>
-                            <span className="text-xs font-medium text-neutral-400 tabular-nums shrink-0">
-                              {isComplete ? '✓' : step.duration}
-                            </span>
+                            {isComplete ? (
+                              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                            ) : isCurrent ? (
+                              <>
+                                <StepIcon className="h-3.5 w-3.5 text-neutral-700" />
+                                <span className="absolute inset-0 rounded-md border border-neutral-300 animate-pulse" />
+                              </>
+                            ) : (
+                              <StepIcon className="h-3.5 w-3.5 text-neutral-400" />
+                            )}
                           </div>
-                        );
-                      })}
-                    </div>
+                          <div className="flex-1 min-w-0">
+                            <p className={`text-sm ${
+                              isComplete ? 'text-green-700 font-medium' : isCurrent ? 'text-neutral-900 font-medium' : 'text-neutral-400'
+                            }`}>
+                              {step.label}
+                            </p>
+                          </div>
+                          <span className={`text-xs tabular-nums shrink-0 ${
+                            isComplete ? 'text-green-600' : isCurrent ? 'text-neutral-600' : 'text-neutral-300'
+                          }`}>
+                            {isComplete ? '✓' : isCurrent ? 'Pågår' : step.duration}
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-200">
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg bg-neutral-200 flex items-center justify-center">
-                      <Clock className="h-4 w-4 text-neutral-600" />
-                    </div>
-                    <p className="text-sm text-neutral-600">
-                      <span className="font-medium text-neutral-900">Analysen kjører.</span> Vanligvis ferdig under ett minutt.
-                    </p>
-                  </div>
-                </div>
+                <p className="text-center text-xs text-neutral-400">
+                  Vanligvis 1–2 minutter
+                </p>
               </div>
             </>
           )}
@@ -523,8 +563,9 @@ export default function AnalysisPage() {
           </div>
         </div>
       ) : (
+        <>
         <div className="space-y-3">
-          {analyses.map((analysis) => (
+          {paginatedAnalyses.map((analysis) => (
             <div key={analysis.id} className="rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5 hover:border-neutral-300 transition-all overflow-hidden">
               <div className="flex flex-col gap-4">
                 {/* Top row: Score + URL */}
@@ -570,6 +611,15 @@ export default function AnalysisPage() {
                     <span className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium ${getScoreBadge(analysis.security_score)}`}>
                       Sikkerhet {analysis.security_score}
                     </span>
+                    {typeof analysis.performance_score === 'number' ? (
+                      <span className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium ${getScoreBadge(analysis.performance_score)}`}>
+                        Hastighet {analysis.performance_score}
+                      </span>
+                    ) : (
+                      <span className="px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-[10px] sm:text-xs font-medium bg-neutral-100 text-neutral-500">
+                        Hastighet —
+                      </span>
+                    )}
                   </div>
 
                   {/* Actions */}
@@ -610,6 +660,40 @@ export default function AnalysisPage() {
             </div>
           ))}
         </div>
+
+        {analyses.length > ANALYSES_PER_PAGE && (
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-neutral-200">
+            <p className="text-sm text-neutral-500">
+              Viser {from}–{to} av {analyses.length} analyser
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-lg border-neutral-200"
+                disabled={page <= 1}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                <ChevronLeft className="h-4 w-4 mr-0.5" />
+                Forrige
+              </Button>
+              <span className="text-sm text-neutral-600 px-2 tabular-nums">
+                Side {page} av {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-9 rounded-lg border-neutral-200"
+                disabled={page >= totalPages}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              >
+                Neste
+                <ChevronRight className="h-4 w-4 ml-0.5" />
+              </Button>
+            </div>
+          </div>
+        )}
+        </>
       )}
 
       {/* CTA: Premium-oppgradering for gratis, Kontakt Mediabooster for premium */}

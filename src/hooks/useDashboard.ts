@@ -110,6 +110,7 @@ interface DashboardState {
   // Update states
   updatingCompetitors: boolean;
   updatingKeywords: boolean;
+
 }
 
 const defaultSeoResults = {
@@ -195,7 +196,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     articleSuggestions: null,
     loadingArticleSuggestions: false,
     articleSuggestionsSavedAt: null,
-    remainingArticleGenerations: 0,
+    remainingArticleGenerations: ARTICLE_GENERATIONS_LIMIT, // Start with full limit, updated from DB
     articleGenerationsLimit: ARTICLE_GENERATIONS_LIMIT,
     generatedArticleResult: null,
     generatingArticleIndex: null,
@@ -233,6 +234,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             remainingAnalyses: data.remainingAnalyses ?? 2,
             remainingCompetitorUpdates: data.remainingCompetitorUpdates ?? 2,
             remainingKeywordUpdates: data.remainingKeywordUpdates ?? 2,
+            remainingArticleGenerations: data.remainingArticleGenerations ?? state.remainingArticleGenerations,
+            articleGenerationsLimit: data.articleGenerationsLimit ?? state.articleGenerationsLimit,
             currentAnalysisId: data.currentAnalysisId || null,
             companyId: data.companyId || null,
             competitorUrls: cachedCompetitors,
@@ -431,6 +434,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           remainingAnalyses: state.remainingAnalyses,
           remainingCompetitorUpdates: state.remainingCompetitorUpdates,
           remainingKeywordUpdates: state.remainingKeywordUpdates,
+          remainingArticleGenerations: state.remainingArticleGenerations,
+          articleGenerationsLimit: state.articleGenerationsLimit,
           currentAnalysisId: state.currentAnalysisId,
           companyId: state.companyId,
           timestamp: Date.now(),
@@ -642,11 +647,15 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       });
       if (!willFetchPageSpeed && !willFetchCompetitors) toast.success('Analyse fullført!');
 
+      const DIALOG_CLOSE_ANIMATION_MS = 400;
       const tryCloseDialog = () => {
         setState((prev) => {
           if (prev.loadingPageSpeed || prev.loadingCompetitors) return prev;
           return { ...prev, dialogOpen: false, analyzing: false };
         });
+      };
+      const toastAfterDialogClosed = (message: string) => {
+        setTimeout(() => toast.success(message), DIALOG_CLOSE_ANIMATION_MS);
       };
 
       if (analysisId) {
@@ -671,13 +680,13 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
               }));
               tryCloseDialog();
               if (!willFetchCompetitors) {
-                toast.success(pageSpeedResults ? 'Analyse fullført med hastighetsmåling!' : 'Analyse fullført!');
+                toastAfterDialogClosed(pageSpeedResults ? 'Analyse fullført med hastighetsmåling!' : 'Analyse fullført!');
               }
             })
             .catch(() => {
               updateState({ loadingPageSpeed: false });
               tryCloseDialog();
-              if (!willFetchCompetitors) toast.success('Analyse fullført (hastighet kunne ikke måles)');
+              if (!willFetchCompetitors) toastAfterDialogClosed('Analyse fullført (hastighet kunne ikke måles)');
             });
         }
 
@@ -715,7 +724,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
               : willFetchPageSpeed
                 ? 'Analyse fullført med hastighetsmåling!'
                 : 'Analyse fullført!';
-            toast.success(msg);
+            toastAfterDialogClosed(msg);
           })();
         }
       }
@@ -759,13 +768,19 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       if (!response.ok) throw new Error('Kunne ikke hente forslag');
 
       const data = await response.json();
+      console.log('[suggest-keywords] API response:', { 
+        keywordsCount: data.keywords?.length, 
+        currentCount: state.keywords.length,
+        limit: FREE_KEYWORD_LIMIT 
+      });
       if (data.keywords && Array.isArray(data.keywords)) {
-        const normalized = data.keywords.map((k: string) => k.toLowerCase().trim());
-        const newKeywords = normalized
-          .filter((k: string) => !state.keywords.includes(k))
-          .slice(0, FREE_KEYWORD_LIMIT - state.keywords.length);
-        updateState({ keywords: [...state.keywords, ...newKeywords] });
-        toast.success(`${newKeywords.length} nøkkelord lagt til`);
+        const normalized: string[] = data.keywords.map((k: unknown) => String(k).toLowerCase().trim());
+        const uniqueKeywords = [...new Set(normalized)].slice(0, FREE_KEYWORD_LIMIT);
+        updateState({ keywords: uniqueKeywords });
+        toast.success(`${uniqueKeywords.length} nøkkelord lagt til`);
+      } else {
+        console.error('[suggest-keywords] Unexpected response format:', data);
+        toast.error('Fikk uventet format fra AI');
       }
     } catch {
       toast.error('Kunne ikke hente forslag til nøkkelord');

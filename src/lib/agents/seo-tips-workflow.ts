@@ -67,7 +67,7 @@ Når status er "warning" eller "bad":
 5. Tilpass tipsene til nettsidens virksomhet: bruk context.siteDescription, context.pageSignals, context.industry og context.companyName. F.eks. ved videoproduksjon: bruk "videoproduksjon", "video", "innhold", "reklamefilm" i eksempler; ved webdesign: "webdesign", "nettsider". Ikke bruk generiske "webdesign og nettsider" eller "Offisiell nettside" med mindre det faktisk står i context.
 6. For element "Sidetittel" eller "title": Eksempel-titteler MÅ beskrive virksomheten. Bruk pageSignals (H1, meta description) og siteDescription for å finne ut hva nettsiden handler om. F.eks. videoproduksjon og innhold: "Videoproduksjon og innhold | [Merkenavn]" eller "[Merkenavn] – Reklamefilm og videoproduksjon". ALDRI generiske titteler som "Offisiell nettside for [domene]" – bruk i stedet virksomhetsbeskrivelse (videoproduksjon, innhold, tjenester, osv.).
 7. Respekter nøkkelnavnene nøyaktig: summary, problem, suggestions, quickWin, title, description, priority, example.`,
-  model: 'gpt-5.2-chat-latest',
+  model: 'gpt-5.2',
   outputType: SEOTipsOutputSchema,
   modelSettings: {
     store: true,

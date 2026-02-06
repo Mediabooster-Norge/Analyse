@@ -130,14 +130,43 @@ ${context?.url ? `Nettside: ${context.url}` : ''}
 VIKTIG: Fokuser forslagene på det spesifikke problemet som er nevnt. Gi 2-3 konkrete forslag for å løse problemet.`;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      temperature: 0.7,
-      max_tokens: 1000,
-      response_format: { type: 'json_object' },
+      max_completion_tokens: 3000, // GPT-5 reasoning tokens (~500) + output (~1000)
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'seo_suggestion',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              problem: { type: ['string', 'null'] },
+              summary: { type: 'string' },
+              suggestions: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    title: { type: 'string' },
+                    description: { type: 'string' },
+                    priority: { type: 'string' },
+                    example: { type: ['string', 'null'] },
+                  },
+                  required: ['title', 'description', 'priority', 'example'],
+                  additionalProperties: false,
+                },
+              },
+              quickWin: { type: 'string' },
+            },
+            required: ['problem', 'summary', 'suggestions', 'quickWin'],
+            additionalProperties: false,
+          },
+        },
+      },
     });
 
     const content = response.choices[0].message.content;

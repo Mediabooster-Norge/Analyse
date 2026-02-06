@@ -55,6 +55,7 @@ import {
   User as UserIcon,
   PenLine,
 } from 'lucide-react';
+import { HeroShapes, SectionShapes, IllustrationShape } from '@/components/landing/hero-shapes';
 
 
 // Score Ring Component (same as dashboard)
@@ -356,7 +357,8 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
+    <div className="min-h-screen bg-white overflow-x-hidden hide-decorative-shapes">
+      {/* Fjern "hide-decorative-shapes" for å vise dekorative former igjen */}
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-200/40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
@@ -389,8 +391,20 @@ export default function LandingPage() {
 
       {/* Hero Section - Centered with Dashboard Demo */}
       <section className="pt-20 sm:pt-24 md:pt-28 relative overflow-hidden">
+        {/* Dekorative former – direkte i seksjonen, bak innholdet */}
+        <div
+          className="absolute inset-0 z-0 overflow-hidden pointer-events-none"
+          style={{
+            maskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 80%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 50%, transparent 80%)',
+          }}
+        >
+          <HeroShapes />
+        </div>
+
         {/* Hero tekst + dashboard – bakgrunn stopper midt i dashboard-fremvisningen */}
-        <div className="relative">
+        <div className="relative z-10">
+          {/* Gradient-blur bakgrunn (med mask) */}
           <div
             className="absolute inset-0 -z-10 overflow-hidden rounded-b-2xl sm:rounded-b-3xl pointer-events-none"
             style={{
@@ -402,7 +416,7 @@ export default function LandingPage() {
             <div className="absolute bottom-0 left-0 w-[280px] sm:w-[400px] h-[280px] sm:h-[400px] rounded-full bg-gradient-to-tr from-neutral-100/25 via-transparent to-transparent blur-[80px] sm:blur-[100px]" />
           </div>
 
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 relative z-10">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 relative">
             {/* Hero Text – strekene er her og går helt opp til header og ned til horisontallinjen */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -423,7 +437,7 @@ export default function LandingPage() {
             <p className="text-base sm:text-lg text-neutral-500 mb-4 sm:mb-6 max-w-xl mx-auto px-1 leading-relaxed">
                 Helsesjekk av nettsiden: SEO, sikkerhet, innhold og hastighet – med konkrete AI-anbefalinger i én rapport.
               </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center sm:ml-2 md:ml-3">
                 {user ? (
                   <Button size="lg" className="h-10 sm:h-12 px-6 sm:px-8 w-full sm:w-auto bg-neutral-900 hover:bg-neutral-800 text-sm sm:text-base" asChild>
                     <Link href="/dashboard">
@@ -867,24 +881,24 @@ export default function LandingPage() {
                   <div className="grid md:grid-cols-2 gap-3">
                     {[
                       { 
-                        title: 'Slik optimaliserer du meta description for bedre CTR', 
+                        title: 'Hvordan velge riktig webutvikler for din bedrift i 2026', 
                         priority: 'høy',
-                        rationale: 'Analysen viser at meta description mangler. En god beskrivelse kan øke klikkraten betydelig.'
+                        rationale: 'Nettsiden mangler innhold som treffer kunder som er i ferd med å velge leverandør. Et slikt innlegg styrker tillit og fanger relevante søk.'
                       },
                       { 
-                        title: '5 tips for å øke innholdsmengden uten å miste kvalitet', 
+                        title: 'Hva koster et nettsted? Komplett prisguide for norske bedrifter', 
                         priority: 'høy',
-                        rationale: 'Med kun 847 ord har siden for lite innhold. Google foretrekker mer omfattende artikler.'
+                        rationale: 'Prisrelaterte søk har høy kjøpsintensjon. Nettsiden har lite innhold som svarer på dette, så en prisguide kan trekke kjøpsklare besøkende.'
                       },
                       { 
-                        title: 'Hvorfor alt-tekst på bilder er viktig for SEO', 
+                        title: 'Derfor bør bedriften din investere i SEO i 2026', 
                         priority: 'medium',
-                        rationale: '3 bilder mangler alt-tekst. Dette påvirker både SEO og tilgjengelighet.'
+                        rationale: 'Konkurrentene har utdatert eller tynt innhold om SEO. Et innholdsgap du kan fylle og rangere på.'
                       },
                       { 
-                        title: 'Guide til strukturert data for lokale bedrifter', 
-                        priority: 'lav',
-                        rationale: 'Schema markup kan øke synligheten i søkeresultater med rich snippets.'
+                        title: 'Slik får du flere henvendelser fra nettsiden din', 
+                        priority: 'medium',
+                        rationale: 'Analysen viser svake CTA-er og lav konverteringsrate. Et innlegg som underbygger forbedringene med konkrete råd gir mening.'
                       },
                     ].map((article, i) => (
                       <div key={i} className="p-3 bg-white rounded-xl border border-neutral-200 hover:border-neutral-300 transition-colors">
@@ -1029,10 +1043,10 @@ export default function LandingPage() {
         <div className="absolute right-0 top-0 bottom-0 w-16 sm:w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none" />
         
         {/* Row 1 - scrolling left */}
-        <div className="relative mb-3 sm:mb-4">
+        <div className="relative mb-2 sm:mb-4">
           <div className="flex animate-scroll-left">
             {[...Array(2)].map((_, setIndex) => (
-              <div key={setIndex} className="flex shrink-0 items-center gap-3 sm:gap-4 px-1.5 sm:px-2">
+              <div key={setIndex} className="flex shrink-0 items-center gap-2 sm:gap-4 px-1 sm:px-2">
                 {[
                   { quote: "Fikset alle SEO-feil på en time. Veldig fornøyd!", name: "Martin", role: "Daglig leder", color: "bg-blue-100 text-blue-500" },
                   { quote: "Endelig en analyse jeg faktisk forstår og kan bruke.", name: "Lise", role: "Markedsfører", color: "bg-violet-100 text-violet-500" },
@@ -1040,12 +1054,12 @@ export default function LandingPage() {
                   { quote: "AI-tipsene var overraskende presise og nyttige.", name: "Camilla", role: "Markedssjef", color: "bg-amber-100 text-amber-500" },
                   { quote: "Beste SEO-verktøyet jeg har prøvd så langt.", name: "Jonas", role: "Utvikler", color: "bg-rose-100 text-rose-500" },
                 ].map((t, i) => (
-                  <div key={`${setIndex}-${i}`} className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 transition-colors whitespace-nowrap">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${t.color.split(' ')[0]}`}>
-                      <UserIcon className={`w-4 h-4 ${t.color.split(' ')[1]}`} />
+                  <div key={`${setIndex}-${i}`} className="flex items-center gap-2 sm:gap-3 px-2 py-1.5 sm:px-4 sm:py-2.5 rounded-md sm:rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 transition-colors whitespace-nowrap">
+                    <div className={`w-5 h-5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shrink-0 ${t.color.split(' ')[0]}`}>
+                      <UserIcon className={`w-3 h-3 sm:w-4 sm:h-4 ${t.color.split(' ')[1]}`} />
                     </div>
-                    <span className="text-sm text-neutral-600">&ldquo;{t.quote}&rdquo;</span>
-                    <span className="text-xs text-neutral-400 border-l border-neutral-200 pl-3">{t.name}, {t.role}</span>
+                    <span className="text-xs sm:text-sm text-neutral-600">&ldquo;{t.quote}&rdquo;</span>
+                    <span className="text-[10px] sm:text-xs text-neutral-400 border-l border-neutral-200 pl-2 sm:pl-3">{t.name}, {t.role}</span>
                   </div>
                 ))}
               </div>
@@ -1054,10 +1068,10 @@ export default function LandingPage() {
         </div>
 
         {/* Row 2 - scrolling right */}
-        <div className="relative mb-3 sm:mb-4">
+        <div className="relative mb-2 sm:mb-4">
           <div className="flex animate-scroll-right">
             {[...Array(2)].map((_, setIndex) => (
-              <div key={setIndex} className="flex shrink-0 items-center gap-3 sm:gap-4 px-1.5 sm:px-2">
+              <div key={setIndex} className="flex shrink-0 items-center gap-2 sm:gap-4 px-1 sm:px-2">
                 {[
                   { quote: "Konkurrentanalysen ga oss et tydelig forsprang.", name: "Sofie", role: "CEO", color: "bg-cyan-100 text-cyan-500" },
                   { quote: "Rapporten var klar på under et minutt. Imponerende!", name: "Anders", role: "Konsulent", color: "bg-orange-100 text-orange-500" },
@@ -1065,12 +1079,12 @@ export default function LandingPage() {
                   { quote: "Fant feil jeg aldri hadde oppdaget selv.", name: "Thomas", role: "Webdesigner", color: "bg-indigo-100 text-indigo-500" },
                   { quote: "Bruker det til alle kundene mine nå.", name: "Maria", role: "Frilanser", color: "bg-teal-100 text-teal-500" },
                 ].map((t, i) => (
-                  <div key={`${setIndex}-${i}`} className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 transition-colors whitespace-nowrap">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${t.color.split(' ')[0]}`}>
-                      <UserIcon className={`w-4 h-4 ${t.color.split(' ')[1]}`} />
+                  <div key={`${setIndex}-${i}`} className="flex items-center gap-2 sm:gap-3 px-2 py-1.5 sm:px-4 sm:py-2.5 rounded-md sm:rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 transition-colors whitespace-nowrap">
+                    <div className={`w-5 h-5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shrink-0 ${t.color.split(' ')[0]}`}>
+                      <UserIcon className={`w-3 h-3 sm:w-4 sm:h-4 ${t.color.split(' ')[1]}`} />
                     </div>
-                    <span className="text-sm text-neutral-600">&ldquo;{t.quote}&rdquo;</span>
-                    <span className="text-xs text-neutral-400 border-l border-neutral-200 pl-3">{t.name}, {t.role}</span>
+                    <span className="text-xs sm:text-sm text-neutral-600">&ldquo;{t.quote}&rdquo;</span>
+                    <span className="text-[10px] sm:text-xs text-neutral-400 border-l border-neutral-200 pl-2 sm:pl-3">{t.name}, {t.role}</span>
                   </div>
                 ))}
               </div>
@@ -1082,7 +1096,7 @@ export default function LandingPage() {
         <div className="relative">
           <div className="flex animate-scroll-left-slow">
             {[...Array(2)].map((_, setIndex) => (
-              <div key={setIndex} className="flex shrink-0 items-center gap-3 sm:gap-4 px-1.5 sm:px-2">
+              <div key={setIndex} className="flex shrink-0 items-center gap-2 sm:gap-4 px-1 sm:px-2">
                 {[
                   { quote: "Nøkkelordanalysen hjalp oss å rangere høyere.", name: "Henrik", role: "SEO-spesialist", color: "bg-lime-100 text-lime-600" },
                   { quote: "Enkel og rask – akkurat det vi trengte.", name: "Ingrid", role: "Prosjektleder", color: "bg-purple-100 text-purple-500" },
@@ -1090,12 +1104,12 @@ export default function LandingPage() {
                   { quote: "Anbefaler til alle som driver egen nettside.", name: "Kari", role: "Blogger", color: "bg-fuchsia-100 text-fuchsia-500" },
                   { quote: "Sikkerhetssjekken avslørte hull vi ikke visste om.", name: "Per", role: "IT-ansvarlig", color: "bg-red-100 text-red-500" },
                 ].map((t, i) => (
-                  <div key={`${setIndex}-${i}`} className="flex items-center gap-3 px-4 py-2.5 rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 transition-colors whitespace-nowrap">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${t.color.split(' ')[0]}`}>
-                      <UserIcon className={`w-4 h-4 ${t.color.split(' ')[1]}`} />
+                  <div key={`${setIndex}-${i}`} className="flex items-center gap-2 sm:gap-3 px-2 py-1.5 sm:px-4 sm:py-2.5 rounded-md sm:rounded-lg border border-neutral-200 bg-white hover:border-neutral-300 transition-colors whitespace-nowrap">
+                    <div className={`w-5 h-5 sm:w-7 sm:h-7 rounded-full flex items-center justify-center shrink-0 ${t.color.split(' ')[0]}`}>
+                      <UserIcon className={`w-3 h-3 sm:w-4 sm:h-4 ${t.color.split(' ')[1]}`} />
                     </div>
-                    <span className="text-sm text-neutral-600">&ldquo;{t.quote}&rdquo;</span>
-                    <span className="text-xs text-neutral-400 border-l border-neutral-200 pl-3">{t.name}, {t.role}</span>
+                    <span className="text-xs sm:text-sm text-neutral-600">&ldquo;{t.quote}&rdquo;</span>
+                    <span className="text-[10px] sm:text-xs text-neutral-400 border-l border-neutral-200 pl-2 sm:pl-3">{t.name}, {t.role}</span>
                   </div>
                 ))}
               </div>
@@ -1125,11 +1139,32 @@ export default function LandingPage() {
           .animate-scroll-left-slow {
             animation: scroll-left-slow 45s linear infinite;
           }
+          @media (max-width: 767px) {
+            .animate-scroll-left {
+              animation-duration: 18s;
+            }
+            .animate-scroll-right {
+              animation-duration: 20s;
+            }
+            .animate-scroll-left-slow {
+              animation-duration: 22s;
+            }
+          }
         `}</style>
       </section>
 
       {/* AI Suggestions Interactive Section */}
       <section className="relative z-10 py-12 sm:py-16 md:py-20 section-separator-top">
+        <IllustrationShape
+          shape="star"
+          bentoColor="violet"
+          className="top-0 left-[8%] sm:left-[10%] md:left-[12%] w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52 -translate-y-2 sm:-translate-y-4"
+        />
+        <IllustrationShape
+          shape="blob"
+          bentoColor="sky"
+          className="bottom-[50%] right-[8%] sm:right-[10%] md:right-[12%] w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48"
+        />
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -1335,6 +1370,11 @@ export default function LandingPage() {
 
       {/* Bento Grid Features – kompakt */}
       <section className="relative z-10 pt-12 sm:pt-16 md:pt-20 pb-6 sm:pb-8 md:pb-10 section-separator-top">
+        <IllustrationShape
+          shape="star"
+          bentoColor="green"
+          className="top-6 left-[35%] sm:left-[27%] md:left-[25%] w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 -z-10"
+        />
         {/* Bakgrunnstekstur i mellomrommet under seksjonen – stopper ved vertikale linjene */}
         <div className="absolute -bottom-10 left-1/2 -translate-x-1/2 w-full max-w-6xl px-3 sm:px-4 md:px-6 h-20 pointer-events-none" aria-hidden>
           <div 
@@ -1349,7 +1389,7 @@ export default function LandingPage() {
             }}
           />
         </div>
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 relative z-10">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -1595,6 +1635,16 @@ export default function LandingPage() {
 
       {/* How it works - Two column layout */}
       <section className="relative z-10 py-12 sm:py-16 md:py-20 bg-neutral-50 overflow-hidden section-separator-top">
+        <IllustrationShape
+          shape="blob"
+          bentoColor="teal"
+          className="top-[15%] left-[8%] sm:left-[12%] md:left-[16%] w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 -z-10"
+        />
+        <IllustrationShape
+          shape="square"
+          bentoColor="sky"
+          className="top-8 right-[10%] sm:right-[14%] md:right-[18%] w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 -z-10"
+        />
         <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 relative z-10">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -1901,6 +1951,16 @@ export default function LandingPage() {
 
       {/* Hva du får – Gratis vs Premium. 3-kolonne layout. */}
       <section className="relative z-10 py-12 sm:py-16 md:py-20 bg-neutral-50 section-separator-top border-t border-neutral-200">
+        <IllustrationShape
+          shape="star"
+          bentoColor="amber"
+          className="top-8 left-[8%] sm:left-[12%] md:left-[16%] w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 -z-10"
+        />
+        <IllustrationShape
+          shape="circle"
+          bentoColor="green"
+          className="top-8 right-[8%] sm:right-[12%] md:right-[16%] w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 -z-10"
+        />
         {/* Bakgrunnstekstur i mellomrommet – stopper ved vertikale linjene */}
         <div className="absolute top-1 left-1/2 -translate-x-1/2 w-full max-w-6xl px-3 sm:px-4 md:px-6 h-20 pointer-events-none" aria-hidden>
           <div 
@@ -2035,7 +2095,17 @@ export default function LandingPage() {
 
       {/* FAQ - Two column layout */}
       <section className="relative z-10 py-12 sm:py-16 md:py-20 overflow-hidden section-separator-top">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
+        <IllustrationShape
+          shape="circle"
+          bentoColor="teal"
+          className="top-[20%] left-[6%] sm:left-[8%] md:left-[10%] w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 -z-10"
+        />
+        <IllustrationShape
+          shape="square"
+          bentoColor="sky"
+          className="bottom-6 right-[6%] sm:right-[8%] md:right-[10%] w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 -z-10"
+        />
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6 relative z-10">
           {/* Wrapper for vertikale linjer – helt opp og ned */}
           <div className="relative -mt-60 sm:-mt-72 md:-mt-80 pt-60 sm:pt-72 md:pt-80 -mb-12 sm:-mb-16 md:-mb-20 pb-12 sm:pb-16 md:pb-20">
             {/* Vertikale linjer – venstre og høyre */}
@@ -2146,6 +2216,7 @@ export default function LandingPage() {
             transition={{ duration: 0.5, ease: "easeOut" }}
             className="bg-neutral-900 rounded-xl sm:rounded-2xl relative overflow-hidden min-h-[280px] sm:min-h-[320px]"
           >
+            <SectionShapes variant="bottomRight" color="green" shape="star" dark />
             {/* Content grid */}
             <div className="relative z-10 grid md:grid-cols-2 h-full">
               {/* Left column - Text and CTA */}

@@ -78,26 +78,27 @@ export async function POST(request: NextRequest) {
     const currentYear = new Date().getFullYear();
 
     // Length configuration with structure requirements
+    // Using GPT-5 models for best article quality
     const lengthConfig = {
       short: { 
         words: '300–500', 
         minWords: 300, 
-        tokens: 1500, 
-        model: 'gpt-4o-mini' as const,
+        tokens: 4000, // GPT-5: ~1500 reasoning + ~1500 output
+        model: 'gpt-5-mini' as const,
         structure: 'Inkluder: 1 innledning (2-3 avsnitt), 2-3 hovedseksjoner med korte forklaringer, 1 kort avslutning.'
       },
       medium: { 
         words: '800–1200', 
         minWords: 800, 
-        tokens: 3000, 
-        model: 'gpt-4o-mini' as const,
+        tokens: 8000, // GPT-5: ~2000 reasoning + ~3000 output
+        model: 'gpt-5-mini' as const,
         structure: 'Inkluder: 1 grundig innledning (3-4 avsnitt), 4-5 hovedseksjoner (##) med 2-3 avsnitt hver, minst 2 lister med 5+ punkter, 1 utfyllende avslutning med CTA.'
       },
       long: { 
         words: '1200–1500', 
         minWords: 1200, 
-        tokens: 5000, 
-        model: 'gpt-4o-mini' as const,
+        tokens: 12000, // GPT-5: ~3000 reasoning + ~5000 output
+        model: 'gpt-5-mini' as const,
         structure: `STRUKTURKRAV FOR LANG ARTIKKEL:
 1. Grundig innledning som setter kontekst
 2. 5-6 hovedseksjoner (##) med utdypende innhold
@@ -160,9 +161,26 @@ Begrunnelse/mål med artikkelen: ${(rationale ?? '').trim() || 'Ingen begrunnels
 Returner JSON med article, metaTitle, metaDescription, featuredImageSuggestion og featuredImageSearchQuery.`,
         },
       ],
-      temperature: 0.6,
-      max_tokens: selectedLength.tokens,
-      response_format: { type: 'json_object' },
+      max_completion_tokens: selectedLength.tokens,
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'generated_article',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              article: { type: 'string' },
+              metaTitle: { type: 'string' },
+              metaDescription: { type: 'string' },
+              featuredImageSuggestion: { type: 'string' },
+              featuredImageSearchQuery: { type: 'string' },
+            },
+            required: ['article', 'metaTitle', 'metaDescription', 'featuredImageSuggestion', 'featuredImageSearchQuery'],
+            additionalProperties: false,
+          },
+        },
+      },
     });
 
     // Log response details for debugging

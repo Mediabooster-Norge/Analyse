@@ -208,6 +208,46 @@ export function KeywordsTab({
           </div>
 
           <div className="p-4 sm:p-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
+              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
+                <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Est. total søkevolum</p>
+                <p className="text-base sm:text-xl font-bold text-neutral-900 mt-1">
+                  ~{result.keywordResearch.reduce((sum, kw) => sum + kw.searchVolume, 0).toLocaleString('nb-NO')}
+                </p>
+              </div>
+              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
+                <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Est. gj.snitt CPC</p>
+                <p className="text-base sm:text-xl font-bold text-green-600 mt-1">
+                  ~{(result.keywordResearch.reduce((sum, kw) => sum + kw.cpc, 0) / result.keywordResearch.length).toFixed(2)} kr
+                </p>
+              </div>
+              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
+                <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Gj.snitt vanskelighet</p>
+                <p className="text-base sm:text-xl font-bold text-neutral-900 mt-1">
+                  {Math.round(result.keywordResearch.reduce((sum, kw) => sum + kw.difficulty, 0) / result.keywordResearch.length)}/100
+                </p>
+              </div>
+              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
+                <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Beste mulighet</p>
+                <p className="text-xs sm:text-sm font-semibold text-neutral-900 mt-1 truncate">
+                  {result.keywordResearch.reduce(
+                    (best, kw) => ((kw.searchVolume / (kw.difficulty + 1)) > (best.searchVolume / (best.difficulty + 1)) ? kw : best)
+                  ).keyword}
+                </p>
+              </div>
+            </div>
+
+            {result.aiSummary?.keywordAnalysis && (
+              <button
+                onClick={() => document.getElementById('keyword-ai-analysis')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                className="mb-4 sm:mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-200 text-xs text-neutral-700 hover:bg-neutral-50 transition-colors cursor-pointer"
+              >
+                <Sparkles className="h-3.5 w-3.5 text-neutral-400" />
+                Se AI-vurdering av nøkkelord
+                <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
+              </button>
+            )}
+
             <div className="mb-4 flex flex-col sm:flex-row gap-2">
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-100 text-[10px] sm:text-xs text-amber-700">
                 <span className="font-medium">Om dataene:</span>
@@ -470,34 +510,53 @@ export function KeywordsTab({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-neutral-100">
-              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
-                <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Est. total søkevolum</p>
-                <p className="text-base sm:text-xl font-bold text-neutral-900 mt-1">
-                  ~{result.keywordResearch.reduce((sum, kw) => sum + kw.searchVolume, 0).toLocaleString('nb-NO')}
-                </p>
+            {/* AI Keyword Analysis */}
+            {result.aiSummary?.keywordAnalysis && (
+              <div id="keyword-ai-analysis" className="mt-4 sm:mt-6 space-y-3 sm:space-y-4 scroll-mt-4">
+                <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
+                  <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-blue-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                    <Sparkles className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-blue-600" />
+                    AI-vurdering av nøkkelord
+                  </h5>
+                  <p className="text-xs sm:text-sm text-neutral-700">{result.aiSummary.keywordAnalysis.summary}</p>
+                  {result.aiSummary.keywordAnalysis.keywordDensityAssessment && (
+                    <p className="text-xs sm:text-sm text-neutral-500 mt-2">{result.aiSummary.keywordAnalysis.keywordDensityAssessment}</p>
+                  )}
+                  {result.aiSummary.keywordAnalysis.titleKeywordMatch && (
+                    <p className="text-xs sm:text-sm text-neutral-500 mt-1">{result.aiSummary.keywordAnalysis.titleKeywordMatch}</p>
+                  )}
+                </div>
+
+                {(result.aiSummary.keywordAnalysis.missingKeywords?.length > 0 || result.aiSummary.keywordAnalysis.recommendations) && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
+                    {result.aiSummary.keywordAnalysis.missingKeywords?.length > 0 && (
+                      <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
+                        <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-amber-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                          <Tag className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-amber-600" />
+                          Manglende nøkkelord
+                        </h5>
+                        <div className="flex flex-wrap gap-1.5">
+                          {result.aiSummary.keywordAnalysis.missingKeywords.map((kw, i) => (
+                            <span key={i} className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium border border-amber-200">
+                              + {kw}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {result.aiSummary.keywordAnalysis.recommendations && (
+                      <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
+                        <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-green-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                          <TrendingUp className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-green-600" />
+                          Anbefalinger
+                        </h5>
+                        <p className="text-xs sm:text-sm text-neutral-700">{result.aiSummary.keywordAnalysis.recommendations}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
-                <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Est. gj.snitt CPC</p>
-                <p className="text-base sm:text-xl font-bold text-green-600 mt-1">
-                  ~{(result.keywordResearch.reduce((sum, kw) => sum + kw.cpc, 0) / result.keywordResearch.length).toFixed(2)} kr
-                </p>
-              </div>
-              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
-                <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Gj.snitt vanskelighet</p>
-                <p className="text-base sm:text-xl font-bold text-neutral-900 mt-1">
-                  {Math.round(result.keywordResearch.reduce((sum, kw) => sum + kw.difficulty, 0) / result.keywordResearch.length)}/100
-                </p>
-              </div>
-              <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
-                <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Beste mulighet</p>
-                <p className="text-xs sm:text-sm font-semibold text-neutral-900 mt-1 truncate">
-                  {result.keywordResearch.reduce(
-                    (best, kw) => ((kw.searchVolume / (kw.difficulty + 1)) > (best.searchVolume / (best.difficulty + 1)) ? kw : best)
-                  ).keyword}
-                </p>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       ) : result.aiSummary?.keywordAnalysis ? (

@@ -139,14 +139,39 @@ Returner JSON:
 }`;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-mini',
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      response_format: { type: 'json_object' },
-      temperature: 0.6,
-      max_tokens: 1200,
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'article_suggestions',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              suggestions: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    title: { type: 'string' },
+                    rationale: { type: 'string' },
+                    priority: { type: 'string', enum: ['high', 'medium', 'low'] },
+                  },
+                  required: ['title', 'rationale', 'priority'],
+                  additionalProperties: false,
+                },
+              },
+            },
+            required: ['suggestions'],
+            additionalProperties: false,
+          },
+        },
+      },
+      max_completion_tokens: 4000, // GPT-5 reasoning tokens (~500-1000) + output (~1200)
     });
 
     const content = response.choices[0]?.message?.content;

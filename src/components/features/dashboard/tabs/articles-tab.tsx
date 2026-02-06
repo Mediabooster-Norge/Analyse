@@ -100,6 +100,20 @@ export function ArticlesTab({
   const [selectedAudience, setSelectedAudience] = useState<ArticleAudience>('general');
   const [usedSettings, setUsedSettings] = useState<{ length: ArticleLength; tone: ArticleTone; audience: ArticleAudience } | null>(null);
   const [regeneratingImage, setRegeneratingImage] = useState(false);
+  const [articleGenElapsed, setArticleGenElapsed] = useState(0);
+
+  // Timer for article generation
+  useEffect(() => {
+    if (generatingArticleIndex === null) {
+      setArticleGenElapsed(0);
+      return;
+    }
+    setArticleGenElapsed(0);
+    const interval = setInterval(() => {
+      setArticleGenElapsed((prev) => prev + 1);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [generatingArticleIndex]);
 
   // Rotate suggestion messages
   useEffect(() => {
@@ -438,13 +452,21 @@ export function ArticlesTab({
             <p className="text-xs text-neutral-500 min-h-[1.25rem] transition-opacity duration-300">
               {GENERATING_ARTICLE_MESSAGES[generatingMessageIndex]}
             </p>
-            <p className="text-[11px] text-neutral-400 mt-1">
-              {usedSettings?.length === 'long' 
-                ? 'Lang artikkel – ca. 20–40 sekunder' 
-                : usedSettings?.length === 'short'
-                ? 'Kort artikkel – ca. 10–15 sekunder'
-                : 'Vanligvis 15–25 sekunder'}
-            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-neutral-100">
+                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                <span className="text-xs font-medium text-neutral-700 tabular-nums">
+                  {Math.floor(articleGenElapsed / 60)}:{(articleGenElapsed % 60).toString().padStart(2, '0')}
+                </span>
+              </div>
+              <p className="text-[11px] text-neutral-400">
+                {usedSettings?.length === 'long' 
+                  ? 'ca. 30–60 sek' 
+                  : usedSettings?.length === 'short'
+                  ? 'ca. 15–30 sek'
+                  : 'ca. 20–40 sek'}
+              </p>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

@@ -15,6 +15,7 @@ import {
   CheckCircle2,
   Clock,
   BarChart3,
+  Zap,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -200,7 +201,7 @@ export function AnalysisDialog({
                       <div
                         key={index}
                         className={`flex items-center gap-3 px-4 py-2.5 transition-all duration-300 ${
-                          isCurrent ? 'bg-neutral-50' : ''
+                          isCurrent ? 'bg-neutral-50 border-l-2 border-l-neutral-400 animate-pulse' : ''
                         }`}
                       >
                         <div
@@ -238,35 +239,42 @@ export function AnalysisDialog({
                       </div>
                     );
                   })}
-                  {showPageSpeedStep && (
-                    <div className="flex items-center gap-3 px-4 py-2.5 bg-neutral-50">
-                      <div className="relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 bg-neutral-200">
-                        <Loader2 className="h-3.5 w-3.5 text-neutral-700 animate-spin" />
+                  {/* Step 6: PageSpeed + Competitors (always visible) */}
+                  {(() => {
+                    const isActive = showPageSpeedStep || showCompetitorsStep;
+
+                    return (
+                      <div className={`flex items-center gap-3 px-4 py-2.5 transition-all duration-300 ${isActive ? 'bg-neutral-50 border-l-2 border-l-neutral-400 animate-pulse' : ''}`}>
+                        <div className={`relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all duration-300 ${
+                          isActive ? 'bg-neutral-200' : 'bg-neutral-100'
+                        }`}>
+                          {isActive ? (
+                            <Loader2 className="h-3.5 w-3.5 text-neutral-700 animate-spin" />
+                          ) : (
+                            <Zap className="h-3.5 w-3.5 text-neutral-400" />
+                          )}
+                          {isActive && <span className="absolute inset-0 rounded-md border border-neutral-300 animate-pulse" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm ${isActive ? 'text-neutral-900 font-medium' : 'text-neutral-400'}`}>
+                            {showCompetitorsStep ? 'Henter hastighet + konkurrenter' : 'Hastighet og konkurrenter'}
+                          </p>
+                          {showCompetitorsStep && competitorProgress && (
+                            <p className="text-xs text-neutral-500">Konkurrent {competitorProgress.current} av {competitorProgress.total}</p>
+                          )}
+                        </div>
+                        <span className={`text-xs tabular-nums shrink-0 ${isActive ? 'text-neutral-600' : 'text-neutral-300'}`}>
+                          {isActive ? 'Pågår' : '~30s'}
+                        </span>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900">Måler hastighet (PageSpeed)</p>
-                      </div>
-                      <span className="text-xs tabular-nums shrink-0 text-neutral-600">Pågår</span>
-                    </div>
-                  )}
-                  {showCompetitorsStep && competitorProgress && (
-                    <div className="flex items-center gap-3 px-4 py-2.5 bg-neutral-50">
-                      <div className="relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 bg-neutral-200">
-                        <Loader2 className="h-3.5 w-3.5 text-neutral-700 animate-spin" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-neutral-900">Henter konkurrenter</p>
-                        <p className="text-xs text-neutral-500">Konkurrent {competitorProgress.current} av {competitorProgress.total}</p>
-                      </div>
-                      <span className="text-xs tabular-nums shrink-0 text-neutral-600">Pågår</span>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               </div>
 
               {/* Status message */}
               <p className="text-center text-xs text-neutral-400">
-                {showPageSpeedStep ? 'Vanligvis under 1 min' : 'Vanligvis rundt 1 min'}
+                {showPageSpeedStep ? 'Vanligvis 1-2 minutter' : 'Vanligvis 1-2 minutter'}
               </p>
             </div>
           </>
@@ -296,7 +304,7 @@ export function AnalysisDialog({
                   <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
                   <Input
                     id="url"
-                    placeholder="https://dinbedrift.no"
+                    placeholder="dinbedrift.no"
                     value={url || companyUrl || ''}
                     onChange={(e) => setUrl(e.target.value)}
                     className="pl-10 h-10 rounded-lg border-neutral-200 text-sm"
@@ -316,7 +324,7 @@ export function AnalysisDialog({
               {/* Competitors – under vår hoved-URL, nøytral styling */}
               <div className="p-3 rounded-lg bg-neutral-50 space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="competitor" className="text-xs font-medium text-neutral-700">
+                  <Label htmlFor="competitor" className="text-sm font-medium text-neutral-700">
                     {isSubpageMode ? 'Legg til konkurrenter med tilsvarende side (valgfritt)' : 'Sammenlign med konkurrenter (valgfritt)'}
                   </Label>
                   <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-neutral-900 text-[10px] font-medium">
@@ -378,7 +386,7 @@ export function AnalysisDialog({
               {/* Keywords section */}
               <div className="p-4 rounded-xl bg-neutral-50 space-y-3 flex-1">
                 <div className="flex items-center justify-between">
-                  <Label className="text-sm font-medium text-neutral-700">Nøkkelord for analyse</Label>
+                  <Label className="text-sm font-medium text-neutral-700">Nøkkelord for analyse <span className="font-normal text-neutral-500">(valgfritt)</span></Label>
                   <div className="flex items-center gap-2">
                     {keywords.length > 0 && (
                       <button

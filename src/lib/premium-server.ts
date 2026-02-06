@@ -1,7 +1,14 @@
 import { createClient } from '@/lib/supabase/server';
 import type { User } from '@supabase/supabase-js';
 
-const PREMIUM_EMAILS = ['web@mediabooster.no'];
+const PREMIUM_EMAILS = [
+  'web@mediabooster.no',
+  'daniel@mediabooster.no',
+  'sylvia@mediabooster.no',
+  'hector@mediabooster.no',
+  'jonas@mediabooster.no',
+  'julia@mediabooster.no',
+];
 
 /** Emails with unlimited article generations */
 const UNLIMITED_ARTICLE_EMAILS = ['web@mediabooster.no'];

@@ -58,61 +58,96 @@ export async function POST(request: NextRequest) {
       // Continue with URL-based suggestions only
     }
 
+    console.log('[suggest-keywords] URL:', normalizedUrl, 'PageContent length:', pageContent.length, 'Count:', safeCount);
+
     // Use AI to suggest keywords
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',
-          content: `Du er en SEO-ekspert som foreslår relevante nøkkelord for norske nettsider. 
-Foreslå nøyaktig ${safeCount} relevante nøkkelord basert på URL og innhold.
-Fokuser på:
-- Bransje og tjenester
-- Geografisk relevans (hvis aktuelt)
-- Søketermer kunder ville brukt
-- Long-tail keywords
-- Kombiner generiske og spesifikke søkeord
+          content: `Du er en erfaren SEO-ekspert som foreslår relevante søkeord for norske nettsider.
 
-Returner kun en JSON-array med nøkkelord på norsk, f.eks: ["nøkkelord1", "nøkkelord2"]
-Ikke inkluder forklaringer, kun JSON-arrayen. Antall nøkkelord må være ${safeCount}.`
+Din oppgave: Generer nøyaktig ${safeCount} relevante norske søkeord/nøkkelfraser som potensielle kunder ville søkt etter på Google for å finne denne nettsiden.
+
+Regler:
+- Alle søkeord skal være på norsk
+- Inkluder en blanding av korte (1-2 ord) og lange (3-5 ord) søkefraser
+- Fokuser på bransje, tjenester, produkter og geografisk relevans
+- Tenk som en kunde som søker etter disse tjenestene
+- Du MÅ returnere nøyaktig ${safeCount} søkeord, aldri færre
+- Svar KUN med en JSON-array, ingen annen tekst
+
+Eksempel på korrekt svarformat:
+["søkeord 1", "søkeord 2", "søkeord 3"]`
         },
         {
           role: 'user',
-          content: `URL: ${normalizedUrl}
-${pageContent ? `\nSideinnhold:\n${pageContent}` : ''}
+          content: `Analyser denne nettsiden og foreslå ${safeCount} norske SEO-søkeord:
 
-Foreslå relevante nøkkelord for denne nettsiden:`
+URL: ${normalizedUrl}
+${pageTitle ? `Tittel: ${pageTitle}` : ''}
+${metaDescription ? `Beskrivelse: ${metaDescription}` : ''}
+${pageContent ? `\nInnhold fra siden:\n${pageContent}` : '\n(Kunne ikke hente innhold fra siden, basér forslag på URL og domenenavn)'}
+
+Gi meg nøyaktig ${safeCount} søkeord som en JSON-array:`
         }
       ],
-      temperature: 0.7,
-      max_tokens: safeCount <= 20 ? 500 : 1200,
+      max_completion_tokens: safeCount <= 20 ? 800 : 2000,
     });
 
     const content = completion.choices[0]?.message?.content || '[]';
     
+    console.log('[suggest-keywords] Raw AI response:', content.slice(0, 800));
+    
+    // Strip markdown code fences if GPT wraps response in ```json ... ```
+    const cleaned = content
+      .replace(/^```(?:json)?\s*\n?/i, '')
+      .replace(/\n?```\s*$/i, '')
+      .trim();
+    
     // Parse the JSON response
     let keywords: string[] = [];
     try {
-      // Extract JSON array from response (in case there's extra text)
-      const jsonMatch = content.match(/\[[\s\S]*\]/);
-      if (jsonMatch) {
-        keywords = JSON.parse(jsonMatch[0]);
+      // Try direct parse first
+      const parsed = JSON.parse(cleaned);
+      if (Array.isArray(parsed)) {
+        keywords = parsed;
+      } else if (parsed && typeof parsed === 'object') {
+        // GPT-5 might wrap in an object like { keywords: [...] }
+        const arrayVal = parsed.keywords || parsed.suggestions || parsed.nøkkelord;
+        if (Array.isArray(arrayVal)) {
+          keywords = arrayVal;
+        } else {
+          // Try to find any array value in the object
+          const found = Object.values(parsed).find(Array.isArray);
+          keywords = (found as string[]) || [];
+        }
       }
-    } catch (parseError) {
-      console.error('Failed to parse keywords:', parseError);
-      // Fallback: try to extract words from content
-      keywords = content
-        .replace(/[\[\]"]/g, '')
-        .split(',')
-        .map(k => k.trim())
-        .filter(k => k.length > 0);
+    } catch {
+      // Fallback: extract JSON array from response (in case there's extra text)
+      try {
+        const jsonMatch = cleaned.match(/\[[\s\S]*?\]/);
+        if (jsonMatch) {
+          keywords = JSON.parse(jsonMatch[0]);
+        }
+      } catch {
+        // Last resort: split by commas/newlines and clean numbered lists
+        keywords = cleaned
+          .replace(/[\[\]"{}]/g, '')
+          .split(/[,\n]/)
+          .map(k => k.replace(/^\d+\.\s*/, '').replace(/^-\s*/, '').trim())
+          .filter(k => k.length > 0 && !k.startsWith('{'));
+      }
     }
+    
+    console.log('[suggest-keywords] Parsed keywords count:', keywords.length, 'First 5:', keywords.slice(0, 5));
 
     // Ensure we return an array of strings
     keywords = keywords
       .filter((k): k is string => typeof k === 'string')
       .map(k => k.toLowerCase().trim())
-      .filter(k => k.length > 1 && k.length < 50);
+      .filter(k => k.length > 1 && k.length < 100);
 
     return NextResponse.json({
       success: true,

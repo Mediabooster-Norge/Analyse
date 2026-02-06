@@ -282,3 +282,8 @@
   }
 }
 
+/* Skjul alle dekorative former (IllustrationShape, HeroShapes, SectionShapes) når en parent har denne klassen */
+.hide-decorative-shapes .decorative-shape {
+  display: none;
+}
+

@@ -20,10 +20,10 @@ export async function GET(request: NextRequest) {
     console.error('Code exchange error:', error.message);
   }
 
-  // Handle email confirmation with token_hash
+  // Handle email confirmation and password recovery with token_hash
   if (token_hash && type) {
     const { error } = await supabase.auth.verifyOtp({
-      type: type as 'signup' | 'email',
+      type: type as 'signup' | 'email' | 'recovery',
       token_hash,
     });
     if (!error) {

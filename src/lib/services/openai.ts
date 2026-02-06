@@ -23,18 +23,33 @@ interface AIAnalysisResult {
   costUsd: number;
 }
 
-// Pricing per 1M tokens (January 2026)
-const PRICING = {
+// ============================================================================
+// Model Configuration - Change these to use different OpenAI models
+// ============================================================================
+export const AI_MODELS = {
+  // Best model - use for critical tasks requiring deep understanding
+  best: 'gpt-5.2',
+  // Balanced model - good quality at reasonable cost
+  balanced: 'gpt-5-mini',
+  // Fast model - for simple tasks where speed/cost matters
+  fast: 'gpt-5-nano',
+} as const;
+
+// Pricing per 1M tokens (February 2026 estimates - update when official)
+const PRICING: Record<string, { input: number; output: number }> = {
   'gpt-4o-mini': { input: 0.15, output: 0.60 },
   'gpt-4o': { input: 2.50, output: 10.00 },
+  'gpt-5-nano': { input: 0.10, output: 0.40 },
+  'gpt-5-mini': { input: 0.30, output: 1.20 },
+  'gpt-5.2': { input: 5.00, output: 15.00 },
 };
 
 function calculateCost(
-  model: 'gpt-4o-mini' | 'gpt-4o',
+  model: string,
   inputTokens: number,
   outputTokens: number
 ): number {
-  const pricing = PRICING[model];
+  const pricing = PRICING[model] || PRICING['gpt-5-mini']; // fallback
   const inputCost = (inputTokens / 1_000_000) * pricing.input;
   const outputCost = (outputTokens / 1_000_000) * pricing.output;
   return inputCost + outputCost;
@@ -44,7 +59,7 @@ export async function generateAIAnalysis(
   data: AnalysisData,
   usePremiumModel: boolean = false
 ): Promise<AIAnalysisResult> {
-  const model = usePremiumModel ? 'gpt-4o' : 'gpt-4o-mini';
+  const model = usePremiumModel ? AI_MODELS.best : AI_MODELS.balanced;
 
   const systemPrompt = `Du er en erfaren SEO- og digital markedsføringsekspert. Analyser nettsidens data og gi konkrete, handlingsbare anbefalinger på norsk.
 
@@ -169,9 +184,86 @@ Gi en komplett analyse med følgende JSON-struktur:
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
       ],
-      response_format: { type: 'json_object' },
-      temperature: 0.7,
-      max_tokens: 2000,
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'seo_analysis',
+          strict: true,
+          schema: {
+            type: 'object',
+            properties: {
+              overallAssessment: { type: 'string' },
+              keyFindings: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    text: { type: 'string' },
+                    type: { type: 'string', enum: ['positive', 'negative', 'neutral'] },
+                  },
+                  required: ['text', 'type'],
+                  additionalProperties: false,
+                },
+              },
+              keywordAnalysis: {
+                type: ['object', 'null'],
+                properties: {
+                  summary: { type: 'string' },
+                  primaryKeywords: { type: 'array', items: { type: 'string' } },
+                  missingKeywords: { type: 'array', items: { type: 'string' } },
+                  keywordDensityAssessment: { type: 'string' },
+                  titleKeywordMatch: { type: 'string' },
+                  targetKeywordMatches: { type: 'string' },
+                  recommendations: { type: 'string' },
+                },
+                required: ['summary', 'primaryKeywords', 'missingKeywords', 'keywordDensityAssessment', 'titleKeywordMatch', 'targetKeywordMatches', 'recommendations'],
+                additionalProperties: false,
+              },
+              recommendations: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    priority: { type: 'string', enum: ['high', 'medium', 'low'] },
+                    category: { type: 'string', enum: ['seo', 'content', 'security', 'performance', 'accessibility'] },
+                    title: { type: 'string' },
+                    description: { type: 'string' },
+                    expectedImpact: { type: 'string' },
+                  },
+                  required: ['priority', 'category', 'title', 'description', 'expectedImpact'],
+                  additionalProperties: false,
+                },
+              },
+              competitorComparison: {
+                type: ['object', 'null'],
+                properties: {
+                  summary: { type: 'string' },
+                  scoreAnalysis: { type: 'string' },
+                  yourStrengths: { type: 'array', items: { type: 'string' } },
+                  competitorStrengths: { type: 'array', items: { type: 'string' } },
+                  opportunities: { type: 'array', items: { type: 'string' } },
+                  quickWins: { type: 'array', items: { type: 'string' } },
+                },
+                required: ['summary', 'scoreAnalysis', 'yourStrengths', 'competitorStrengths', 'opportunities', 'quickWins'],
+                additionalProperties: false,
+              },
+              actionPlan: {
+                type: 'object',
+                properties: {
+                  immediate: { type: 'array', items: { type: 'string' } },
+                  shortTerm: { type: 'array', items: { type: 'string' } },
+                  longTerm: { type: 'array', items: { type: 'string' } },
+                },
+                required: ['immediate', 'shortTerm', 'longTerm'],
+                additionalProperties: false,
+              },
+            },
+            required: ['overallAssessment', 'keyFindings', 'keywordAnalysis', 'recommendations', 'competitorComparison', 'actionPlan'],
+            additionalProperties: false,
+          },
+        },
+      },
+      max_completion_tokens: 8000, // GPT-5 uses reasoning tokens (~500-2000) + output (~2000)
     });
 
     const content = response.choices[0]?.message?.content;
@@ -188,7 +280,7 @@ Gi en komplett analyse med følgende JSON-struktur:
       summary: parsed,
       tokensUsed: totalTokens,
       model,
-      costUsd: calculateCost(model as 'gpt-4o-mini' | 'gpt-4o', inputTokens, outputTokens),
+      costUsd: calculateCost(model, inputTokens, outputTokens),
     };
   } catch (error) {
     console.error('OpenAI API error:', error);
@@ -204,7 +296,7 @@ export async function generateQuickSummary(
   const overallScore = Math.round((seoScore + contentScore + securityScore) / 3);
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: AI_MODELS.fast,
     messages: [
       {
         role: 'system',
@@ -215,7 +307,7 @@ export async function generateQuickSummary(
         content: `Nettsidens score: SEO ${seoScore}/100, Innhold ${contentScore}/100, Sikkerhet ${securityScore}/100. Total: ${overallScore}/100. Gi en kort oppsummering.`,
       },
     ],
-    max_tokens: 100,
+    max_completion_tokens: 1500, // GPT-5-nano uses ~800 reasoning tokens + output
   });
 
   return response.choices[0]?.message?.content || 'Analysen er fullført.';
@@ -244,7 +336,7 @@ export async function generateKeywordResearch(
   }
 
   const response = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: AI_MODELS.balanced,
     messages: [
       {
         role: 'system',
@@ -286,9 +378,39 @@ Returner data i dette formatet:
 }`
       },
     ],
-    response_format: { type: 'json_object' },
-    temperature: 0.5,
-    max_tokens: 1500,
+    response_format: {
+      type: 'json_schema',
+      json_schema: {
+        name: 'keyword_research',
+        strict: true,
+        schema: {
+          type: 'object',
+          properties: {
+            keywords: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  keyword: { type: 'string' },
+                  searchVolume: { type: 'number' },
+                  cpc: { type: 'number' },
+                  competition: { type: 'string', enum: ['lav', 'medium', 'høy'] },
+                  competitionScore: { type: 'number' },
+                  intent: { type: 'string', enum: ['informational', 'commercial', 'transactional', 'navigational'] },
+                  difficulty: { type: 'number' },
+                  trend: { type: 'string', enum: ['stigende', 'stabil', 'synkende'] },
+                },
+                required: ['keyword', 'searchVolume', 'cpc', 'competition', 'competitionScore', 'intent', 'difficulty', 'trend'],
+                additionalProperties: false,
+              },
+            },
+          },
+          required: ['keywords'],
+          additionalProperties: false,
+        },
+      },
+    },
+    max_completion_tokens: 5000, // GPT-5 reasoning overhead + keyword data
   });
 
   const content = response.choices[0]?.message?.content;
@@ -303,7 +425,7 @@ Returner data i dette formatet:
   return {
     keywords: parsed.keywords || [],
     tokensUsed: inputTokens + outputTokens,
-    costUsd: calculateCost('gpt-4o-mini', inputTokens, outputTokens),
+    costUsd: calculateCost(AI_MODELS.balanced, inputTokens, outputTokens),
   };
 }
 
@@ -349,7 +471,7 @@ export async function checkAIVisibility(
     searchQueries.map(async (query) => {
       try {
         const response = await openai.chat.completions.create({
-          model: 'gpt-4o',
+          model: AI_MODELS.best,
           messages: [
             {
               role: 'system',
@@ -360,14 +482,13 @@ export async function checkAIVisibility(
               content: query,
             },
           ],
-          max_tokens: 400,
-          temperature: 0.3,
+          max_completion_tokens: 600, // GPT-5.2 has no reasoning overhead but buffer for safety
         });
 
         const inputTokens = response.usage?.prompt_tokens || 0;
         const outputTokens = response.usage?.completion_tokens || 0;
         totalTokens += inputTokens + outputTokens;
-        totalCost += calculateCost('gpt-4o', inputTokens, outputTokens);
+        totalCost += calculateCost(AI_MODELS.best, inputTokens, outputTokens);
 
         const content = response.choices[0]?.message?.content || '';
         
@@ -573,7 +694,7 @@ export async function analyzeImageRelevance(
   for (const image of imagesToAnalyze) {
     try {
       const response = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: AI_MODELS.balanced,
         messages: [
           {
             role: 'system',
@@ -615,8 +736,7 @@ Vurder om dette bildet er relevant for innholdet:`
             ]
           }
         ],
-        max_tokens: 200,
-        temperature: 0.3,
+        max_completion_tokens: 800, // GPT-5-mini reasoning overhead + JSON output
       });
 
       const content = response.choices[0]?.message?.content || '{}';
@@ -625,7 +745,7 @@ Vurder om dette bildet er relevant for innholdet:`
       const inputTokens = response.usage?.prompt_tokens || 0;
       const outputTokens = response.usage?.completion_tokens || 0;
       totalTokens += inputTokens + outputTokens;
-      totalCost += calculateCost('gpt-4o-mini', inputTokens, outputTokens);
+      totalCost += calculateCost(AI_MODELS.balanced, inputTokens, outputTokens);
 
       // Parse response
       try {

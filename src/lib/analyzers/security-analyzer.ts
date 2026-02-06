@@ -1,14 +1,15 @@
 import type { SecurityResults, SecurityHeadersAnalysis } from '@/types';
-import { analyzeSSL, analyzeSSLDirect, getSSLGradeScore } from '@/lib/services/ssl-labs';
+import { analyzeSSLDirect, getSSLGradeScore } from '@/lib/services/ssl-labs';
 import { analyzeSecurityHeadersSimple } from '@/lib/services/observatory';
 
 export async function analyzeSecurity(
   url: string,
   headers: Record<string, string>
 ): Promise<SecurityResults> {
-  // Run SSL (with timeout fallback) and Headers analyses in parallel
+  // Run direct SSL check and headers analysis in parallel
+  // Direct SSL check is fast (<1s) and gives us cert details, grade, and expiry
   const [ssl, headersAnalysis] = await Promise.all([
-    analyzeSSLWithFallback(url),
+    analyzeSSLDirect(url),
     analyzeSecurityHeadersSimple(headers),
   ]);
 
@@ -25,30 +26,6 @@ export async function analyzeSecurity(
     observatory: { grade: 'N/A', score: 0, tests: [] }, // Deprecated - kept for backwards compatibility
     score,
   };
-}
-
-// Try SSL Labs first, fall back to direct SSL check if it takes too long
-async function analyzeSSLWithFallback(url: string) {
-  // Race between SSL Labs (with 30s timeout) and direct check
-  const sslLabsPromise = Promise.race([
-    analyzeSSL(url),
-    new Promise<null>((resolve) => setTimeout(() => resolve(null), 30000)),
-  ]);
-
-  const directPromise = analyzeSSLDirect(url);
-
-  // Try SSL Labs first
-  const sslLabsResult = await sslLabsPromise;
-  
-  // If SSL Labs returned valid result (not Unknown), use it
-  if (sslLabsResult && !sslLabsResult.grade.includes('Ukjent')) {
-    console.log('[SSL] Using SSL Labs result:', sslLabsResult.grade);
-    return sslLabsResult;
-  }
-
-  // Fall back to direct check
-  console.log('[SSL] SSL Labs timed out or failed, using direct check');
-  return directPromise;
 }
 
 export async function analyzeSecurityQuick(

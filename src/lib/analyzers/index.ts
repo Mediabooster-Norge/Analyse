@@ -214,9 +214,6 @@ export async function runFullAnalysis(
   };
 }
 
-// Cap so we stay under Vercel 60s: main + N competitors + AI. With competitors we use quick security for main.
-const COMPETITOR_PAGE_SPEED_MAX_MS = 18_000; // 18s leaves room for scrape + competitors + AI
-
 export async function runCompetitorAnalysis(
   mainUrl: string,
   competitorUrls: string[],
@@ -245,7 +242,7 @@ export async function runCompetitorAnalysis(
   const main$ = parseHtml(mainScrapedData.html);
 
   // Step 2: Run main analysis
-  // With competitors: use quick security for main to stay under 60s (full security can take ~30s). PageSpeed capped at 18s.
+  // With competitors: use quick security for main to stay under 60s. PageSpeed for main hentes i eget kall (skipPageSpeedForMain).
   console.log('Analyzing main URL...');
   const mainSecurityPromise = cachedSecurityResults
     ? Promise.resolve(cachedSecurityResults)
@@ -253,14 +250,13 @@ export async function runCompetitorAnalysis(
       ? analyzeSecurityQuick(mainUrl, mainScrapedData.headers)
       : analyzeSecurity(mainUrl, mainScrapedData.headers);
 
-  const [mainSeoResults, mainContentResults, mainSecurityResults, mainPageSpeedResults] = await Promise.all([
+  // Hastighet for main URL hentes alltid i eget API-kall (/api/analyze/pagespeed) – holder dette kall under 60s
+  const mainPageSpeedResults: PageSpeedResults | null = null as PageSpeedResults | null;
+
+  const [mainSeoResults, mainContentResults, mainSecurityResults] = await Promise.all([
     analyzeSEO(main$, mainUrl),
     Promise.resolve(analyzeContent(main$)),
     mainSecurityPromise,
-    analyzePageSpeed(mainUrl, { timeout: COMPETITOR_PAGE_SPEED_MAX_MS }).catch((err) => {
-      console.error('PageSpeed analysis failed for main URL:', err);
-      return null;
-    }),
   ]);
 
   if (cachedSecurityResults) {
@@ -302,6 +298,7 @@ export async function runCompetitorAnalysis(
         const compPageSpeedResults = estimatePerformanceFromScrape({
           html: compScrapedData.html,
           loadTimeMs: compScrapedData.loadTime,
+          headers: compScrapedData.headers,
         });
         const [compSeoResults, compContentResults, compSecurityResults] = await Promise.all([
           analyzeSEO(comp$, competitorUrl),
@@ -491,6 +488,7 @@ export async function analyzeCompetitorsOnly(
         const compPageSpeedResults = estimatePerformanceFromScrape({
           html: compScrapedData.html,
           loadTimeMs: compScrapedData.loadTime,
+          headers: compScrapedData.headers,
         });
         const [compSeoResults, compContentResults, compSecurityResults] = await Promise.all([
           analyzeSEO(comp$, competitorUrl),
