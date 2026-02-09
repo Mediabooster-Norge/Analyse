@@ -182,35 +182,64 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Run the analysis
+    // Run the analysis – hard cap 59s så vi aldri overstiger 60s i produksjon (1s buffer for respons)
+    const ANALYSIS_DEADLINE_MS = 59_000;
+    const deadlinePromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error('ANALYSIS_DEADLINE')), ANALYSIS_DEADLINE_MS);
+    });
+
+    const runAnalysis = async () => {
+      let result: Awaited<ReturnType<typeof runFullAnalysis>>;
+      let competitors: Array<{ url: string; results: unknown }> = [];
+
+      if (competitorUrls.length > 0) {
+        const competitorAnalysis = await runCompetitorAnalysis(normalizedUrl, competitorUrls, {
+          includeAI,
+          usePremiumAI,
+          industry,
+          targetKeywords: keywords,
+          companyName: companyName || websiteName,
+          isPremium,
+          cachedSecurityResults,
+          cachedAiVisibilityByDomain,
+        });
+        result = competitorAnalysis.mainResults;
+        competitors = competitorAnalysis.competitorResults;
+      } else {
+        result = await runFullAnalysis(normalizedUrl, {
+          includeAI,
+          usePremiumAI,
+          industry,
+          targetKeywords: keywords,
+          companyName: companyName || websiteName,
+          isPremium,
+          cachedSecurityResults,
+          cachedAiVisibility: cachedAiVisibilityByDomain[urlDomain],
+          skipPageSpeed: true, // Hastighet hentes i eget API-kall etterpå (holder første kall under 60s)
+          quickSecurityScan: true, // Full SSL-sjekk kan overstige 60s; bruk rask sjekk i produksjon
+        });
+      }
+      return { result, competitors };
+    };
+
     let result;
     let competitors: Array<{ url: string; results: unknown }> = [];
-    
-    if (competitorUrls.length > 0) {
-      const competitorAnalysis = await runCompetitorAnalysis(normalizedUrl, competitorUrls, {
-        includeAI,
-        usePremiumAI,
-        industry,
-        targetKeywords: keywords,
-        companyName: companyName || websiteName,
-        isPremium,
-        cachedSecurityResults,
-        cachedAiVisibilityByDomain,
-      });
-      result = competitorAnalysis.mainResults;
-      competitors = competitorAnalysis.competitorResults;
-    } else {
-      result = await runFullAnalysis(normalizedUrl, {
-        includeAI,
-        usePremiumAI,
-        industry,
-        targetKeywords: keywords,
-        companyName: companyName || websiteName,
-        isPremium,
-        cachedSecurityResults,
-        cachedAiVisibility: cachedAiVisibilityByDomain[urlDomain],
-        skipPageSpeed: true, // Hastighet hentes i eget API-kall etterpå (holder første kall under 60s)
-      });
+
+    try {
+      const outcome = await Promise.race([runAnalysis(), deadlinePromise]);
+      result = outcome.result;
+      competitors = outcome.competitors;
+    } catch (err) {
+      if (err instanceof Error && err.message === 'ANALYSIS_DEADLINE') {
+        return NextResponse.json(
+          {
+            error: 'Analysen tok for lang tid. Prøv igjen med færre konkurrenter eller uten nøkkelord.',
+            code: 'DEADLINE_EXCEEDED',
+          },
+          { status: 504 }
+        );
+      }
+      throw err;
     }
 
     // Save analysis with user_id
