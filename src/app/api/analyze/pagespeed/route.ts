@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { analyzePageSpeed } from '@/lib/services/pagespeed';
 
-export const maxDuration = 60; // Eget kall – full tid til PageSpeed
+export const maxDuration = 120; // PageSpeed API kan være treg – 2 min med Fluid Compute
 
 interface PageSpeedRequest {
   analysisId: string;
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
     }
 
     const url = analysis.website_url;
-    const PAGE_SPEED_MAX_MS = 55_000; // God margin under 60s
+    const PAGE_SPEED_MAX_MS = 115_000; // God margin under 120s
 
     const pageSpeedResults = await analyzePageSpeed(url, { timeout: PAGE_SPEED_MAX_MS }).catch((err) => {
       console.error('PageSpeed analysis failed or timed out:', err);

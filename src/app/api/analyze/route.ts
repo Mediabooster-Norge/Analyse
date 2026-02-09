@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getPremiumStatusServer } from '@/lib/premium-server';
 import type { AIVisibilityData } from '@/lib/services/openai';
 
-export const maxDuration = 60; // Vercel Free limit; competitors use quick performance estimate (no PageSpeed API)
+export const maxDuration = 300; // Krever Fluid Compute (Hobby eller Pro). Uten Fluid: Hobby 60s. Med Fluid: 300s på begge.
 
 interface AnalyzeRequest {
   url?: string;
@@ -182,8 +182,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Run the analysis – hard cap 59s så vi aldri overstiger 60s i produksjon (1s buffer for respons)
-    const ANALYSIS_DEADLINE_MS = 59_000;
+    // Run the analysis – hard cap 1s under maxDuration (119s når maxDuration=120) så respons rekkes
+    const ANALYSIS_DEADLINE_MS = (typeof maxDuration === 'number' ? maxDuration - 1 : 119) * 1000;
     const deadlinePromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error('ANALYSIS_DEADLINE')), ANALYSIS_DEADLINE_MS);
     });
