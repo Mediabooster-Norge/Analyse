@@ -10,13 +10,11 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Search,
   TrendingUp,
   TrendingDown,
   Minus,
   Plus,
   FileText,
-  Shield,
   Clock,
   ArrowRight,
   Loader2,
@@ -34,7 +32,6 @@ import {
   ChevronDown,
   Eye,
   Lock,
-  Zap,
   FileDown,
 } from 'lucide-react';
 
@@ -52,6 +49,7 @@ import {
   DashboardEmptyState,
   AISuggestionDialog,
   AnalysisDialog,
+  ANALYSIS_STEPS,
 } from '@/components/features/dashboard';
 import { downloadAnalysisReportPdf } from '@/components/features/dashboard/analysis-report-pdf';
 import { OverviewTab, CompetitorsTab, KeywordsTab, AiTab, AiVisibilityTab, ArticlesTab } from '@/components/features/dashboard/tabs';
@@ -155,13 +153,7 @@ function DashboardPageContent() {
   const FREE_COMPETITOR_LIMIT = limits.competitors;
   const FREE_UPDATE_LIMIT = limits.updates;
 
-  const analysisSteps = [
-    { label: 'Henter nettside', description: 'Laster inn og scraper innhold fra nettsiden', duration: '~5s', icon: Globe },
-    { label: 'Analyserer SEO', description: 'Sjekker meta-tags, overskrifter, lenker og innhold', duration: '~10s', icon: Search },
-    { label: 'Sjekker sikkerhet', description: 'Tester SSL-sertifikat og sikkerhetsheaders', duration: '~15s', icon: Shield },
-    { label: 'Måler ytelse', description: 'Henter Google PageSpeed-score og Core Web Vitals', duration: '~30s', icon: Zap },
-    { label: 'Genererer rapport', description: 'AI sammenligner resultater og lager anbefalinger', duration: '~20s', icon: Sparkles },
-  ];
+  const analysisSteps = ANALYSIS_STEPS;
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-neutral-900';

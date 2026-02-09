@@ -7,7 +7,7 @@ export { SummaryCard } from './summary-card';
 export { TabNavigation } from './tab-navigation';
 export { DashboardEmptyState } from './empty-state';
 export { AISuggestionDialog } from './ai-suggestion-dialog';
-export { AnalysisDialog } from './analysis-dialog';
+export { AnalysisDialog, ANALYSIS_STEPS } from './analysis-dialog';
 export type { AnalysisStepConfig } from './analysis-dialog';
 export { ScoreTrendChart } from './score-trend-chart';
 export { SocialPreview } from './social-preview';

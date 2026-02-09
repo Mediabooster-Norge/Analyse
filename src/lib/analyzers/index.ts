@@ -70,7 +70,7 @@ export async function runFullAnalysis(
   const [seoResults, contentResults, securityResults, pageSpeedResults] = await Promise.all([
     analyzeSEO($, url),
     Promise.resolve(analyzeContent($)),
-    cachedSecurityResults
+    quickSecurityScan && cachedSecurityResults
       ? Promise.resolve(cachedSecurityResults)
       : quickSecurityScan
         ? analyzeSecurityQuick(url, scrapedData.headers)

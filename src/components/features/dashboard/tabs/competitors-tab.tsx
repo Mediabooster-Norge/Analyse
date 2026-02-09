@@ -249,7 +249,8 @@ export function CompetitorsTab({
 
             {/* Estimate & variance info */}
             <p className="text-xs text-neutral-500 leading-relaxed px-1">
-              Hastighetsscoren for konkurrenter er estimert basert på responstid, HTML-størrelse, render-blocking ressurser, lazy loading og komprimering. Din egen score bruker Google PageSpeed Insights. Hastighetsscore kan variere mellom målinger.
+              Hastighetsscoren for konkurrenter er estimert basert på responstid, HTML-størrelse, render-blocking ressurser, lazy loading og komprimering. Din egen score bruker Google PageSpeed Insights.{' '}
+              <span className="font-medium text-neutral-700">Hastighetsscore kan variere mellom målinger – kjør analysen på nytt for et oppdatert resultat.</span>
             </p>
 
             <div className="overflow-x-auto -mx-3 max-[400px]:-mx-3 min-[401px]:-mx-4 sm:mx-0 scrollbar-hide touch-pan-x">

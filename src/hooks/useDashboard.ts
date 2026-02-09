@@ -643,19 +643,21 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         loadingPageSpeed: willFetchPageSpeed,
         loadingCompetitors: willFetchCompetitors,
         competitorProgress: willFetchCompetitors ? { current: 0, total: competitorUrlsToFetch.length } : null,
+        analysisStep: willFetchPageSpeed || willFetchCompetitors ? 5 : state.analysisStep,
         ...(isSubpage ? { articleSuggestions: null, articleSuggestionsSavedAt: null } : {}),
       });
       if (!willFetchPageSpeed && !willFetchCompetitors) toast.success('Analyse fullført!');
 
       const DIALOG_CLOSE_ANIMATION_MS = 400;
-      const tryCloseDialog = () => {
-        setState((prev) => {
-          if (prev.loadingPageSpeed || prev.loadingCompetitors) return prev;
-          return { ...prev, dialogOpen: false, analyzing: false };
-        });
-      };
       const toastAfterDialogClosed = (message: string) => {
         setTimeout(() => toast.success(message), DIALOG_CLOSE_ANIMATION_MS);
+      };
+      const tryCloseDialog = (onClosed?: () => void) => {
+        setState((prev) => {
+          if (prev.loadingPageSpeed || prev.loadingCompetitors) return prev;
+          setTimeout(() => onClosed?.(), 0);
+          return { ...prev, dialogOpen: false, analyzing: false };
+        });
       };
 
       if (analysisId) {
@@ -678,15 +680,17 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
                     }
                   : null,
               }));
-              tryCloseDialog();
-              if (!willFetchCompetitors) {
-                toastAfterDialogClosed(pageSpeedResults ? 'Analyse fullført med hastighetsmåling!' : 'Analyse fullført!');
-              }
+              tryCloseDialog(() => {
+                if (!willFetchCompetitors) {
+                  toastAfterDialogClosed(pageSpeedResults ? 'Analyse fullført med hastighetsmåling!' : 'Analyse fullført!');
+                }
+              });
             })
             .catch(() => {
-              updateState({ loadingPageSpeed: false });
-              tryCloseDialog();
-              if (!willFetchCompetitors) toastAfterDialogClosed('Analyse fullført (hastighet kunne ikke måles)');
+              setState((prev) => ({ ...prev, loadingPageSpeed: false }));
+              tryCloseDialog(() => {
+                if (!willFetchCompetitors) toastAfterDialogClosed('Analyse fullført (hastighet kunne ikke måles)');
+              });
             });
         }
 
@@ -718,13 +722,12 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
               loadingCompetitors: false,
               competitorProgress: null,
             }));
-            tryCloseDialog();
             const msg = competitors.length > 0
               ? `Analyse fullført med hastighet og ${competitors.length} konkurrent${competitors.length > 1 ? 'er' : ''}!`
               : willFetchPageSpeed
                 ? 'Analyse fullført med hastighetsmåling!'
                 : 'Analyse fullført!';
-            toastAfterDialogClosed(msg);
+            tryCloseDialog(() => toastAfterDialogClosed(msg));
           })();
         }
       }

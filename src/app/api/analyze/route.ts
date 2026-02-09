@@ -216,7 +216,7 @@ export async function POST(request: NextRequest) {
           cachedSecurityResults,
           cachedAiVisibility: cachedAiVisibilityByDomain[urlDomain],
           skipPageSpeed: true, // Hastighet hentes i eget API-kall etterpå (holder første kall under 60s)
-          quickSecurityScan: true, // Full SSL-sjekk kan overstige 60s; bruk rask sjekk i produksjon
+          quickSecurityScan: false, // Med Fluid Compute (300s) kjører vi ekte SSL-sjekk (analyzeSSLDirect)
         });
       }
       return { result, competitors };

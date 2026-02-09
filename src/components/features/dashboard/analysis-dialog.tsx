@@ -1,6 +1,7 @@
 'use client';
 
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,14 +18,11 @@ import {
   BarChart3,
   Zap,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { ANALYSIS_STEPS } from './analysis-steps';
+import type { AnalysisStepConfig } from './analysis-steps';
 
-export interface AnalysisStepConfig {
-  label: string;
-  description: string;
-  duration: string;
-  icon: LucideIcon;
-}
+export type { AnalysisStepConfig } from './analysis-steps';
+export { ANALYSIS_STEPS } from './analysis-steps';
 
 export interface AnalysisDialogProps {
   open: boolean;
@@ -102,42 +100,38 @@ export function AnalysisDialog({
 }: AnalysisDialogProps) {
   const showPageSpeedStep = analyzing && loadingPageSpeed && !loadingCompetitors;
   const showCompetitorsStep = analyzing && loadingCompetitors;
-  const showStepLabel = showCompetitorsStep ? 'Henter konkurrenter' : showPageSpeedStep ? 'Måler hastighet (PageSpeed)' : analysisSteps[analysisStep]?.label;
+  const isMainAnalyzePhase = analyzing && !loadingPageSpeed && !loadingCompetitors;
+  /** Steg 6 (index 5) vises i samme modal under PageSpeed/konkurrenter – ikke egen «1/1»-visning. */
+  const effectiveStep = showPageSpeedStep || showCompetitorsStep ? analysisSteps.length - 1 : analysisStep;
+
+  const showStepLabel = showCompetitorsStep && competitorProgress
+    ? `Analyserer konkurrent ${competitorProgress.current}`
+    : showCompetitorsStep
+      ? 'Henter konkurrenter'
+      : showPageSpeedStep
+        ? 'Måler hastighet (PageSpeed)'
+        : analysisSteps[analysisStep]?.label;
   const showStepDesc = showCompetitorsStep && competitorProgress
-    ? `Konkurrent ${competitorProgress.current} av ${competitorProgress.total}`
-    : showPageSpeedStep
-      ? 'Henter ytelsesdata fra Google PageSpeed Insights'
-      : analysisSteps[analysisStep]?.description;
+    ? (competitorProgress.current < competitorProgress.total
+        ? `Neste: konkurrent ${competitorProgress.current + 1} av ${competitorProgress.total}`
+        : `Konkurrent ${competitorProgress.current} av ${competitorProgress.total}`)
+    : showCompetitorsStep
+      ? 'Laster inn konkurrentanalyser'
+      : showPageSpeedStep
+        ? 'Henter ytelsesdata fra Google PageSpeed Insights'
+        : isMainAnalyzePhase
+          ? 'Vennligst vent'
+          : analysisSteps[analysisStep]?.description;
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 mx-1 max-[400px]:mx-1 min-[401px]:mx-2 sm:mx-auto rounded-xl w-[calc(100vw-0.5rem)] max-[400px]:w-[calc(100vw-0.5rem)] min-[401px]:w-[calc(100vw-1rem)] sm:w-full max-w-[95vw]">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 mx-1 max-[400px]:mx-1 min-[401px]:mx-2 sm:mx-auto rounded-xl w-[calc(100vw-0.5rem)] max-[400px]:w-[calc(100vw-0.5rem)] min-[401px]:w-[calc(100vw-1rem)] sm:w-full max-w-[95vw]">
         {analyzing ? (
           <>
-            {/* Header - simple */}
-            <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
-              <div className="flex items-center gap-3">
-                <div className="relative w-9 sm:w-10 h-9 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-                  <Loader2 className="h-4 sm:h-5 w-4 sm:w-5 text-neutral-600 animate-spin" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <DialogHeader className="p-0 space-y-0">
-                    <DialogTitle className="text-sm sm:text-base font-semibold text-neutral-900">
-                      {showCompetitorsStep ? 'Henter konkurrenter' : showPageSpeedStep ? 'Måler hastighet' : 'Analyserer nettside'}
-                    </DialogTitle>
-                    <DialogDescription className="text-xs text-neutral-500 truncate">
-                      {showCompetitorsStep && competitorProgress
-                        ? `Konkurrent ${competitorProgress.current} av ${competitorProgress.total}`
-                        : showPageSpeedStep
-                          ? 'Fullfører PageSpeed-analyse – vanligvis under 1 min'
-                          : (url || companyUrl || '—')}
-                    </DialogDescription>
-                  </DialogHeader>
-                </div>
-              </div>
-            </div>
-
-            <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
+            <VisuallyHidden.Root asChild>
+              <DialogTitle>Analyserer nettside</DialogTitle>
+            </VisuallyHidden.Root>
+            <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
               {/* Current step or PageSpeed step */}
               <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-3 sm:p-4">
                 <div className="flex items-center gap-3 sm:gap-4">
@@ -154,12 +148,12 @@ export function AnalysisDialog({
                         strokeWidth="3"
                         strokeLinecap="round"
                         className="transition-all duration-700 ease-out"
-                        strokeDasharray={`${((showPageSpeedStep ? 6 : analysisStep + 1) / 6) * 150.8} 150.8`}
+                        strokeDasharray={`${((effectiveStep + 1) / analysisSteps.length) * 150.8} 150.8`}
                       />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center">
                       <span className="text-neutral-700 text-xs sm:text-sm font-semibold">
-                        {`${showPageSpeedStep ? 6 : analysisStep + 1}/6`}
+                        {`${effectiveStep + 1}/${analysisSteps.length}`}
                       </span>
                     </div>
                   </div>
@@ -190,13 +184,15 @@ export function AnalysisDialog({
                 </div>
               </div>
 
-              {/* Steps list - clean styling */}
+              {/* Steps list – alle 6 steg inkl. hastighet/konkurrenter i samme modal */}
               <div className="rounded-xl border border-neutral-200 overflow-hidden bg-white">
                 <div className="divide-y divide-neutral-100">
                   {analysisSteps.map((step, index) => {
                     const StepIcon = step.icon;
-                    const isComplete = showPageSpeedStep || showCompetitorsStep ? true : index < analysisStep;
-                    const isCurrent = showPageSpeedStep || showCompetitorsStep ? false : index === analysisStep;
+                    const isComplete = index < effectiveStep;
+                    const isCurrent = index === effectiveStep;
+                    const isStep6Current = index === analysisSteps.length - 1 && isCurrent;
+                    const label = isStep6Current && (showPageSpeedStep || showCompetitorsStep) ? showStepLabel : step.label;
                     return (
                       <div
                         key={index}
@@ -206,10 +202,10 @@ export function AnalysisDialog({
                       >
                         <div
                           className={`relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all duration-300 ${
-                            isComplete 
-                              ? 'bg-green-100' 
-                              : isCurrent 
-                                ? 'bg-neutral-200' 
+                            isComplete
+                              ? 'bg-green-100'
+                              : isCurrent
+                                ? 'bg-neutral-200'
                                 : 'bg-neutral-100'
                           }`}
                         >
@@ -217,7 +213,11 @@ export function AnalysisDialog({
                             <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
                           ) : isCurrent ? (
                             <>
-                              <StepIcon className="h-3.5 w-3.5 text-neutral-700" />
+                              {isStep6Current && (showPageSpeedStep || showCompetitorsStep) ? (
+                                <Loader2 className="h-3.5 w-3.5 text-neutral-700 animate-spin" />
+                              ) : (
+                                <StepIcon className="h-3.5 w-3.5 text-neutral-700" />
+                              )}
                               <span className="absolute inset-0 rounded-md border border-neutral-300 animate-pulse" />
                             </>
                           ) : (
@@ -228,7 +228,7 @@ export function AnalysisDialog({
                           <p className={`text-sm ${
                             isComplete ? 'text-green-700 font-medium' : isCurrent ? 'text-neutral-900 font-medium' : 'text-neutral-400'
                           }`}>
-                            {step.label}
+                            {label}
                           </p>
                         </div>
                         <span className={`text-xs tabular-nums shrink-0 ${
@@ -239,36 +239,6 @@ export function AnalysisDialog({
                       </div>
                     );
                   })}
-                  {/* Step 6: PageSpeed + Competitors (always visible) */}
-                  {(() => {
-                    const isActive = showPageSpeedStep || showCompetitorsStep;
-
-                    return (
-                      <div className={`flex items-center gap-3 px-4 py-2.5 transition-all duration-300 ${isActive ? 'bg-neutral-50 border-l-2 border-l-neutral-400 animate-pulse' : ''}`}>
-                        <div className={`relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all duration-300 ${
-                          isActive ? 'bg-neutral-200' : 'bg-neutral-100'
-                        }`}>
-                          {isActive ? (
-                            <Loader2 className="h-3.5 w-3.5 text-neutral-700 animate-spin" />
-                          ) : (
-                            <Zap className="h-3.5 w-3.5 text-neutral-400" />
-                          )}
-                          {isActive && <span className="absolute inset-0 rounded-md border border-neutral-300 animate-pulse" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm ${isActive ? 'text-neutral-900 font-medium' : 'text-neutral-400'}`}>
-                            {showCompetitorsStep ? 'Henter hastighet + konkurrenter' : 'Hastighet og konkurrenter'}
-                          </p>
-                          {showCompetitorsStep && competitorProgress && (
-                            <p className="text-xs text-neutral-500">Konkurrent {competitorProgress.current} av {competitorProgress.total}</p>
-                          )}
-                        </div>
-                        <span className={`text-xs tabular-nums shrink-0 ${isActive ? 'text-neutral-600' : 'text-neutral-300'}`}>
-                          {isActive ? 'Pågår' : '~30s'}
-                        </span>
-                      </div>
-                    );
-                  })()}
                 </div>
               </div>
 

@@ -14,11 +14,8 @@ import {
   Plus,
   RefreshCw,
   Loader2,
-  Search,
-  Shield,
   Eye,
   Sparkles,
-  CheckCircle2,
   Trash2,
   AlertTriangle,
   Zap,
@@ -30,6 +27,8 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { usePremium } from '@/hooks/usePremium';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AnalysisDialog } from '@/components/features/dashboard';
+import { ANALYSIS_STEPS } from '@/components/features/dashboard/analysis-steps';
 
 interface AnalysisRaw {
   id: string;
@@ -65,6 +64,7 @@ export default function AnalysisPage() {
   const [rerunningAnalysis, setRerunningAnalysis] = useState<{ id: string; url: string } | null>(null);
   const [rerunStep, setRerunStep] = useState(0);
   const [rerunElapsedTime, setRerunElapsedTime] = useState(0);
+  const [rerunLoadingPageSpeed, setRerunLoadingPageSpeed] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; url: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState(1);
@@ -80,23 +80,15 @@ export default function AnalysisPage() {
     if (totalPages > 0 && page > totalPages) setPage(1);
   }, [analyses.length, totalPages, page]);
 
-  const RERUN_STEPS = [
-    { label: 'Henter nettside', description: 'Laster inn og scraper innhold fra nettsiden', duration: '~5s', icon: Globe },
-    { label: 'Analyserer SEO', description: 'Sjekker meta-tags, overskrifter, lenker og innhold', duration: '~10s', icon: Search },
-    { label: 'Sjekker sikkerhet', description: 'Tester SSL-sertifikat og sikkerhetsheaders', duration: '~15s', icon: Shield },
-    { label: 'Måler ytelse', description: 'Henter Google PageSpeed-score og Core Web Vitals', duration: '~30s', icon: Zap },
-    { label: 'Genererer rapport', description: 'AI sammenligner resultater og lager anbefalinger', duration: '~20s', icon: Sparkles },
-    { label: 'Hastighet og konkurrenter', description: 'PageSpeed og konkurrentsammenligning', duration: '~30s', icon: Zap },
-  ];
-
-  // Timer og steg-fremdrift mens «Kjør på nytt» kjører
+  // Timer og steg 0–4 mens «Kjør på nytt» kjører; steg 5 settes når PageSpeed starter
   useEffect(() => {
     if (!rerunningAnalysis) return;
     setRerunStep(0);
     setRerunElapsedTime(0);
+    setRerunLoadingPageSpeed(false);
     const timeInterval = setInterval(() => setRerunElapsedTime((t) => t + 1), 1000);
     const stepInterval = setInterval(() => {
-      setRerunStep((s) => Math.min(s + 1, RERUN_STEPS.length - 1));
+      setRerunStep((s) => Math.min(s + 1, 4));
     }, 12000);
     return () => {
       clearInterval(timeInterval);
@@ -207,6 +199,8 @@ export default function AnalysisPage() {
       }
 
       const analysisId = data.analysisId as string | undefined;
+      setRerunStep(5);
+      setRerunLoadingPageSpeed(true);
       if (analysisId) {
         try {
           const speedRes = await fetch('/api/analyze/pagespeed', {
@@ -221,7 +215,7 @@ export default function AnalysisPage() {
           console.warn('PageSpeed-måling feilet ved rerun, analysen er lagret uten hastighet');
         }
       }
-
+      setRerunLoadingPageSpeed(false);
       toast.success('Analysen er ferdig.');
       router.push(`/dashboard?analysisId=${analysisId ?? data.analysisId}`);
     } catch (error) {
@@ -351,133 +345,42 @@ export default function AnalysisPage() {
 
   return (
     <div className="space-y-8">
-      {/* Modal mens «Kjør på nytt» kjører */}
-      <Dialog open={!!rerunningAnalysis} onOpenChange={() => {}}>
-        <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 mx-1 min-[401px]:mx-2 sm:mx-auto rounded-xl w-[calc(100vw-0.5rem)] min-[401px]:w-[calc(100vw-1rem)] sm:w-full max-w-[95vw]" showCloseButton={false}>
-          {rerunningAnalysis && (
-            <>
-              {/* Header – samme som original analyse-dialog */}
-              <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="relative w-9 sm:w-10 h-9 sm:h-10 rounded-xl bg-neutral-100 flex items-center justify-center shrink-0">
-                    <Loader2 className="h-4 sm:h-5 w-4 sm:w-5 text-neutral-600 animate-spin" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <DialogHeader className="p-0 space-y-0">
-                      <DialogTitle className="text-sm sm:text-base font-semibold text-neutral-900">
-                        Kjører analyse på nytt
-                      </DialogTitle>
-                      <DialogDescription className="text-xs text-neutral-500 truncate">
-                        {rerunningAnalysis.url}
-                      </DialogDescription>
-                    </DialogHeader>
-                  </div>
-                </div>
-              </div>
-
-              <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
-                {/* Nåværende steg – samme boks som original */}
-                <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-3 sm:p-4">
-                  <div className="flex items-center gap-3 sm:gap-4">
-                    <div className="relative w-12 sm:w-14 h-12 sm:h-14 shrink-0">
-                      <svg className="w-12 sm:w-14 h-12 sm:h-14 -rotate-90" viewBox="0 0 56 56">
-                        <circle cx="28" cy="28" r="24" fill="none" stroke="#e5e5e5" strokeWidth="3" />
-                        <circle
-                          cx="28"
-                          cy="28"
-                          r="24"
-                          fill="none"
-                          stroke="#737373"
-                          strokeWidth="3"
-                          strokeLinecap="round"
-                          className="transition-all duration-700 ease-out"
-                          strokeDasharray={`${((rerunStep + 1) / RERUN_STEPS.length) * 150.8} 150.8`}
-                        />
-                      </svg>
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <span className="text-neutral-700 text-xs sm:text-sm font-semibold">
-                          {rerunStep + 1}/{RERUN_STEPS.length}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <p className="text-neutral-900 text-sm sm:text-base font-medium flex items-center gap-2">
-                          {RERUN_STEPS[rerunStep]?.label}
-                          <span className="inline-flex gap-0.5">
-                            <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                            <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                            <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                          </span>
-                        </p>
-                      </div>
-                      <p className="text-neutral-500 text-xs sm:text-sm hidden sm:block">
-                        {RERUN_STEPS[rerunStep]?.description}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-white border border-neutral-200">
-                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                      <span className="text-xs sm:text-sm font-medium text-neutral-700 tabular-nums">
-                        {Math.floor(rerunElapsedTime / 60)}:{(rerunElapsedTime % 60).toString().padStart(2, '0')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Steg-liste – samme styling som original */}
-                <div className="rounded-xl border border-neutral-200 overflow-hidden bg-white">
-                  <div className="divide-y divide-neutral-100">
-                    {RERUN_STEPS.map((step, index) => {
-                      const StepIcon = step.icon;
-                      const isComplete = index < rerunStep;
-                      const isCurrent = index === rerunStep;
-                      return (
-                        <div
-                          key={index}
-                          className={`flex items-center gap-3 px-4 py-2.5 transition-all duration-300 ${isCurrent ? 'bg-neutral-50 border-l-2 border-l-neutral-400 animate-pulse' : ''}`}
-                        >
-                          <div
-                            className={`relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all duration-300 ${
-                              isComplete ? 'bg-green-100' : isCurrent ? 'bg-neutral-200' : 'bg-neutral-100'
-                            }`}
-                          >
-                            {isComplete ? (
-                              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
-                            ) : isCurrent ? (
-                              <>
-                                <StepIcon className="h-3.5 w-3.5 text-neutral-700" />
-                                <span className="absolute inset-0 rounded-md border border-neutral-300 animate-pulse" />
-                              </>
-                            ) : (
-                              <StepIcon className="h-3.5 w-3.5 text-neutral-400" />
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-sm ${
-                              isComplete ? 'text-green-700 font-medium' : isCurrent ? 'text-neutral-900 font-medium' : 'text-neutral-400'
-                            }`}>
-                              {step.label}
-                            </p>
-                          </div>
-                          <span className={`text-xs tabular-nums shrink-0 ${
-                            isComplete ? 'text-green-600' : isCurrent ? 'text-neutral-600' : 'text-neutral-300'
-                          }`}>
-                            {isComplete ? '✓' : isCurrent ? 'Pågår' : step.duration}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <p className="text-center text-xs text-neutral-400">
-                  Vanligvis 1–2 minutter
-                </p>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Modal «Kjør på nytt» – samme AnalysisDialog som dashboard, steg 6/6 inkludert */}
+      <AnalysisDialog
+        open={!!rerunningAnalysis}
+        onOpenChange={() => {}}
+        trigger={<span className="hidden" aria-hidden />}
+        analyzing={!!rerunningAnalysis}
+        analysisStep={rerunLoadingPageSpeed ? 5 : rerunStep}
+        analysisSteps={ANALYSIS_STEPS}
+        elapsedTime={rerunElapsedTime}
+        url={rerunningAnalysis?.url ?? ''}
+        setUrl={() => {}}
+        companyUrl={null}
+        companyName={null}
+        competitorUrls={[]}
+        competitorInput=""
+        setCompetitorInput={() => {}}
+        addCompetitor={() => {}}
+        removeCompetitor={() => {}}
+        keywords={[]}
+        keywordInput=""
+        setKeywordInput={() => {}}
+        addKeyword={() => {}}
+        removeKeyword={() => {}}
+        clearKeywords={() => {}}
+        suggestedKeywordCount={0}
+        setSuggestedKeywordCount={() => {}}
+        suggestingKeywords={false}
+        suggestKeywords={() => {}}
+        FREE_COMPETITOR_LIMIT={5}
+        FREE_KEYWORD_LIMIT={5}
+        onRunAnalysis={() => {}}
+        loadingPageSpeed={rerunLoadingPageSpeed}
+        loadingCompetitors={false}
+        competitorProgress={null}
+        isSubpageMode={false}
+      />
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteConfirm} onOpenChange={(open) => !open && setDeleteConfirm(null)}>
