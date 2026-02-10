@@ -275,12 +275,12 @@ export function AnalysisDialog({
                   <Input
                     id="url"
                     placeholder="dinbedrift.no"
-                    value={url || companyUrl || ''}
+                    value={isSubpageMode ? (url || companyUrl || '') : url}
                     onChange={(e) => setUrl(e.target.value)}
                     className="pl-10 h-10 rounded-lg border-neutral-200 text-sm"
                   />
                 </div>
-                {!isSubpageMode && companyUrl && url !== companyUrl && (
+                {!isSubpageMode && companyUrl && url && url !== companyUrl && (
                   <button
                     type="button"
                     onClick={() => setUrl(companyUrl)}

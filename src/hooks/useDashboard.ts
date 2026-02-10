@@ -464,11 +464,18 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
   // Actions
   const setUrl = useCallback((url: string) => updateState({ url }), [updateState]);
   const setDialogOpen = useCallback((open: boolean) => {
-    // Clear subpageUrl when closing dialog
     if (!open) {
       updateState({ dialogOpen: false, subpageUrl: null });
     } else {
-      updateState({ dialogOpen: true });
+      // Reset all inputs for a fresh new analysis
+      updateState({
+        dialogOpen: true,
+        url: '',
+        keywords: [],
+        keywordInput: '',
+        competitorUrls: [],
+        competitorInput: '',
+      });
     }
   }, [updateState]);
   const openSubpageDialog = useCallback((subpageUrl: string) => {
@@ -778,9 +785,11 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       });
       if (data.keywords && Array.isArray(data.keywords)) {
         const normalized: string[] = data.keywords.map((k: unknown) => String(k).toLowerCase().trim());
-        const uniqueKeywords = [...new Set(normalized)].slice(0, FREE_KEYWORD_LIMIT);
-        updateState({ keywords: uniqueKeywords });
-        toast.success(`${uniqueKeywords.length} nøkkelord lagt til`);
+        // Merge with existing keywords (user-added first, then suggested), respecting limit
+        const merged = [...new Set([...state.keywords, ...normalized])].slice(0, FREE_KEYWORD_LIMIT);
+        const added = merged.length - state.keywords.length;
+        updateState({ keywords: merged });
+        toast.success(added > 0 ? `${added} nye nøkkelord lagt til` : 'Ingen nye nøkkelord å legge til');
       } else {
         console.error('[suggest-keywords] Unexpected response format:', data);
         toast.error('Fikk uventet format fra AI');

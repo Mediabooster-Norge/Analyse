@@ -128,7 +128,7 @@ export function SocialPreview({ url, pageTitle, pageDescription, ogTags, onGetTi
             className="inline-flex items-center gap-1 px-2 py-1 max-[400px]:px-1.5 max-[400px]:py-1 min-[401px]:px-2.5 min-[401px]:py-1.5 rounded-md bg-amber-50 border border-amber-100 text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-amber-700 hover:bg-amber-100 cursor-pointer w-fit"
           >
             <Sparkles className="w-3 h-3" />
-            Få AI-tips
+            Trykk her for AI-forslag til deling
           </button>
         )}
       </div>

@@ -384,16 +384,7 @@ export function OverviewTab({
       {/* Detailed Metrics */}
       <div data-section="detailed-metrics" className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
         <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6 border-b border-neutral-100">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 max-[400px]:gap-2">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-neutral-900 mb-0.5 text-sm max-[400px]:text-xs min-[401px]:text-base">Detaljert gjennomgang</h3>
-              <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs sm:text-sm text-neutral-500">Klikk for AI-forslag</p>
-            </div>
-            <div className="inline-flex items-center gap-1 max-[400px]:gap-1 px-2 py-1 max-[400px]:px-1.5 max-[400px]:py-1 min-[401px]:px-2.5 min-[401px]:py-1.5 rounded-md bg-amber-50 border border-amber-100 text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-amber-700 w-fit">
-              <Lightbulb className="w-2.5 h-2.5 max-[400px]:w-2 max-[400px]:h-2 text-amber-500" />
-              AI-hjelp
-            </div>
-          </div>
+          <h3 className="font-semibold text-neutral-900 text-sm max-[400px]:text-xs min-[401px]:text-base">Detaljert gjennomgang</h3>
         </div>
         <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6 space-y-3 max-[400px]:space-y-3 sm:space-y-4">
           {/* Social preview – øverst */}
@@ -424,6 +415,14 @@ export function OverviewTab({
                   );
                 }}
               />
+            </div>
+          </div>
+
+          {/* AI hint – rett over metrikkortene */}
+          <div className="flex items-center gap-2 px-1">
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-blue-50 border border-blue-200/60 text-xs text-blue-700">
+              <Lightbulb className="w-3 h-3 text-blue-500 shrink-0" />
+              <span>Trykk på et kort for AI-drevne forbedringsforslag</span>
             </div>
           </div>
 

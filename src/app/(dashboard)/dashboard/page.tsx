@@ -422,12 +422,17 @@ function DashboardPageContent() {
             };
             const suggested = internalUrls.filter((p): p is string => !!p && toPath(p) !== currentPathNorm);
             return (
-              <Accordion type="single" collapsible defaultValue="" className="rounded-2xl border border-neutral-200 bg-white overflow-hidden mb-4">
+              <Accordion type="single" collapsible defaultValue="" className="rounded-2xl border border-blue-200/60 bg-gradient-to-r from-blue-50/50 to-indigo-50/30 overflow-hidden mb-4">
                 <AccordionItem value="analyser" className="border-none">
-                  <AccordionTrigger className="px-3 sm:px-4 py-3 hover:no-underline hover:bg-neutral-50 [&[data-state=open]]:border-b [&[data-state=open]]:border-neutral-100">
+                  <AccordionTrigger className="px-3 sm:px-4 py-3 hover:no-underline hover:from-blue-50/80 hover:to-indigo-50/50 [&[data-state=open]]:border-b [&[data-state=open]]:border-blue-100/60">
                     <span className="font-medium text-neutral-900 flex items-center gap-2 text-sm">
-                      <Link2 className="h-4 w-4 text-neutral-500" />
-                      Analyser en annen side
+                      <div className="w-6 h-6 rounded-md bg-blue-100 flex items-center justify-center shrink-0">
+                        <Link2 className="h-3.5 w-3.5 text-blue-600" />
+                      </div>
+                      <span>
+                        Analyser en annen side på samme domene
+                        <span className="block text-xs font-normal text-neutral-500 mt-0.5">Sammenlign undersider med SEO og innholdsanalyse</span>
+                      </span>
                     </span>
                   </AccordionTrigger>
                   <AccordionContent>
@@ -501,7 +506,7 @@ function DashboardPageContent() {
                               key={pathname}
                               type="button"
                               onClick={() => openSubpageDialog(fullUrl)}
-                              className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-neutral-50 hover:bg-neutral-100 border border-transparent hover:border-neutral-200 transition-all text-left group cursor-pointer"
+                              className="flex items-center gap-1.5 py-1.5 px-2.5 rounded-lg bg-white hover:bg-neutral-50 border border-neutral-200/60 hover:border-neutral-300 transition-all text-left group cursor-pointer shadow-sm"
                               title={fullUrl}
                             >
                               <span className="text-xs text-neutral-600 truncate flex-1 group-hover:text-neutral-900">{label}</span>

@@ -243,7 +243,7 @@ export function KeywordsTab({
                 className="mb-4 sm:mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-200 text-xs text-neutral-700 hover:bg-neutral-50 transition-colors cursor-pointer"
               >
                 <Sparkles className="h-3.5 w-3.5 text-neutral-400" />
-                Se AI-vurdering av nøkkelord
+                Trykk her for AI-vurdering av nøkkelord
                 <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
               </button>
             )}

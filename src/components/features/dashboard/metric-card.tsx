@@ -50,7 +50,7 @@ export function MetricCard({
   return (
     <div
       onClick={onClick}
-      className={`p-2 max-[400px]:p-2 min-[401px]:p-3 rounded-lg border cursor-pointer hover:shadow-sm transition-all group min-w-0 ${colors.bg} ${colors.border}`}
+      className={`p-2 max-[400px]:p-2 min-[401px]:p-3 rounded-lg border cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all group min-w-0 ${colors.bg} ${colors.border}`}
     >
       {/* Header row */}
       <div className="flex items-center justify-between gap-1 max-[400px]:gap-1 min-[401px]:gap-2 mb-1 max-[400px]:mb-1 min-[401px]:mb-1.5">
@@ -60,9 +60,11 @@ export function MetricCard({
           </div>
           <span className="font-medium text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-900 truncate">{title}</span>
         </div>
-        <div className="flex items-center gap-0.5 text-neutral-400 group-hover:text-amber-500 transition-colors shrink-0">
-          <Lightbulb className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
-          <ChevronRight className="w-3 h-3" />
+        <div className="flex items-center gap-0.5 shrink-0">
+          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-500 text-[8px] max-[400px]:text-[7px] min-[401px]:text-[9px] font-medium group-hover:bg-neutral-200 transition-colors">
+            <Lightbulb className="w-2.5 h-2.5" />
+            AI
+          </span>
         </div>
       </div>
 
