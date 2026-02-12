@@ -380,7 +380,6 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           updateState({
             currentAnalysisId: analysis.id,
             companyUrl: analysis.website_url || null,
-            url: analysis.website_url || '',
             companyName: analysis.website_name || null,
             remainingCompetitorUpdates: analysis.remaining_competitor_updates ?? 5,
             remainingKeywordUpdates: analysis.remaining_keyword_updates ?? 5,
@@ -388,8 +387,6 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             remainingArticleGenerations: remainingArticleGens,
             articleGenerationsLimit: ARTICLE_GENERATIONS_LIMIT,
             userName: firstName || null,
-            competitorUrls: loadedCompetitors,
-            keywords: loadedKeywords,
             articleSuggestions: savedArticleSuggestions,
             articleSuggestionsSavedAt: savedArticleSuggestionsAt,
             analysisHistory,
@@ -404,6 +401,12 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
               keywordResearch: analysis.keyword_research || undefined,
               aiVisibility: analysis.ai_visibility || undefined,
             },
+            // When opening fresh "new analysis" dialog, keep input fields empty.
+            // Otherwise pre-fill from the loaded analysis.
+            ...(showNewDialog
+              ? { url: '', competitorUrls: [], keywords: [], keywordInput: '', competitorInput: '' }
+              : { url: analysis.website_url || '', competitorUrls: loadedCompetitors, keywords: loadedKeywords }
+            ),
           });
         } else {
           updateState({
@@ -419,7 +422,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     }
     
     fetchData();
-  }, [analysisIdFromUrl, FREE_MONTHLY_LIMIT, ARTICLE_GENERATIONS_LIMIT, isPremium, updateState]);
+  }, [analysisIdFromUrl, showNewDialog, FREE_MONTHLY_LIMIT, ARTICLE_GENERATIONS_LIMIT, isPremium, updateState]);
 
   // Save to cache when data changes
   useEffect(() => {
@@ -1126,6 +1129,49 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     }
   }, [state.result, state.editKeywords, state.companyUrl, state.url, state.currentAnalysisId, state.remainingKeywordUpdates, isPremium, updateState]);
 
+  // Retry PageSpeed analysis for the current analysis
+  const retryPageSpeed = useCallback(async () => {
+    if (!state.currentAnalysisId || state.loadingPageSpeed) return;
+
+    updateState({ loadingPageSpeed: true });
+
+    try {
+      const response = await fetch('/api/analyze/pagespeed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ analysisId: state.currentAnalysisId }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || 'Hastighetstest feilet');
+      }
+
+      const { pageSpeedResults, overallScore } = await response.json();
+
+      setState((prev) => ({
+        ...prev,
+        loadingPageSpeed: false,
+        result: prev.result
+          ? {
+              ...prev.result,
+              pageSpeedResults: pageSpeedResults ?? prev.result.pageSpeedResults,
+              overallScore: overallScore ?? prev.result.overallScore,
+            }
+          : null,
+      }));
+
+      if (pageSpeedResults) {
+        toast.success('Hastighetstest fullført!');
+      } else {
+        toast.error('Hastighetstest returnerte ingen resultater. Prøv igjen senere.');
+      }
+    } catch (error) {
+      updateState({ loadingPageSpeed: false });
+      toast.error(error instanceof Error ? error.message : 'Hastighetstest feilet');
+    }
+  }, [state.currentAnalysisId, state.loadingPageSpeed, updateState]);
+
   return {
     // State
     ...state,
@@ -1186,6 +1232,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     removeEditKeyword,
     cancelEditingKeywords,
     updateKeywordAnalysis,
+    retryPageSpeed,
     updateState,
   };
 }

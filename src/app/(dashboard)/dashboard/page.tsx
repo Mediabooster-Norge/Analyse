@@ -136,6 +136,7 @@ function DashboardPageContent() {
     setGeneratedArticle,
     analysisHistory,
     checkAiVisibility,
+    retryPageSpeed,
     startEditingCompetitors,
     addEditCompetitor,
     removeEditCompetitor,
@@ -573,6 +574,7 @@ function DashboardPageContent() {
               setGeneratedArticle={setGeneratedArticle}
               analysisHistory={analysisHistory}
               loadingPageSpeed={loadingPageSpeed}
+              retryPageSpeed={retryPageSpeed}
             />
           )}
 

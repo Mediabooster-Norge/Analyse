@@ -269,26 +269,15 @@ export function AnalysisDialog({
             </div>
             <div className="space-y-3 sm:space-y-4 px-4 sm:px-5 pb-4 sm:pb-5">
               {/* URL input – alltid først */}
-              <div className="flex items-center gap-2">
-                <div className="relative flex-1">
-                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
-                  <Input
-                    id="url"
-                    placeholder="dinbedrift.no"
-                    value={isSubpageMode ? (url || companyUrl || '') : url}
-                    onChange={(e) => setUrl(e.target.value)}
-                    className="pl-10 h-10 rounded-lg border-neutral-200 text-sm"
-                  />
-                </div>
-                {!isSubpageMode && companyUrl && url && url !== companyUrl && (
-                  <button
-                    type="button"
-                    onClick={() => setUrl(companyUrl)}
-                    className="text-xs text-neutral-500 hover:text-neutral-700 transition-colors whitespace-nowrap shrink-0"
-                  >
-                    ← Tilbake
-                  </button>
-                )}
+              <div className="relative">
+                <Globe className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
+                <Input
+                  id="url"
+                  placeholder="dinbedrift.no"
+                  value={isSubpageMode ? (url || companyUrl || '') : url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="pl-10 h-10 rounded-lg border-neutral-200 text-sm"
+                />
               </div>
 
               {/* Competitors – under vår hoved-URL, nøytral styling */}

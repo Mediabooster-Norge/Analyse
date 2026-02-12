@@ -1,6 +1,12 @@
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { fetch as nativeFetch } from 'undici';
 
+/**
+ * Creates a Supabase server client using undici's native fetch.
+ * This bypasses Next.js 16's patched fetch which has intermittent
+ * connection timeout issues in the dev server.
+ */
 export async function createClient() {
   const cookieStore = await cookies();
 
@@ -22,6 +28,9 @@ export async function createClient() {
             // This can be ignored if you have middleware refreshing sessions.
           }
         },
+      },
+      global: {
+        fetch: nativeFetch as unknown as typeof globalThis.fetch,
       },
     }
   );

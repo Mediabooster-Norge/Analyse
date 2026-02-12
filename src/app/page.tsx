@@ -1025,6 +1025,116 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* CTA Banner – right after hero */}
+      <section className="relative z-10 py-8 sm:py-10 md:py-12">
+        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+            className="bg-neutral-900 rounded-xl sm:rounded-2xl relative overflow-hidden min-h-[280px] sm:min-h-[320px]"
+          >
+            <SectionShapes variant="bottomRight" color="green" shape="star" dark />
+            {/* Content grid */}
+            <div className="relative z-10 grid md:grid-cols-2 h-full">
+              {/* Left column - Text and CTA */}
+              <div className="p-6 sm:p-10 md:p-12 flex flex-col justify-center relative z-20">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight text-white mb-3 sm:mb-4 leading-tight">
+                  Prøv analysen<br />
+                  <span className="text-neutral-400">helt gratis.</span>
+                </h2>
+                <p className="text-sm sm:text-base text-neutral-400 mb-6 sm:mb-8 max-w-sm">
+                  Full helsesjekk av nettsiden din på under ett minutt – SEO, sikkerhet, innhold og AI-anbefalinger.
+                </p>
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
+                  <Button className="bg-white text-neutral-900 hover:bg-neutral-100 h-10 sm:h-12 px-4 sm:px-6 text-sm sm:text-base" asChild>
+                  <Link href="/register">
+                    Kom i gang gratis
+                    <ArrowRight className="ml-2 w-4 h-4" />
+                  </Link>
+                </Button>
+              </motion.div>
+              </div>
+              
+              {/* Right column - Dashboard mockup (visible as faded bg on mobile) */}
+              <div className="absolute md:relative inset-0 md:inset-auto overflow-hidden opacity-40 md:opacity-100">
+                {/* Gradient fade from left */}
+                <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-neutral-900 to-transparent z-10" />
+                
+                {/* Dashboard mockup - dark theme, tilted */}
+                <div className="absolute inset-0 flex items-center">
+                  <div 
+                    className="absolute -right-8 w-[500px] bg-neutral-800/90 rounded-xl overflow-hidden border border-neutral-700/50"
+                    style={{ transform: 'perspective(1200px) rotateY(-15deg) rotateX(2deg)' }}
+                  >
+                    {/* Header */}
+                    <div className="px-4 py-3 border-b border-neutral-700/50">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <BarChart3 className="w-4 h-4 text-neutral-400" />
+                          <span className="text-sm font-medium text-white">Sammenligning</span>
+                          <span className="text-xs text-neutral-500">· Konkurrenter</span>
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-neutral-500">
+                          <span>Synlighet</span>
+                          <span>Score</span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Rankings list */}
+                    <div className="p-2">
+                      {[
+                        { rank: 1, name: 'Din bedrift', score: 89, visibility: '95%', isYou: true, trend: 'up' },
+                        { rank: 2, name: 'Konkurrent A', score: 82, visibility: '80%', isYou: false, trend: 'down' },
+                        { rank: 3, name: 'Konkurrent B', score: 76, visibility: '72%', isYou: false, trend: 'up' },
+                        { rank: 4, name: 'Konkurrent C', score: 71, visibility: '65%', isYou: false, trend: 'neutral' },
+                        { rank: 5, name: 'Konkurrent D', score: 58, visibility: '50%', isYou: false, trend: 'down' },
+                        { rank: 6, name: 'Konkurrent E', score: 45, visibility: '38%', isYou: false, trend: 'down' },
+                      ].map((item) => (
+                        <div 
+                          key={item.rank} 
+                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 ${
+                            item.isYou ? 'bg-green-500/20 border border-green-500/30' : 'bg-neutral-700/30 hover:bg-neutral-700/50'
+                          }`}
+                        >
+                          <span className={`w-5 h-5 rounded flex items-center justify-center text-xs font-medium ${
+                            item.isYou ? 'bg-green-500 text-white' : 'bg-neutral-600 text-neutral-300'
+                          }`}>
+                            {item.rank}
+                          </span>
+                          <span className={`flex-1 text-sm ${item.isYou ? 'text-white font-medium' : 'text-neutral-300'}`}>
+                            {item.name}
+                          </span>
+                          <div className="flex items-center gap-4">
+                            <span className="text-xs text-neutral-400 w-12 text-right">{item.visibility}</span>
+                            <div className="flex items-center gap-1">
+                              <span className={`text-sm font-medium w-8 text-right ${
+                                item.isYou ? 'text-green-400' : 'text-neutral-400'
+                              }`}>
+                                {item.score}
+                              </span>
+                              {item.trend === 'up' && <TrendingUp className="w-3 h-3 text-green-400" />}
+                              {item.trend === 'down' && <TrendingUp className="w-3 h-3 text-red-400 rotate-180" />}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Gradient fades for smooth blending */}
+                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-neutral-900 via-neutral-900/80 to-transparent z-10" />
+                <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-neutral-900 via-neutral-900/50 to-transparent z-10" />
+                {/* Extra left gradient on mobile for text readability */}
+                <div className="absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r from-neutral-900 via-neutral-900/70 to-transparent z-10 md:hidden" />
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       <div className="relative">
       {/* Testimonials - Scrolling Cards */}
       <section className="relative z-10 bg-white py-10 sm:py-12 md:py-16 overflow-hidden section-separator-top">
@@ -2203,116 +2313,6 @@ export default function LandingPage() {
             </motion.div>
           </div>
           </div>
-        </div>
-      </section>
-
-      {/* Final CTA - Inline style */}
-      <section className="relative z-10 py-12 sm:py-16 md:py-20 section-separator-top">
-        <div className="max-w-6xl mx-auto px-3 sm:px-4 md:px-6">
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95 }}
-            whileInView={{ opacity: 1, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            className="bg-neutral-900 rounded-xl sm:rounded-2xl relative overflow-hidden min-h-[280px] sm:min-h-[320px]"
-          >
-            <SectionShapes variant="bottomRight" color="green" shape="star" dark />
-            {/* Content grid */}
-            <div className="relative z-10 grid md:grid-cols-2 h-full">
-              {/* Left column - Text and CTA */}
-              <div className="p-6 sm:p-10 md:p-12 flex flex-col justify-center relative z-20">
-                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-medium tracking-tight text-white mb-3 sm:mb-4 leading-tight">
-                  Prøv analysen<br />
-                  <span className="text-neutral-400">helt gratis.</span>
-                </h2>
-                <p className="text-sm sm:text-base text-neutral-400 mb-6 sm:mb-8 max-w-sm">
-                  Full helsesjekk av nettsiden din på under ett minutt – SEO, sikkerhet, innhold og AI-anbefalinger.
-                </p>
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.98 }}>
-                  <Button className="bg-white text-neutral-900 hover:bg-neutral-100 h-10 sm:h-12 px-4 sm:px-6 text-sm sm:text-base" asChild>
-                  <Link href="/register">
-                    Kom i gang gratis
-                    <ArrowRight className="ml-2 w-4 h-4" />
-                  </Link>
-                </Button>
-              </motion.div>
-              </div>
-              
-              {/* Right column - Dashboard mockup (visible as faded bg on mobile) */}
-              <div className="absolute md:relative inset-0 md:inset-auto overflow-hidden opacity-40 md:opacity-100">
-                {/* Gradient fade from left */}
-                <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-neutral-900 to-transparent z-10" />
-                
-                {/* Dashboard mockup - dark theme, tilted */}
-                <div className="absolute inset-0 flex items-center">
-                  <div 
-                    className="absolute -right-8 w-[500px] bg-neutral-800/90 rounded-xl overflow-hidden border border-neutral-700/50"
-                    style={{ transform: 'perspective(1200px) rotateY(-15deg) rotateX(2deg)' }}
-                  >
-                    {/* Header */}
-                    <div className="px-4 py-3 border-b border-neutral-700/50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <BarChart3 className="w-4 h-4 text-neutral-400" />
-                          <span className="text-sm font-medium text-white">Sammenligning</span>
-                          <span className="text-xs text-neutral-500">· Konkurrenter</span>
-                        </div>
-                        <div className="flex items-center gap-3 text-xs text-neutral-500">
-                          <span>Synlighet</span>
-                          <span>Score</span>
-                        </div>
-                      </div>
-                    </div>
-                    {/* Rankings list */}
-                    <div className="p-2">
-                      {[
-                        { rank: 1, name: 'Din bedrift', score: 89, visibility: '95%', isYou: true, trend: 'up' },
-                        { rank: 2, name: 'Konkurrent A', score: 82, visibility: '80%', isYou: false, trend: 'down' },
-                        { rank: 3, name: 'Konkurrent B', score: 76, visibility: '72%', isYou: false, trend: 'up' },
-                        { rank: 4, name: 'Konkurrent C', score: 71, visibility: '65%', isYou: false, trend: 'neutral' },
-                        { rank: 5, name: 'Konkurrent D', score: 58, visibility: '50%', isYou: false, trend: 'down' },
-                        { rank: 6, name: 'Konkurrent E', score: 45, visibility: '38%', isYou: false, trend: 'down' },
-                      ].map((item) => (
-                        <div 
-                          key={item.rank} 
-                          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg mb-1 ${
-                            item.isYou ? 'bg-green-500/20 border border-green-500/30' : 'bg-neutral-700/30 hover:bg-neutral-700/50'
-                          }`}
-                        >
-                          <span className={`w-5 h-5 rounded flex items-center justify-center text-xs font-medium ${
-                            item.isYou ? 'bg-green-500 text-white' : 'bg-neutral-600 text-neutral-300'
-                          }`}>
-                            {item.rank}
-                          </span>
-                          <span className={`flex-1 text-sm ${item.isYou ? 'text-white font-medium' : 'text-neutral-300'}`}>
-                            {item.name}
-                          </span>
-                          <div className="flex items-center gap-4">
-                            <span className="text-xs text-neutral-400 w-12 text-right">{item.visibility}</span>
-                            <div className="flex items-center gap-1">
-                              <span className={`text-sm font-medium w-8 text-right ${
-                                item.isYou ? 'text-green-400' : 'text-neutral-400'
-                              }`}>
-                                {item.score}
-                              </span>
-                              {item.trend === 'up' && <TrendingUp className="w-3 h-3 text-green-400" />}
-                              {item.trend === 'down' && <TrendingUp className="w-3 h-3 text-red-400 rotate-180" />}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Gradient fades for smooth blending */}
-                <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-neutral-900 via-neutral-900/80 to-transparent z-10" />
-                <div className="absolute inset-x-0 top-0 h-16 bg-gradient-to-b from-neutral-900 via-neutral-900/50 to-transparent z-10" />
-                {/* Extra left gradient on mobile for text readability */}
-                <div className="absolute inset-y-0 left-0 w-2/3 bg-gradient-to-r from-neutral-900 via-neutral-900/70 to-transparent z-10 md:hidden" />
-              </div>
-            </div>
-          </motion.div>
         </div>
       </section>
 
