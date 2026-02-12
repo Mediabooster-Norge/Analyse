@@ -14,13 +14,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Din digitale CMO - og AI-kollega",
-  description: "Få en komplett analyse av nettsiden din på sekunder. SEO, ytelse, sikkerhet, innhold og AI-drevne anbefalinger - alt i én rapport.",
-  keywords: ["nettside", "analyse", "SEO", "ytelse", "sikkerhet", "gratis", "AI", "CMO", "digital markedsføring"],
-  authors: [{ name: "Mediabooster" }],
+  title: "Booster | Din digitale markedssjef – og AI kollega",
+  description: "Spar titusenvis av kroner på dyre verktøy og byråtimer. Booster gir deg gratis webanalyse, SEO, sikkerhet og AI-anbefalinger på minutter.",
+  keywords: ["nettside", "analyse", "SEO", "ytelse", "sikkerhet", "gratis", "AI", "markedssjef", "digital markedsføring", "Booster"],
+  authors: [{ name: "Booster" }],
   openGraph: {
-    title: "Din digitale CMO - og AI-kollega",
-    description: "Få en komplett analyse av nettsiden din på sekunder. SEO, ytelse, sikkerhet og AI-anbefalinger.",
+    title: "Booster | Din digitale markedssjef – og AI kollega",
+    description: "Spar titusenvis av kroner på dyre verktøy og byråtimer. Booster gir deg gratis webanalyse, SEO, sikkerhet og AI-anbefalinger på minutter.",
     type: "website",
     locale: "nb_NO",
   },
