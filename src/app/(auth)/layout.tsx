@@ -10,7 +10,7 @@ export default function AuthLayout({
       {/* Header */}
       <header className="p-4 sm:p-6">
         <Link href="/" className="flex items-center w-fit">
-          <img src="/logo.svg" alt="Mediabooster" className="h-6 sm:h-7 w-auto brightness-0" />
+          <img src="/logo.svg" alt="Booster" className="h-6 sm:h-7 w-auto brightness-0" />
         </Link>
       </header>
 

@@ -363,7 +363,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-neutral-200/40">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 md:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
           <Link href="/" className="flex items-center min-w-0 flex-shrink">
-            <img src="/logo.svg" alt="Mediabooster" className="h-5 sm:h-6 w-auto brightness-0" />
+            <img src="/logo.svg" alt="Booster" className="h-5 sm:h-6 w-auto brightness-0" />
           </Link>
           <div className="flex items-center gap-2 sm:gap-4 shrink-0">
             {loading ? (
@@ -428,14 +428,14 @@ export default function LandingPage() {
               <div className="absolute left-0 top-0 bottom-0 w-px bg-neutral-200/40 pointer-events-none" aria-hidden />
               <div className="absolute right-0 top-0 bottom-0 w-px bg-neutral-200/40 pointer-events-none" aria-hidden />
               <Badge variant="outline" className="mb-3 sm:mb-4 text-xs sm:text-sm text-neutral-600 border-neutral-300">
-              Din digitale CMO – og AI-kollega
+              Digitale analyser – helt gratis!
               </Badge>
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-medium tracking-tight mb-3 sm:mb-4 max-w-2xl mx-auto leading-none">
-              Analyser nettsiden din<br />
-              <span className="text-neutral-400">med AI som hjelper deg.</span>
+              Din digitale markedssjef<br />
+              <span className="text-neutral-400">– og AI kollega.</span>
               </h1>
             <p className="text-base sm:text-lg text-neutral-500 mb-4 sm:mb-6 max-w-xl mx-auto px-1 leading-relaxed">
-                Helsesjekk av nettsiden: SEO, sikkerhet, innhold og hastighet – med konkrete AI-anbefalinger i én rapport.
+                Spar titusenvis av kroner hver måned på dyre verktøy, byråtimer og tidkrevende arbeid. Booster gjør jobben på minutter.
               </p>
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center sm:ml-2 md:ml-3">
                 {user ? (
@@ -1425,7 +1425,7 @@ export default function LandingPage() {
                     {[
                       { file: 'hero-image.jpg', alt: 'Team som jobber med digital markedsføring' },
                       { file: 'services.png', alt: 'Illustrasjon av SEO og annonsering' },
-                      { file: 'logo.svg', alt: 'Firmanavn logo' },
+                      { file: 'logo.png', alt: 'Firmanavn logo' },
                     ].map((img, i) => (
                       <div key={i} className="p-3 bg-white rounded-lg border border-neutral-200">
                         <p className="text-xs text-neutral-500 mb-1">{img.file}</p>
@@ -2333,7 +2333,7 @@ export default function LandingPage() {
                 <motion.img
                   whileHover={{ rotate: 5 }}
                   src="/logo.svg"
-                  alt="Mediabooster"
+                  alt="Booster"
                   className="h-6 w-auto brightness-0"
                 />
               </Link>

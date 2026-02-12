@@ -54,7 +54,7 @@ export default function DashboardLayout({
     <div className="flex h-full flex-col bg-white">
       {/* Logo */}
       <Link href="/" className="flex items-center h-20 px-5 border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
-        <img src="/logo.svg" alt="Mediabooster" className="h-9 w-auto object-contain brightness-0" />
+        <img src="/logo.svg" alt="Booster" className="h-9 w-auto object-contain brightness-0" />
       </Link>
 
       {/* Navigation */}
@@ -131,7 +131,7 @@ export default function DashboardLayout({
           </SheetContent>
         </Sheet>
         <Link href="/" className="flex items-center min-w-0 flex-1">
-          <img src="/logo.svg" alt="Mediabooster" className="h-7 max-[400px]:h-6 min-[450px]:h-8 w-auto object-contain brightness-0" />
+          <img src="/logo.svg" alt="Booster" className="h-7 max-[400px]:h-6 min-[450px]:h-8 w-auto object-contain brightness-0" />
         </Link>
       </header>
 
