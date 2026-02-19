@@ -200,7 +200,7 @@ function buildSSLResult(
     grade = 'A';
   }
 
-  const issuer = (cert.issuer as Record<string, string>);
+  const issuer = (cert.issuer as unknown as Record<string, string>);
 
   return {
     grade,
