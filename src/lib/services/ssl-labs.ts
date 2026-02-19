@@ -112,8 +112,23 @@ function getDefaultSSLResults(reason: string = 'Unknown'): SSLAnalysis {
 // Fast direct SSL check (fallback when SSL Labs is slow)
 export async function analyzeSSLDirect(url: string): Promise<SSLAnalysis> {
   const hostname = new URL(url.startsWith('http') ? url : `https://${url}`).hostname;
-  
+
   return new Promise((resolve) => {
+    let resolved = false;
+    // Guard against multiple resolve calls (timeout + error after destroy)
+    const done = (result: SSLAnalysis) => {
+      if (!resolved) {
+        resolved = true;
+        console.log(`[SSL Direct] ${hostname} → grade: ${result.grade}, issuer: ${result.certificate.issuer ?? 'n/a'}, days: ${result.certificate.daysUntilExpiry ?? 'n/a'}`);
+        resolve(result);
+      }
+    };
+
+    // Cert is captured in secureConnect – before HTTP response arrives.
+    // This is critical for slow servers: the TLS handshake completes quickly
+    // even when the server takes several seconds to send the HTTP response.
+    let earlyCert: SSLAnalysis | null = null;
+
     const options = {
       hostname,
       port: 443,
@@ -123,57 +138,81 @@ export async function analyzeSSLDirect(url: string): Promise<SSLAnalysis> {
     };
 
     const req = https.request(options, (res) => {
-      const socket = res.socket as import('tls').TLSSocket;
-      const cert = socket.getPeerCertificate();
-      
-      if (!cert || Object.keys(cert).length === 0) {
-        resolve(getDefaultSSLResults('Ingen sertifikat'));
+      res.resume(); // consume and discard the body so the socket can close
+      if (earlyCert) {
+        done(earlyCert);
         return;
       }
-
-      // Calculate days until expiry
-      const validTo = new Date(cert.valid_to);
-      const now = new Date();
-      const daysUntilExpiry = Math.ceil((validTo.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-
-      // Determine grade based on certificate and connection
-      let grade = 'B'; // Default for valid HTTPS
-      
-      if (daysUntilExpiry < 0) {
-        grade = 'F'; // Expired
-      } else if (daysUntilExpiry < 7) {
-        grade = 'C'; // Expiring very soon
-      } else if (daysUntilExpiry < 30) {
-        grade = 'B-'; // Expiring soon
-      } else if (socket.authorized) {
-        grade = 'A'; // Valid and authorized
+      // Fallback: try reading cert from the response socket
+      const socket = res.socket as import('tls').TLSSocket;
+      const cert = socket.getPeerCertificate(true);
+      if (!cert || Object.keys(cert).length === 0) {
+        done(getDefaultSSLResults('Ingen sertifikat'));
+        return;
       }
+      done(buildSSLResult(cert, socket));
+    });
 
-      resolve({
-        grade,
-        certificate: {
-          issuer: cert.issuer?.O || cert.issuer?.CN || null,
-          validFrom: cert.valid_from ? new Date(cert.valid_from).toISOString() : null,
-          validTo: validTo.toISOString(),
-          daysUntilExpiry,
-        },
-        protocols: [socket.getProtocol() || 'TLS'],
-        vulnerabilities: [],
+    // secureConnect fires as soon as the TLS handshake completes,
+    // well before the HTTP response – reliable even on slow servers.
+    req.on('socket', (rawSocket) => {
+      const socket = rawSocket as import('tls').TLSSocket;
+      socket.on('secureConnect', () => {
+        const cert = socket.getPeerCertificate(true);
+        if (cert && Object.keys(cert).length > 0) {
+          earlyCert = buildSSLResult(cert, socket);
+        }
       });
     });
 
     req.on('error', (error) => {
       console.error('[SSL Direct] Error:', error.message);
-      resolve(getDefaultSSLResults('Tilkobling feilet'));
+      // If we already have the cert (e.g. destroy() was called after timeout),
+      // prefer that over a generic error result.
+      done(earlyCert ?? getDefaultSSLResults('Tilkobling feilet'));
     });
 
     req.on('timeout', () => {
-      req.destroy();
-      resolve(getDefaultSSLResults('Timeout'));
+      req.destroy(); // triggers 'error' event; done() guard handles it
+      done(earlyCert ?? getDefaultSSLResults('Timeout'));
     });
 
     req.end();
   });
+}
+
+function buildSSLResult(
+  cert: import('tls').PeerCertificate,
+  socket: import('tls').TLSSocket
+): SSLAnalysis {
+  const validTo = new Date(cert.valid_to);
+  const now = new Date();
+  const daysUntilExpiry = Math.ceil((validTo.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+
+  let grade = 'B';
+  if (daysUntilExpiry < 0) {
+    grade = 'F';
+  } else if (daysUntilExpiry < 7) {
+    grade = 'C';
+  } else if (daysUntilExpiry < 30) {
+    grade = 'B-';
+  } else if (socket.authorized) {
+    grade = 'A';
+  }
+
+  const issuer = (cert.issuer as Record<string, string>);
+
+  return {
+    grade,
+    certificate: {
+      issuer: issuer?.O || issuer?.CN || null,
+      validFrom: cert.valid_from ? new Date(cert.valid_from).toISOString() : null,
+      validTo: validTo.toISOString(),
+      daysUntilExpiry,
+    },
+    protocols: [socket.getProtocol() || 'TLS'],
+    vulnerabilities: [],
+  };
 }
 
 export function getSSLGradeColor(grade: string): string {

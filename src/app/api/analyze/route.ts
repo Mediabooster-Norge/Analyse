@@ -154,9 +154,16 @@ export async function POST(request: NextRequest) {
           const analysisDomain = new URL(analysis.website_url).hostname;
           
           // Cache main site's security and AI visibility
+          // Skip caching if the SSL grade is an error/unknown state – those should always re-run
           if (analysisDomain === urlDomain && !cachedSecurityResults && analysis.security_results) {
-            cachedSecurityResults = analysis.security_results;
-            console.log(`[Security] Reusing cached security results for domain: ${urlDomain}`);
+            const cachedGrade: string = analysis.security_results?.ssl?.grade ?? '';
+            const isValidGrade = cachedGrade.length > 0 && !cachedGrade.startsWith('Ukjent') && !cachedGrade.startsWith('Error') && !cachedGrade.startsWith('Tilkobling') && !cachedGrade.startsWith('Timeout');
+            if (isValidGrade) {
+              cachedSecurityResults = analysis.security_results;
+              console.log(`[Security] Reusing cached security results for domain: ${urlDomain}`);
+            } else {
+              console.log(`[Security] Skipping bad cached SSL grade "${cachedGrade}" for ${urlDomain} – will re-run`);
+            }
           }
           
           if (analysis.ai_visibility && !cachedAiVisibilityByDomain[analysisDomain]) {

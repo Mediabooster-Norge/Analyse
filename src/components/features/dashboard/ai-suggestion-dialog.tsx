@@ -4,8 +4,88 @@ import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import type { AISuggestionData } from '@/types/dashboard';
-import { Lightbulb, CheckCircle2, AlertCircle, Sparkles, Zap, Loader2, Copy, Check, ExternalLink, ArrowRight } from 'lucide-react';
+import { Lightbulb, CheckCircle2, AlertCircle, Sparkles, Zap, Loader2, Copy, Check, ExternalLink, ArrowRight, ImageOff } from 'lucide-react';
 import { toast } from 'sonner';
+
+function MissingAltImagesSection({ urls, websiteUrl }: { urls?: string[]; websiteUrl?: string | null }) {
+  const [failedUrls, setFailedUrls] = useState<Set<string>>(new Set());
+
+  const getFilename = (url: string) => {
+    try {
+      return decodeURIComponent(new URL(url).pathname.split('/').pop() || url);
+    } catch {
+      return url.split('/').pop() || url;
+    }
+  };
+
+  const hasUrls = urls && urls.length > 0;
+
+  return (
+    <div className="p-3 rounded-lg bg-red-50 border border-red-200">
+      <div className="flex items-center gap-2 mb-3">
+        <ImageOff className="h-3.5 w-3.5 text-red-500 shrink-0" />
+        <p className="text-xs font-medium text-red-700">
+          {hasUrls ? `${urls.length} bilde${urls.length !== 1 ? 'r' : ''} uten alt-tekst` : 'Bilder mangler alt-tekst'}
+        </p>
+      </div>
+      {hasUrls ? (
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {urls.map((url, i) => (
+            <a
+              key={i}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative rounded-lg border border-red-200 bg-white overflow-hidden hover:border-red-400 hover:shadow-sm transition-all"
+            >
+              <div className="aspect-video w-full bg-neutral-100 flex items-center justify-center overflow-hidden">
+                {failedUrls.has(url) ? (
+                  <div className="flex flex-col items-center gap-1 p-2">
+                    <ImageOff className="h-5 w-5 text-neutral-300" />
+                    <span className="text-[9px] text-neutral-400 text-center leading-tight">Kan ikke vises</span>
+                  </div>
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={url}
+                  alt=""
+                  className="w-full h-full object-cover"
+                  onError={() => setFailedUrls((prev) => new Set([...prev, url]))}
+                />
+              )}
+              </div>
+              <div className="px-1.5 py-1 flex items-center gap-1">
+                <ExternalLink className="h-2.5 w-2.5 text-red-400 shrink-0" />
+                <span className="text-[9px] text-neutral-500 truncate leading-tight" title={url}>
+                  {getFilename(url)}
+                </span>
+              </div>
+            </a>
+          ))}
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-xs text-red-600 leading-relaxed">
+            Kjør en ny analyse for å se eksakte bilde-URLer, eller åpne siden og søk i kildekoden etter{' '}
+            <code className="bg-red-100 px-1 rounded font-mono">{'<img'}</code> uten{' '}
+            <code className="bg-red-100 px-1 rounded font-mono">alt</code>-attributt.
+          </p>
+          {websiteUrl && (
+            <a
+              href={websiteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-red-700 hover:text-red-900 hover:underline transition-colors"
+            >
+              <ExternalLink className="h-3 w-3 shrink-0" />
+              Åpne {websiteUrl}
+            </a>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const loadingSteps = [
   'Leser innholdet ditt',
@@ -20,6 +100,7 @@ export interface AISuggestionDialogProps {
   selectedElement: { name: string; value: string; status: 'good' | 'warning' | 'bad'; relatedUrls?: string[] } | null;
   aiSuggestion: AISuggestionData | null;
   loadingSuggestion: boolean;
+  websiteUrl?: string | null;
 }
 
 export function AISuggestionDialog({
@@ -28,6 +109,7 @@ export function AISuggestionDialog({
   selectedElement,
   aiSuggestion,
   loadingSuggestion,
+  websiteUrl,
 }: AISuggestionDialogProps) {
   const [activeStep, setActiveStep] = useState(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -151,6 +233,13 @@ export function AISuggestionDialog({
                 })}
               </div>
 
+              {/* Missing alt images – shown immediately while AI loads */}
+              {selectedElement?.name.includes('Bilder') && selectedElement.status !== 'good' && (
+                <div className="mt-4">
+                  <MissingAltImagesSection urls={selectedElement.relatedUrls} websiteUrl={websiteUrl} />
+                </div>
+              )}
+
               {/* Timer */}
               <div className="flex items-center justify-center gap-1.5 mt-6">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
@@ -204,11 +293,13 @@ export function AISuggestionDialog({
                 </div>
               )}
 
-              {/* Related URLs */}
-              {selectedElement?.relatedUrls && selectedElement.relatedUrls.length > 0 && (
+              {/* Related URLs / Missing alt images */}
+              {selectedElement?.name.includes('Bilder') && selectedElement.status !== 'good' ? (
+                <MissingAltImagesSection urls={selectedElement.relatedUrls} websiteUrl={websiteUrl} />
+              ) : selectedElement?.relatedUrls && selectedElement.relatedUrls.length > 0 ? (
                 <div className="p-3 rounded-lg bg-neutral-50 border border-neutral-200">
                   <p className="text-xs font-medium text-neutral-500 mb-2">
-                    {selectedElement.name.includes('Bilder') ? 'Bilder som mangler alt-tekst' : 'Relaterte lenker'} ({selectedElement.relatedUrls.length})
+                    Relaterte lenker ({selectedElement.relatedUrls.length})
                   </p>
                   <div className="space-y-1 max-h-24 overflow-y-auto">
                     {selectedElement.relatedUrls.map((url, i) => (
@@ -225,7 +316,7 @@ export function AISuggestionDialog({
                     ))}
                   </div>
                 </div>
-              )}
+              ) : null}
 
               {/* Suggestions */}
               <div>

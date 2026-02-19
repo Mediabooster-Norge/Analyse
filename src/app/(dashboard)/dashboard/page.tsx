@@ -689,6 +689,7 @@ function DashboardPageContent() {
         selectedElement={selectedElement}
         aiSuggestion={aiSuggestion}
         loadingSuggestion={loadingSuggestion}
+        websiteUrl={companyUrl}
       />
     </div>
   );

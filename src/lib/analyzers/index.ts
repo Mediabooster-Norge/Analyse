@@ -70,7 +70,7 @@ export async function runFullAnalysis(
   const [seoResults, contentResults, securityResults, pageSpeedResults] = await Promise.all([
     analyzeSEO($, url),
     Promise.resolve(analyzeContent($)),
-    quickSecurityScan && cachedSecurityResults
+    cachedSecurityResults
       ? Promise.resolve(cachedSecurityResults)
       : quickSecurityScan
         ? analyzeSecurityQuick(url, scrapedData.headers)
@@ -84,7 +84,7 @@ export async function runFullAnalysis(
   ]);
   
   if (cachedSecurityResults) {
-    console.log('[Security] Using cached security results (same domain)');
+    console.log(`[Security] Used cached security results (grade: ${cachedSecurityResults.ssl.grade})`);
   }
 
   // Step 3: Calculate overall score (now includes performance if available)
@@ -260,7 +260,7 @@ export async function runCompetitorAnalysis(
   ]);
 
   if (cachedSecurityResults) {
-    console.log('[Security] Using cached security results for main URL (same domain)');
+    console.log(`[Security] Used cached security results for main URL (grade: ${cachedSecurityResults.ssl.grade})`);
   } else if (hasCompetitors) {
     console.log('[Security] Using quick security for main URL (competitor mode, 60s limit)');
   }

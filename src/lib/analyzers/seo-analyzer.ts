@@ -138,9 +138,17 @@ function analyzeImages($: CheerioAPI, pageUrl: string): ImagesAnalysis {
   images.each((_, el) => {
     const $img = $(el);
     const alt = $img.attr('alt');
-    const src = $img.attr('src') || $img.attr('data-src') || '';
+    const rawSrc = $img.attr('src') || '';
+    // When src is a data URI placeholder (WordPress lazy loading pattern),
+    // fall through to data-src to get the real image URL
+    const src = rawSrc.startsWith('data:')
+      ? ($img.attr('data-src') || $img.attr('data-lazy-src') || $img.attr('data-original') || '')
+      : (rawSrc || $img.attr('data-src') || $img.attr('data-lazy-src') || $img.attr('data-original') || '');
+    // Fall back to the first URL in srcset when no src is present at all
+    const srcset = !src ? ($img.attr('srcset') || $img.attr('data-srcset') || '') : '';
+    const srcFromSrcset = srcset ? srcset.split(',')[0].trim().split(/\s+/)[0] : '';
     const loading = $img.attr('loading');
-    const resolvedSrc = resolveUrl(src);
+    const resolvedSrc = resolveUrl(src || srcFromSrcset);
 
     // Collect valid image URLs for relevance analysis (max 5)
     if (resolvedSrc && allImageUrls.length < 5) {
