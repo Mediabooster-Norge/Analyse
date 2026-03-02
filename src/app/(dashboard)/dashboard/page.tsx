@@ -52,7 +52,7 @@ import {
   ANALYSIS_STEPS,
 } from '@/components/features/dashboard';
 import { downloadAnalysisReportPdf } from '@/components/features/dashboard/analysis-report-pdf';
-import { OverviewTab, CompetitorsTab, KeywordsTab, AiTab, AiVisibilityTab, ArticlesTab } from '@/components/features/dashboard/tabs';
+import { OverviewTab, CompetitorsTab, KeywordsTab, AiTab, AiVisibilityTab, ArticlesTab, SocialTab } from '@/components/features/dashboard/tabs';
 
 function DashboardPageContent() {
   const searchParams = useSearchParams();
@@ -109,6 +109,7 @@ function DashboardPageContent() {
     setCompetitorSort,
     aiVisibilityResult,
     checkingAiVisibility,
+    aiVisibilityElapsedTime,
     suggestionSheetOpen,
     setSuggestionSheetOpen,
     selectedElement,
@@ -134,6 +135,17 @@ function DashboardPageContent() {
     generatingArticleIndex,
     fetchGenerateArticle,
     setGeneratedArticle,
+    socialPostSuggestions,
+    loadingSocialPostSuggestions,
+    socialPostSuggestionsSavedAt,
+    selectedSocialPlatform,
+    setSelectedSocialPlatform,
+    loadSocialSuggestionsForPlatform,
+    fetchSocialPostSuggestions,
+    generatedSocialPostResult,
+    generatingSocialPostIndex,
+    fetchGenerateSocialPost,
+    setGeneratedSocialPost,
     analysisHistory,
     checkAiVisibility,
     retryPageSpeed,
@@ -543,12 +555,13 @@ function DashboardPageContent() {
             <ExternalLink className="h-3 w-3 text-neutral-400 shrink-0" />
           </div>
 
-          {/* Tab Navigation */}
-          <div className="mb-4">
+          {/* Tab Navigation – sticky på desktop så faner er alltid synlige ved scroll */}
+          <div className="sticky top-0 z-10 pt-1 pb-2 mb-4 bg-[#FAFAFA] md:pt-2">
             <TabNavigation
               activeTab={activeTab}
               onTabChange={setActiveTab}
               competitorCount={result.competitors?.length}
+              keywordCount={result.keywordResearch?.length}
             />
           </div>
 
@@ -575,6 +588,7 @@ function DashboardPageContent() {
               analysisHistory={analysisHistory}
               loadingPageSpeed={loadingPageSpeed}
               retryPageSpeed={retryPageSpeed}
+              aiVisibilityResult={aiVisibilityResult}
             />
           )}
 
@@ -640,6 +654,7 @@ function DashboardPageContent() {
               url={url}
               companyName={companyName}
               checkingAiVisibility={checkingAiVisibility}
+              aiVisibilityElapsedTime={aiVisibilityElapsedTime}
               onCheckAiVisibility={checkAiVisibility}
             />
           )}
@@ -657,6 +672,24 @@ function DashboardPageContent() {
               generatingArticleIndex={generatingArticleIndex}
               fetchGenerateArticle={fetchGenerateArticle}
               setGeneratedArticle={setGeneratedArticle}
+            />
+          )}
+          {activeTab === 'social' && (
+            <SocialTab
+              socialPostSuggestions={socialPostSuggestions}
+              loadingSocialPostSuggestions={loadingSocialPostSuggestions}
+              socialPostSuggestionsSavedAt={socialPostSuggestionsSavedAt}
+              selectedSocialPlatform={selectedSocialPlatform}
+              setSelectedSocialPlatform={setSelectedSocialPlatform}
+              loadSocialSuggestionsForPlatform={loadSocialSuggestionsForPlatform}
+              fetchSocialPostSuggestions={fetchSocialPostSuggestions}
+              hasCompetitors={Boolean(result?.competitors?.length)}
+              remainingArticleGenerations={remainingArticleGenerations}
+              articleGenerationsLimit={articleGenerationsLimit}
+              generatedSocialPostResult={generatedSocialPostResult}
+              generatingSocialPostIndex={generatingSocialPostIndex}
+              fetchGenerateSocialPost={fetchGenerateSocialPost}
+              setGeneratedSocialPost={setGeneratedSocialPost}
             />
           )}
         </>

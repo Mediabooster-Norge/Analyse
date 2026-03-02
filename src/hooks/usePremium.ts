@@ -162,7 +162,7 @@ export const PREMIUM_LIMITS = {
     keywords: 50, // Max nøkkelord per analyse
     keywordUpdates: 999, // Unlimited
     competitorUpdates: 999, // Unlimited
-    aiVisibilityChecks: 999, // Unlimited
+    aiVisibilityChecks: 999, // Premium: ubegrenset per måned
     articleGenerationsPerMonth: 30, // Full artikkelgenerering per måned (premium)
   },
 };

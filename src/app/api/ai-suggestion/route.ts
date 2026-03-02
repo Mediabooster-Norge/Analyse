@@ -32,8 +32,8 @@ export async function POST(request: NextRequest) {
         element,
         currentValue,
         status,
-        ...(issue !== undefined && { issue }),
-        ...(context !== undefined && { context }),
+        ...(issue !== undefined ? { issue } : {}),
+        ...(context !== undefined ? { context } : {}),
       });
       const result = await runSeoTipsWorkflow({ input_as_text: inputAsText });
       return NextResponse.json(

@@ -1,6 +1,19 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
+import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
 import type { DashboardAnalysisResult, AIVisibilityData } from '@/types/dashboard';
 import {
   Eye,
@@ -16,8 +29,116 @@ import {
   Bell,
 } from 'lucide-react';
 
-// Feature flag: Set to true when AI visibility is ready
-const AI_VISIBILITY_ENABLED = false;
+function getHostname(url: string): string {
+  try {
+    return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}
+
+/** Samme suffiks som i API (route.ts PROMPT_INSTRUCTION_SUFFIX); fjernes fra spørsmålstekst slik at kun ren spørsmålstekst vises. */
+const PROMPT_INSTRUCTION_SUFFIX =
+  ' Svar i 1–2 setninger. Fokuser kun på spørsmålet. Ikke inkluder nettsideadresser i parentes (f.eks. (domene.no)) i svaret. Unngå å gjenta samme firmabeskrivelse i hvert svar—svar kun på det som spørres.';
+
+/** Fjerner prompt-instruksjoner, "Søk:" og (domene) fra spørsmålstekst slik at kun ren spørsmålstekst vises. */
+function cleanQueryForDisplay(rawQuery: string, domain: string): string {
+  return rawQuery
+    .replace(PROMPT_INSTRUCTION_SUFFIX, '')
+    .replace(/^Søk:\s*/i, '')
+    .replaceAll(` (${domain})`, '')
+    .trim();
+}
+
+/** Fjerner (domene.no)-lignende parenteser fra AI-svar for ryddigere visning. */
+function cleanAiResponseForDisplay(text: string): string {
+  return text
+    .replace(/\s*\([a-z0-9][a-z0-9.-]*\.[a-z]{2,}\)(\.)?\s*/gi, (_, period) => (period ? '. ' : ' '))
+    .replace(/\s{2,}/g, ' ')
+    .trim();
+}
+
+type TextSegment = { type: 'text'; content: string };
+type LinkSegment = { type: 'link'; content: string; href: string };
+
+function shortUrlDisplay(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url.length > 40 ? url.slice(0, 37) + '…' : url;
+  }
+}
+
+function formatAiResponseSegments(text: string): Array<TextSegment | LinkSegment> {
+  const segments: Array<TextSegment | LinkSegment> = [];
+
+  function addTextWithRawUrls(rest: string) {
+    const urlRegex = /https?:\/\/[^\s)\]"]+/g;
+    let last = 0;
+    let match;
+    while ((match = urlRegex.exec(rest)) !== null) {
+      if (match.index > last) {
+        segments.push({ type: 'text', content: rest.slice(last, match.index) });
+      }
+      const href = match[0].replace(/[.,;:!?)\]]+$/, '');
+      segments.push({ type: 'link', content: shortUrlDisplay(href), href });
+      last = urlRegex.lastIndex;
+    }
+    if (last < rest.length) {
+      segments.push({ type: 'text', content: rest.slice(last) });
+    }
+  }
+
+  const mdLinkRegex = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
+  let lastEnd = 0;
+  let m;
+  while ((m = mdLinkRegex.exec(text)) !== null) {
+    if (m.index > lastEnd) {
+      addTextWithRawUrls(text.slice(lastEnd, m.index));
+    }
+    segments.push({ type: 'link', content: m[1], href: m[2] });
+    lastEnd = mdLinkRegex.lastIndex;
+  }
+  if (lastEnd < text.length) {
+    addTextWithRawUrls(text.slice(lastEnd));
+  }
+  if (segments.length === 0 && text) {
+    segments.push({ type: 'text', content: text });
+  }
+  return segments;
+}
+
+function AiResponseText({ text, className }: { text: string; className?: string }) {
+  const segments = formatAiResponseSegments(text);
+  return (
+    <p className={className}>
+      {segments.map((seg, i) =>
+        seg.type === 'text' ? (
+          <React.Fragment key={i}>{seg.content}</React.Fragment>
+        ) : (
+          <a
+            key={i}
+            href={seg.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 hover:text-blue-700 hover:underline break-all"
+          >
+            {seg.content}
+          </a>
+        )
+      )}
+    </p>
+  );
+}
+
+const AI_VISIBILITY_ENABLED = true;
+
+const AI_CHECK_MESSAGES = [
+  'Søker etter bedriften din…',
+  'Sjekker synlighet i AI-søk…',
+  'Analyserer resultater…',
+  'Oppsummerer…',
+];
 
 export interface AiVisibilityTabProps {
   result: DashboardAnalysisResult;
@@ -27,6 +148,8 @@ export interface AiVisibilityTabProps {
   url: string;
   companyName: string | null;
   checkingAiVisibility: boolean;
+  /** Sekunder siden sjekk startet (viser i modal) */
+  aiVisibilityElapsedTime: number;
   onCheckAiVisibility: () => Promise<void>;
 }
 
@@ -38,8 +161,20 @@ export function AiVisibilityTab({
   url,
   companyName,
   checkingAiVisibility,
+  aiVisibilityElapsedTime = 0,
   onCheckAiVisibility,
 }: AiVisibilityTabProps) {
+  const [checkMessageIndex, setCheckMessageIndex] = useState(0);
+
+  useEffect(() => {
+    if (!checkingAiVisibility) return;
+    setCheckMessageIndex(0);
+    const interval = setInterval(() => {
+      setCheckMessageIndex((prev) => (prev + 1) % AI_CHECK_MESSAGES.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [checkingAiVisibility]);
+
   // Show "Coming soon" when feature is disabled
   if (!AI_VISIBILITY_ENABLED) {
     return (
@@ -86,7 +221,7 @@ export function AiVisibilityTab({
                   <CheckCircle2 className="w-5 h-5 text-blue-600" />
                 </div>
                 <p className="text-sm font-medium text-neutral-900">Score</p>
-                <p className="text-xs text-neutral-500 mt-1">Sammenlign med konkurrenter</p>
+                <p className="text-xs text-neutral-500 mt-1">Din AI-synlighet</p>
               </div>
             </div>
 
@@ -103,44 +238,148 @@ export function AiVisibilityTab({
   }
 
   return (
-    <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
-      <div className="p-6 border-b border-neutral-100">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-3">
-              <Eye className="h-4 w-4 text-neutral-600" />
-              AI-synlighet
-            </h3>
-            <p className="text-sm text-neutral-600">Hvor godt AI-modeller kjenner til bedriften din</p>
-          </div>
-        </div>
-      </div>
-      <div className="p-6 space-y-6">
-        {!isPremium ? (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 border border-amber-100">
-              <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                <Lock className="h-5 w-5 text-amber-600" />
+    <>
+      <Dialog open={checkingAiVisibility} onOpenChange={() => {}}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 mx-1 max-[400px]:mx-1 min-[401px]:mx-2 sm:mx-auto rounded-xl w-[calc(100vw-0.5rem)] min-[401px]:w-[calc(100vw-1rem)] sm:w-full max-w-[95vw]">
+          <VisuallyHidden.Root asChild>
+            <DialogTitle>Sjekker AI-synlighet</DialogTitle>
+          </VisuallyHidden.Root>
+          <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
+            <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-3 sm:p-4">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="relative w-12 sm:w-14 h-12 sm:h-14 shrink-0">
+                  <svg className="w-12 sm:w-14 h-12 sm:h-14 -rotate-90" viewBox="0 0 56 56">
+                    <circle cx="28" cy="28" r="24" fill="none" stroke="#e5e5e5" strokeWidth="3" />
+                    <circle
+                      cx="28"
+                      cy="28"
+                      r="24"
+                      fill="none"
+                      stroke="#737373"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      className="animate-pulse"
+                      strokeDasharray="75.4 150.8"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 text-neutral-600 animate-spin" />
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <p className="text-neutral-900 text-sm sm:text-base font-medium flex items-center gap-2">
+                      Sjekker AI-synlighet
+                      <span className="inline-flex gap-0.5">
+                        <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '150ms' }} />
+                        <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '300ms' }} />
+                      </span>
+                    </p>
+                  </div>
+                  <p className="text-neutral-500 text-xs sm:text-sm">
+                    {AI_CHECK_MESSAGES[checkMessageIndex]}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg bg-white border border-neutral-200">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <span className="text-xs sm:text-sm font-medium text-neutral-700 tabular-nums">
+                    {Math.floor(aiVisibilityElapsedTime / 60)}:{(aiVisibilityElapsedTime % 60).toString().padStart(2, '0')}
+                  </span>
+                </div>
               </div>
-              <div>
-                <h4 className="font-semibold text-amber-900">AI-synlighet er en Premium-funksjon</h4>
-                <p className="text-sm text-amber-800 mt-0.5">
-                  Med Premium får du full rapport om hvordan AI-modeller ser og anbefaler bedriften din.
-                </p>
+            </div>
+            <p className="text-center text-xs text-neutral-400">
+              Vanligvis 1–2 minutter.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+    <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
+      <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 border-b border-neutral-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-xs sm:text-sm font-medium mb-1.5">
+            <Eye className="h-3.5 w-3.5 text-neutral-600" />
+            AI-synlighet
+          </h3>
+          <p className="text-[10px] sm:text-sm text-neutral-500">Spør AI om den kjenner til bedriften og kan anbefale den.</p>
+        </div>
+        {isPremium && (() => {
+          const skip24hThrottle =
+            process.env.NEXT_PUBLIC_AI_VISIBILITY_SKIP_24H_THROTTLE === 'true' ||
+            process.env.NEXT_PUBLIC_AI_VISIBILITY_SKIP_24H_THROTTLE === '1';
+          const visibility = result.aiVisibility ?? aiVisibilityResult;
+          const checkedAt = visibility?.checked_at;
+          const THRESHOLD_MS = 24 * 60 * 60 * 1000;
+          const throttled =
+            !skip24hThrottle && !!checkedAt && Date.now() - new Date(checkedAt).getTime() < THRESHOLD_MS;
+          const nextCheckAt = throttled && checkedAt
+            ? new Date(new Date(checkedAt).getTime() + THRESHOLD_MS)
+            : null;
+          return (
+            <div className="shrink-0 flex flex-col items-end gap-1">
+              <Button
+                onClick={onCheckAiVisibility}
+                disabled={checkingAiVisibility || throttled}
+                className="w-full sm:w-auto rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white disabled:opacity-70"
+              >
+                {checkingAiVisibility ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Sjekker...
+                  </>
+                ) : throttled ? (
+                  'Sjekk tilgjengelig om 24 t'
+                ) : (
+                  <>
+                    <Search className="mr-2 h-4 w-4" />
+                    Kjør sjekk
+                  </>
+                )}
+              </Button>
+              {throttled && nextCheckAt && (
+                <span className="text-[10px] sm:text-xs text-neutral-500">
+                  Neste sjekk mulig fra {nextCheckAt.toLocaleDateString('nb-NO', { day: 'numeric', month: 'short' })} kl. {nextCheckAt.toLocaleTimeString('nb-NO', { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              )}
+              {!throttled && !result.keywordResearch?.length && (
+                <span className="text-[10px] sm:text-xs text-neutral-500 text-right">
+                  Generelle spørsmål (ingen nøkkelord)
+                </span>
+              )}
+            </div>
+          );
+        })()}
+      </div>
+      <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 space-y-4 min-[401px]:space-y-6">
+        {isPremium && checkingAiVisibility ? null : !isPremium ? (
+          <div className="space-y-4 min-[401px]:space-y-6">
+            <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3 min-[401px]:p-4">
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                  <Lock className="h-5 w-5 text-amber-600" />
+                </div>
+                <div className="min-w-0">
+                  <h4 className="text-sm sm:text-base font-semibold text-amber-900">AI-synlighet er en Premium-funksjon</h4>
+                  <p className="text-xs sm:text-sm text-amber-800 mt-1">
+                    Med Premium får du full rapport om hvordan AI-modeller ser og anbefaler bedriften din.
+                  </p>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-4">
-              <h4 className="font-semibold text-neutral-900">Hvorfor er dette viktig?</h4>
-              <p className="text-sm text-neutral-600">
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-3 min-[401px]:p-4">
+              <h4 className="text-xs sm:text-sm font-semibold text-neutral-900 mb-2">Hvorfor er dette viktig?</h4>
+              <p className="text-[11px] sm:text-sm text-neutral-600 leading-relaxed">
                 Flere bruker nå AI-verktøy (ChatGPT, Perplexity, Copilot) til å finne tjenester og bedrifter.
                 Hvis AI ikke kjenner til deg eller ikke anbefaler deg, går potensielle kunder til konkurrentene.
                 AI-synlighetsrapporten viser hvor du står og hva du kan gjøre for å bli mer synlig.
               </p>
             </div>
 
-            <div className="pt-4 border-t border-neutral-100">
-              <Button asChild size="lg" className="w-full sm:w-auto bg-neutral-900 hover:bg-neutral-800 text-white">
+            <div className="pt-2">
+              <Button asChild className="w-full sm:w-auto rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white">
                 <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
                   Få Premium – AI-synlighet inkludert
                   <ArrowRight className="ml-2 h-4 w-4 inline" />
@@ -248,54 +487,62 @@ export function AiVisibilityTab({
                 </div>
 
                 <div className="lg:col-span-2">
+                  {!result.keywordResearch?.length && (
+                    <div className="mb-4 p-3 rounded-xl bg-neutral-50 border border-neutral-200">
+                      <p className="text-xs text-neutral-600">
+                        Sjekken bruker generelle spørsmål fordi analysen ikke har nøkkelord. Legg til nøkkelord under <strong>Nøkkelord</strong>-fanen for mer relevante spørsmål.
+                      </p>
+                    </div>
+                  )}
                   <div className="mb-4">
                     <h4 className="font-medium text-neutral-900">AI-svar på spørsmål</h4>
+                    <p className="text-xs text-neutral-500 mt-0.5">Klikk for å åpne/lukke svar</p>
                   </div>
-                  <div className="space-y-3">
+                  <Accordion type="single" collapsible className="space-y-2">
                     {visData.details.queries.map((q, i) => (
-                      <div
+                      <AccordionItem
                         key={i}
-                        className={`p-4 rounded-xl border ${
+                        value={`q-${i}`}
+                        className={`rounded-xl border overflow-hidden ${
                           q.cited
-                            ? 'bg-green-50/50 border-green-200'
+                            ? 'bg-green-50/30 border-green-200'
                             : q.mentioned
-                              ? 'bg-blue-50/50 border-blue-200'
-                              : 'bg-neutral-50 border-neutral-200'
+                              ? 'bg-blue-50/30 border-blue-200'
+                              : 'bg-neutral-50/50 border-neutral-200'
                         }`}
                       >
-                        <div className="flex items-start gap-3">
-                          <div
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                              q.cited ? 'bg-green-100' : q.mentioned ? 'bg-blue-100' : 'bg-neutral-200'
-                            }`}
-                          >
-                            {q.cited ? (
-                              <CheckCircle2 className="w-4 h-4 text-green-600" />
-                            ) : q.mentioned ? (
-                              <Search className="w-4 h-4 text-blue-600" />
-                            ) : (
-                              <X className="w-4 h-4 text-neutral-400" />
-                            )}
+                        <AccordionTrigger className="px-3 sm:px-4 py-3 hover:no-underline [&[data-state=open]]:border-b [&[data-state=open]]:border-neutral-200/80">
+                          <div className="flex items-start justify-between gap-3 text-left w-full">
+                            <p className="text-sm sm:text-base text-neutral-800 leading-snug break-words flex-1 min-w-0 pr-2">
+                              {cleanQueryForDisplay(q.query, getHostname(companyUrl || url))}
+                            </p>
+                            <span
+                              className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full font-medium ${
+                                q.cited ? 'bg-green-100 text-green-700' : q.mentioned ? 'bg-blue-100 text-blue-700' : 'bg-neutral-200 text-neutral-600'
+                              }`}
+                            >
+                              {q.cited ? 'Kjent' : q.mentioned ? 'Delvis' : 'Ukjent'}
+                            </span>
                           </div>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <p className="text-sm font-medium text-neutral-800">{q.query}</p>
-                              <span
-                                className={`text-[10px] px-2 py-0.5 rounded-full shrink-0 font-medium ${
-                                  q.cited ? 'bg-green-100 text-green-700' : q.mentioned ? 'bg-blue-100 text-blue-700' : 'bg-neutral-200 text-neutral-600'
-                                }`}
-                              >
-                                {q.cited ? 'Kjent' : q.mentioned ? 'Delvis' : 'Ukjent'}
-                              </span>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-3 sm:px-4 pb-3 pt-0">
+                          {q.aiResponse ? (
+                            <div className="pt-2">
+                              <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-neutral-500 mb-1.5">
+                                AI-svar
+                              </p>
+                              <AiResponseText
+                                text={cleanAiResponseForDisplay(q.aiResponse)}
+                                className="text-sm sm:text-base text-neutral-700 leading-relaxed whitespace-pre-wrap break-words"
+                              />
                             </div>
-                            {q.aiResponse && (
-                              <p className="text-sm text-neutral-600 leading-relaxed">{q.aiResponse}</p>
-                            )}
-                          </div>
-                        </div>
-                      </div>
+                          ) : (
+                            <p className="text-sm text-neutral-500">Ingen svar</p>
+                          )}
+                        </AccordionContent>
+                      </AccordionItem>
                     ))}
-                  </div>
+                  </Accordion>
                 </div>
               </div>
             );
@@ -315,101 +562,60 @@ export function AiVisibilityTab({
             { name: 'Bildetekster', pass: hasAltTexts, tip: 'Alt-tekst hjelper AI å forstå bilder' },
           ];
 
-          const passCount = factors.filter((f) => f.pass).length;
-          const aiScore = Math.round((passCount / factors.length) * 100);
-
           return (
-            <div className="space-y-6">
-              <div className="rounded-2xl border border-neutral-200 bg-white p-6">
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div className="flex items-center gap-6">
-                    <div className="relative">
-                      <div
-                        className={`w-28 h-28 rounded-full flex items-center justify-center ${
-                          aiScore >= 80 ? 'bg-green-100' : aiScore >= 60 ? 'bg-amber-100' : 'bg-red-100'
-                        }`}
-                      >
-                        <span
-                          className={`text-4xl font-bold ${
-                            aiScore >= 80 ? 'text-green-600' : aiScore >= 60 ? 'text-amber-600' : 'text-red-600'
-                          }`}
-                        >
-                          {aiScore}
-                        </span>
-                      </div>
-                      <div className="absolute -bottom-1 -right-1 px-2 py-0.5 rounded-full bg-neutral-200 text-[10px] text-neutral-600 font-medium">
-                        Estimert
-                      </div>
+            <div className="space-y-4 min-[401px]:space-y-6">
+              <div className="rounded-2xl border border-neutral-200 bg-gradient-to-b from-neutral-50/90 to-white overflow-hidden shadow-sm">
+                <div className="p-4 min-[401px]:p-5 sm:p-6">
+                  <div className="flex items-start gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+                      <Eye className="w-5 h-5 text-violet-600" />
                     </div>
-                    <div className="flex-1">
-                      <p
-                        className={`text-lg font-semibold mb-1 ${
-                          aiScore >= 80 ? 'text-green-700' : aiScore >= 60 ? 'text-amber-700' : 'text-red-700'
-                        }`}
-                      >
-                        {aiScore >= 80 ? 'God AI-beredskap' : aiScore >= 60 ? 'Moderat AI-beredskap' : 'Lav AI-beredskap'}
-                      </p>
-                      <p className="text-sm text-neutral-600">
-                        Estimat basert på nettsideinnhold. Kjør live-sjekk for å se faktisk AI-synlighet.
+                    <div>
+                      <h4 className="text-sm font-semibold text-neutral-900">
+                        Før du kjører live-sjekk
+                      </h4>
+                      <p className="text-xs sm:text-sm text-neutral-600 mt-0.5 leading-relaxed">
+                        Slik ser nettsiden din ut på noen faktorer som påvirker AI-synlighet.
                       </p>
                     </div>
                   </div>
-
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {factors.map((factor, i) => (
                       <div
                         key={i}
-                        className={`flex items-center gap-3 p-3 rounded-lg ${factor.pass ? 'bg-green-50' : 'bg-neutral-50'}`}
+                        className={`flex items-start gap-3 p-3.5 sm:p-4 rounded-xl border transition-colors ${
+                          factor.pass
+                            ? 'bg-green-50/90 border-green-100'
+                            : 'bg-white border-neutral-100 hover:border-neutral-200'
+                        }`}
                       >
                         <div
-                          className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${
-                            factor.pass ? 'bg-green-100' : 'bg-neutral-200'
+                          className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
+                            factor.pass ? 'bg-green-100' : 'bg-neutral-100'
                           }`}
                         >
                           {factor.pass ? (
-                            <CheckCircle2 className="w-3.5 h-3.5 text-green-600" />
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
                           ) : (
-                            <X className="w-3 h-3 text-neutral-400" />
+                            <X className="w-4 h-4 text-neutral-400" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className={`text-sm font-medium ${factor.pass ? 'text-green-700' : 'text-neutral-600'}`}>
+                          <span className={`text-sm font-medium block ${factor.pass ? 'text-green-800' : 'text-neutral-700'}`}>
                             {factor.name}
                           </span>
-                          {!factor.pass && <p className="text-xs text-neutral-500">{factor.tip}</p>}
+                          {!factor.pass && (
+                            <p className="text-xs text-neutral-500 mt-1 leading-snug">{factor.tip}</p>
+                          )}
+                          {factor.pass && (
+                            <span className="inline-block mt-1.5 text-[10px] font-medium uppercase tracking-wide text-green-600">
+                              OK
+                            </span>
+                          )}
                         </div>
                       </div>
                     ))}
                   </div>
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-neutral-200 bg-white p-6">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-100 to-blue-100 flex items-center justify-center">
-                    <Search className="w-6 h-6 text-violet-600" />
-                  </div>
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-neutral-900">Sjekk faktisk AI-synlighet</h4>
-                    <p className="text-sm text-neutral-500">Spør AI om den kjenner til bedriften og kan anbefale den</p>
-                  </div>
-                  <Button
-                    onClick={onCheckAiVisibility}
-                    disabled={checkingAiVisibility}
-                    className="bg-gradient-to-r from-violet-600 to-blue-600 hover:from-violet-700 hover:to-blue-700 text-white"
-                  >
-                    {checkingAiVisibility ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Sjekker...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="mr-2 h-4 w-4" />
-                        Kjør sjekk
-                      </>
-                    )}
-                  </Button>
                 </div>
               </div>
             </div>
@@ -417,5 +623,6 @@ export function AiVisibilityTab({
         })()}
       </div>
     </div>
+    </>
   );
 }

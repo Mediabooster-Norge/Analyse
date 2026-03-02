@@ -27,7 +27,6 @@ import {
   Globe,
   Link2,
   Lightbulb,
-  Eye,
   Sparkles,
   Lock,
   ExternalLink,
@@ -43,12 +42,13 @@ import {
   Share2,
   Download,
   RefreshCw,
+  Eye,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 
 // Feature flag: Set to true when AI visibility is ready
-const AI_VISIBILITY_ENABLED = false;
+const AI_VISIBILITY_ENABLED = true;
 
 const GENERATING_ARTICLE_MESSAGES = [
   'Forsker på emnet…',
@@ -103,6 +103,8 @@ export interface OverviewTabProps {
   loadingPageSpeed?: boolean;
   /** Re-run only the PageSpeed test for the current analysis */
   retryPageSpeed?: () => void;
+  /** AI-synlighet fra manuell sjekk (viser i oversikt til result er oppdatert) */
+  aiVisibilityResult?: { score: number; level: string; description: string } | null;
 }
 
 export function OverviewTab({
@@ -126,7 +128,9 @@ export function OverviewTab({
   analysisHistory,
   loadingPageSpeed = false,
   retryPageSpeed,
+  aiVisibilityResult,
 }: OverviewTabProps) {
+  const aiVisibility = result.aiVisibility ?? aiVisibilityResult ?? null;
   const copyTitle = (title: string) => {
     navigator.clipboard.writeText(title).then(
       () => toast.success('Tittel kopiert'),
@@ -247,21 +251,41 @@ export function OverviewTab({
                   </>
                 )}
               </div>
-              {/* AI-synlighet - only show when feature is enabled */}
               {AI_VISIBILITY_ENABLED && (
                 <div className="text-center min-w-0">
-                  <ScoreRing 
-                    score={result.aiVisibility?.score ?? 0} 
-                    label="AI" 
-                    size="md" 
-                    showStatus={isPremium} 
-                  />
-                  <p className="text-xs text-neutral-500 mt-1">AI-synlighet</p>
-                  {!isPremium && (
-                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-neutral-100 text-[10px] font-medium text-neutral-500">
-                      <Lock className="h-2.5 w-2.5" />
-                      Premium
-                    </span>
+                  {aiVisibility != null ? (
+                    <>
+                      <ScoreRing
+                        score={aiVisibility.score}
+                        label="AI"
+                        size="md"
+                        showStatus={isPremium}
+                        title={`AI-synlighet: ${aiVisibility.score} – hvor godt AI kjenner til og anbefaler bedriften`}
+                      />
+                      <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">AI-synlighet</p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-12 h-12 max-[400px]:w-10 max-[400px]:h-10 min-[401px]:w-14 min-[401px]:h-14 sm:w-16 sm:h-16 mx-auto rounded-full bg-neutral-100 border-2 border-neutral-200 flex items-center justify-center">
+                        <Eye className="w-5 h-5 max-[400px]:w-4 max-[400px]:h-4 min-[401px]:w-5 sm:w-6 sm:h-6 text-neutral-400" />
+                      </div>
+                      <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">AI-synlighet</p>
+                      {isPremium ? (
+                        <button
+                          type="button"
+                          onClick={() => setActiveTab('ai-visibility')}
+                          className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-700 font-medium hover:bg-violet-100 transition-colors cursor-pointer"
+                          title="Gå til AI-synlighet og kjør sjekk"
+                        >
+                          Ikke sjekket
+                        </button>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-neutral-100 text-[10px] font-medium text-neutral-500">
+                          <Lock className="h-2.5 w-2.5" />
+                          Premium
+                        </span>
+                      )}
+                    </>
                   )}
                 </div>
               )}
@@ -315,9 +339,6 @@ export function OverviewTab({
               }
             }
           }
-          // Only show AI visibility issues if feature is enabled
-          if (AI_VISIBILITY_ENABLED && result.aiVisibility && result.aiVisibility.score < 50) issues.push({ label: 'AI-synlighet', desc: 'Lav AI-synlighet', priority: 'medium', category: 'ai' });
-
           const issueToMetricId: Record<string, string> = {
             'Sidetittel': 'sidetittel',
             'Meta-beskrivelse': 'meta-beskrivelse',
@@ -334,7 +355,6 @@ export function OverviewTab({
             'Ytelse': 'ytelse',
             'LCP': 'lcp',
             'CLS': 'cls',
-            'AI-synlighet': 'ai-synlighet',
           };
 
           return issues.length > 0 ? (
@@ -821,26 +841,6 @@ export function OverviewTab({
             </div>
           </div>
 
-          {/* AI visibility (Premium) - only show if feature is enabled */}
-          {AI_VISIBILITY_ENABLED && isPremium && result.aiVisibility != null && (
-            <div>
-              <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-                <Eye className="w-3.5 h-3.5" />
-                AI-synlighet
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
-                <MetricCard
-                  icon={Eye}
-                  title="AI-synlighet"
-                  description={result.aiVisibility.description}
-                  value={`${result.aiVisibility.score}/100`}
-                  recommendation={result.aiVisibility.level === 'high' ? 'God synlighet' : result.aiVisibility.level === 'medium' ? 'Moderat' : 'Kan forbedres'}
-                  status={result.aiVisibility.level === 'high' ? 'good' : result.aiVisibility.level === 'medium' ? 'warning' : 'bad'}
-                  onClick={() => fetchAISuggestion('AI-synlighet', `${result.aiVisibility!.score}/100`, result.aiVisibility!.level === 'high' ? 'good' : 'warning', result.aiVisibility!.description)}
-                />
-              </div>
-            </div>
-          )}
         </div>
       </div>
 

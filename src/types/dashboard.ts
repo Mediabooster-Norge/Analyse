@@ -61,6 +61,8 @@ export interface AIVisibilityData {
     }>;
   };
   recommendations: string[];
+  /** ISO-dato for når sjekken ble kjørt (brukes for 24t-throttle i UI) */
+  checked_at?: string;
 }
 
 /**
@@ -91,7 +93,7 @@ export interface CompetitorAnalysis {
     contentResults: { score: number; wordCount: number };
     securityResults: { score: number };
     overallScore: number;
-    aiVisibility?: { score: number };
+    aiVisibility?: AIVisibilityData;
     pageSpeedResults?: PageSpeedResults;
   };
 }
@@ -210,7 +212,7 @@ export interface DashboardAnalysisResult {
 /**
  * Dashboard tab types
  */
-export type DashboardTab = 'overview' | 'competitors' | 'keywords' | 'ai' | 'ai-visibility' | 'articles';
+export type DashboardTab = 'overview' | 'competitors' | 'keywords' | 'ai' | 'ai-visibility' | 'articles' | 'social';
 
 /**
  * Analysis step for progress indicator
@@ -244,7 +246,7 @@ export interface KeywordSort {
  * Competitor sort configuration
  */
 export interface CompetitorSort {
-  column: 'total' | 'seo' | 'content' | 'security' | 'speed' | 'aiVisibility';
+  column: 'total' | 'seo' | 'content' | 'security' | 'speed';
   direction: 'asc' | 'desc';
 }
 
@@ -282,4 +284,45 @@ export interface GeneratedArticleResult {
   articleTone?: string;
   /** Article audience setting: general, beginners, experts, business */
   articleAudience?: string;
+}
+
+/** Supported platforms for SoMe-post generator */
+export type SocialPlatform = 'linkedin' | 'instagram' | 'x';
+
+/** SoMe post length (innleggslengde); kort er fjernet, kun medium og lang */
+export type SocialPostLength = 'medium' | 'long';
+
+/** SoMe post tone – same as article tone */
+export type SocialPostTone = 'professional' | 'casual' | 'educational';
+
+/** SoMe post audience – same as article audience */
+export type SocialPostAudience = 'general' | 'beginners' | 'experts' | 'business';
+
+/** Options when generating a SoMe post */
+export interface GenerateSocialPostOptions {
+  length?: SocialPostLength;
+  tone?: SocialPostTone;
+  audience?: SocialPostAudience;
+}
+
+/** SoMe post suggestion (idea for a post) */
+export interface SocialPostSuggestion {
+  title: string;
+  rationale: string;
+  priority?: 'high' | 'medium' | 'low';
+}
+
+/** Result from SoMe post generation */
+export interface GeneratedSocialPostResult {
+  postId?: string;
+  platform: SocialPlatform;
+  title: string;
+  content: string;
+  hashtags: string[];
+  cta?: string;
+  featuredImageSuggestion?: string;
+  featuredImageUrl?: string;
+  featuredImageDownloadUrl?: string;
+  featuredImageAttribution?: string;
+  featuredImageProfileUrl?: string;
 }

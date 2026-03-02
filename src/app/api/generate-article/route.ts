@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
     firstDayOfMonth.setHours(0, 0, 0, 0);
     const firstDayIso = firstDayOfMonth.toISOString();
 
+    // Shared quota: article_generations counts both article and social post generations (same limit).
     const { count, error: countError } = await supabase
       .from('article_generations')
       .select('*', { count: 'exact', head: true })
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { title, rationale, companyName, websiteUrl, websiteName, length, tone, audience } = body as {
+    const { title, rationale, companyName, websiteUrl, websiteName, length: lengthParam, tone, audience } = body as {
       title?: string;
       rationale?: string;
       companyName?: string;
@@ -65,6 +66,8 @@ export async function POST(request: NextRequest) {
       tone?: 'professional' | 'casual' | 'educational';
       audience?: 'general' | 'beginners' | 'experts' | 'business';
     };
+    // Map deprecated 'short' to 'medium'; only medium and long are offered in UI
+    const length = lengthParam === 'short' ? 'medium' : (lengthParam ?? 'medium');
 
     if (!title || typeof title !== 'string' || title.trim().length === 0) {
       return NextResponse.json(
@@ -77,38 +80,31 @@ export async function POST(request: NextRequest) {
 
     const currentYear = new Date().getFullYear();
 
-    // Length configuration with structure requirements
+    // Length configuration with structure requirements (medium and long only; 'short' is mapped to medium above)
     // Using GPT-5 models for best article quality
-    const lengthConfig = {
-      short: { 
-        words: '300–500', 
-        minWords: 300, 
-        tokens: 4000, // GPT-5: ~1500 reasoning + ~1500 output
-        model: 'gpt-5-mini' as const,
-        structure: 'Inkluder: 1 innledning (2-3 avsnitt), 2-3 hovedseksjoner med korte forklaringer, 1 kort avslutning.'
-      },
-      medium: { 
-        words: '800–1200', 
-        minWords: 800, 
+    const lengthConfig: Record<'medium' | 'long', { words: string; minWords: number; tokens: number; model: 'gpt-5-mini'; structure: string }> = {
+      medium: {
+        words: '800–1200',
+        minWords: 800,
         tokens: 8000, // GPT-5: ~2000 reasoning + ~3000 output
-        model: 'gpt-5-mini' as const,
-        structure: 'Inkluder: 1 grundig innledning (3-4 avsnitt), 4-5 hovedseksjoner (##) med 2-3 avsnitt hver, minst 2 lister med 5+ punkter, 1 utfyllende avslutning med CTA.'
+        model: 'gpt-5-mini',
+        structure: 'Inkluder: 1 grundig innledning (3-4 avsnitt), 4-5 hovedseksjoner (##) med 2-3 avsnitt hver, minst 2 lister med 5+ punkter, 1 utfyllende avslutning med CTA.',
       },
-      long: { 
-        words: '1200–1500', 
-        minWords: 1200, 
-        tokens: 12000, // GPT-5: ~3000 reasoning + ~5000 output
-        model: 'gpt-5-mini' as const,
+      long: {
+        words: '1500–2000',
+        minWords: 1500,
+        tokens: 15000, // GPT-5: ~4000 reasoning + ~6500 output
+        model: 'gpt-5-mini',
         structure: `STRUKTURKRAV FOR LANG ARTIKKEL:
 1. Grundig innledning som setter kontekst
-2. 5-6 hovedseksjoner (##) med utdypende innhold
+2. 6-8 hovedseksjoner (##) med utdypende innhold
 3. Minst 2 lister med 5+ punkter hver
 4. Konkrete eksempler og praktiske tips
 5. FAQ-seksjon med 3-4 spørsmål og svar
-6. Omfattende avslutning med oppsummering og CTA`
+6. Omfattende avslutning med oppsummering og CTA`,
       },
     };
-    const selectedLength = lengthConfig[length || 'medium'];
+    const selectedLength = lengthConfig[length];
     
     console.log('[generate-article] Using config:', { length, model: selectedLength.model, tokens: selectedLength.tokens });
 

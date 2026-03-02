@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { usePremium, getPremiumLimits } from '@/hooks/usePremium';
 import { toast } from 'sonner';
@@ -15,6 +15,10 @@ import type {
   AIVisibilityData,
   ArticleSuggestion,
   GeneratedArticleResult,
+  SocialPostSuggestion,
+  GeneratedSocialPostResult,
+  SocialPlatform,
+  GenerateSocialPostOptions,
 } from '@/types/dashboard';
 import { normalizeUrl } from '@/lib/utils/score-utils';
 
@@ -77,6 +81,8 @@ interface DashboardState {
   // AI features
   aiVisibilityResult: AIVisibilityData | null;
   checkingAiVisibility: boolean;
+  /** Sekunder siden «Kjør sjekk» startet (for modal-timer) */
+  aiVisibilityElapsedTime: number;
   suggestingKeywords: boolean;
   
   // AI Suggestions
@@ -95,6 +101,14 @@ interface DashboardState {
   articleGenerationsLimit: number;
   generatedArticleResult: GeneratedArticleResult | null;
   generatingArticleIndex: number | null;
+
+  // Social post suggestions and generation (same limit as articles)
+  socialPostSuggestions: SocialPostSuggestion[] | null;
+  loadingSocialPostSuggestions: boolean;
+  socialPostSuggestionsSavedAt: string | null;
+  selectedSocialPlatform: SocialPlatform;
+  generatedSocialPostResult: GeneratedSocialPostResult | null;
+  generatingSocialPostIndex: number | null;
   
   // Analysis history for trends
   analysisHistory: Array<{
@@ -188,6 +202,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     competitorSort: null,
     aiVisibilityResult: null,
     checkingAiVisibility: false,
+    aiVisibilityElapsedTime: 0,
     suggestingKeywords: false,
     suggestionSheetOpen: false,
     selectedElement: null,
@@ -200,6 +215,12 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     articleGenerationsLimit: ARTICLE_GENERATIONS_LIMIT,
     generatedArticleResult: null,
     generatingArticleIndex: null,
+    socialPostSuggestions: null,
+    loadingSocialPostSuggestions: false,
+    socialPostSuggestionsSavedAt: null,
+    selectedSocialPlatform: 'linkedin',
+    generatedSocialPostResult: null,
+    generatingSocialPostIndex: null,
     analysisHistory: [],
     updatingCompetitors: false,
     updatingKeywords: false,
@@ -348,6 +369,22 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             // Ignore errors loading saved suggestions
           }
 
+          // Fetch saved social post suggestions for this analysis (default: linkedin)
+          let savedSocialSuggestions: SocialPostSuggestion[] | null = null;
+          let savedSocialSuggestionsAt: string | null = null;
+          try {
+            const socialRes = await fetch(`/api/suggest-social-posts?analysisId=${analysis.id}&platform=linkedin`);
+            if (socialRes.ok) {
+              const socialData = await socialRes.json();
+              if (socialData.suggestions && Array.isArray(socialData.suggestions)) {
+                savedSocialSuggestions = socialData.suggestions;
+                savedSocialSuggestionsAt = socialData.savedAt || null;
+              }
+            }
+          } catch {
+            // Ignore
+          }
+
           // Fetch analysis history for trends (same website URL, up to last 10 analyses)
           let analysisHistory: DashboardState['analysisHistory'] = [];
           if (analysis.website_url) {
@@ -389,6 +426,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             userName: firstName || null,
             articleSuggestions: savedArticleSuggestions,
             articleSuggestionsSavedAt: savedArticleSuggestionsAt,
+            socialPostSuggestions: savedSocialSuggestions,
+            socialPostSuggestionsSavedAt: savedSocialSuggestionsAt,
             analysisHistory,
             result: {
               seoResults: mergedSeoResults,
@@ -439,6 +478,9 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           remainingKeywordUpdates: state.remainingKeywordUpdates,
           remainingArticleGenerations: state.remainingArticleGenerations,
           articleGenerationsLimit: state.articleGenerationsLimit,
+          socialPostSuggestions: state.socialPostSuggestions,
+          socialPostSuggestionsSavedAt: state.socialPostSuggestionsSavedAt,
+          selectedSocialPlatform: state.selectedSocialPlatform,
           currentAnalysisId: state.currentAnalysisId,
           companyId: state.companyId,
           timestamp: Date.now(),
@@ -448,8 +490,10 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         // Ignore cache errors
       }
     }
-  }, [state.result, state.companyName, state.companyUrl, state.url, state.userName, 
-      state.remainingAnalyses, state.remainingCompetitorUpdates, state.remainingKeywordUpdates, 
+  }, [state.result, state.companyName, state.companyUrl, state.url, state.userName,
+      state.remainingAnalyses, state.remainingCompetitorUpdates, state.remainingKeywordUpdates,
+      state.remainingArticleGenerations, state.articleGenerationsLimit,
+      state.socialPostSuggestions, state.socialPostSuggestionsSavedAt, state.selectedSocialPlatform,
       state.currentAnalysisId, state.companyId, state.loading, cacheKey]);
 
   // Timer for analysis
@@ -463,6 +507,31 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     }
     return () => clearInterval(interval);
   }, [state.analyzing, updateState]);
+
+  // Timer for AI visibility check (modal): ref so we clear the right interval and avoid stale state in tick
+  const aiVisibilityIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const aiVisibilityElapsedRef = useRef(0);
+  useEffect(() => {
+    if (!state.checkingAiVisibility) {
+      if (aiVisibilityIntervalRef.current) {
+        clearInterval(aiVisibilityIntervalRef.current);
+        aiVisibilityIntervalRef.current = null;
+      }
+      return;
+    }
+    aiVisibilityElapsedRef.current = 0;
+    updateState({ aiVisibilityElapsedTime: 0 });
+    aiVisibilityIntervalRef.current = setInterval(() => {
+      aiVisibilityElapsedRef.current += 1;
+      setState(prev => ({ ...prev, aiVisibilityElapsedTime: aiVisibilityElapsedRef.current }));
+    }, 1000);
+    return () => {
+      if (aiVisibilityIntervalRef.current) {
+        clearInterval(aiVisibilityIntervalRef.current);
+        aiVisibilityIntervalRef.current = null;
+      }
+    };
+  }, [state.checkingAiVisibility, updateState]);
 
   // Actions
   const setUrl = useCallback((url: string) => updateState({ url }), [updateState]);
@@ -499,27 +568,65 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
   const checkAiVisibility = useCallback(async () => {
     updateState({ checkingAiVisibility: true });
     try {
+      const body: Record<string, unknown> = {
+        url: state.companyUrl || state.url,
+        companyName: state.companyName,
+        keywords: state.result?.keywordResearch?.slice(0, 3).map((k) => k.keyword) || [],
+        analysisId: state.currentAnalysisId || undefined,
+      };
       const response = await fetch('/api/analyze/ai-visibility', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url: state.companyUrl || state.url,
-          companyName: state.companyName,
-          keywords: state.result?.keywordResearch?.slice(0, 3).map((k) => k.keyword) || [],
-        }),
+        body: JSON.stringify(body),
       });
-      const data = await response.json();
+      const data = await response.json() as Record<string, unknown> & {
+        ai_visibility?: AIVisibilityData;
+        score?: number;
+        remaining?: number;
+        limit?: number;
+        source?: string;
+      };
+
+      if (!response.ok) {
+        if (response.status === 403) {
+          toast.error((data.error as string) || 'AI-synlighet er en Premium-funksjon');
+        } else if (response.status === 429) {
+          toast.error((data.error as string) || 'Du har brukt opp AI-synlighetssjekker denne måneden');
+        } else if (response.status === 503) {
+          toast.error((data.error as string) || 'AI-synlighet kunne ikke sjekkes pga. API-begrensning. Prøv igjen senere.');
+        } else if (response.status === 401) {
+          toast.error('Logg inn for å kjøre sjekk');
+        } else {
+          toast.error((data.error as string) || 'Kunne ikke sjekke AI-synlighet');
+        }
+        return;
+      }
+
       if (data.estimatedOnly) {
-        toast.error(data.message || 'Kunne ikke sjekke AI-synlighet');
-      } else if (data.score !== undefined) {
-        updateState({ aiVisibilityResult: data });
+        toast.error((data.message as string) || 'Kunne ikke sjekke AI-synlighet');
+        return;
+      }
+
+      const visibility = data.ai_visibility ?? (data.score !== undefined ? (data as unknown as AIVisibilityData) : null);
+      if (visibility) {
+        updateState({ aiVisibilityResult: visibility });
+        const remaining = data.remaining;
+        const limit = data.limit;
+        const estimated = (visibility as AIVisibilityData & { source?: string }).source === 'model_knowledge' || data.source === 'model_knowledge';
+        const base =
+          typeof remaining === 'number' && typeof limit === 'number'
+            ? `AI-synlighet oppdatert. ${remaining} av ${limit} sjekker igjen denne måneden.`
+            : 'AI-synlighet oppdatert';
+        const msg = estimated ? `${base} (Estimert – live søk ikke tilgjengelig.)` : base;
+        toast.success(msg);
       }
     } catch {
       toast.error('En feil oppstod under sjekk av AI-synlighet');
     } finally {
       updateState({ checkingAiVisibility: false });
     }
-  }, [state.companyUrl, state.url, state.companyName, state.result?.keywordResearch, updateState]);
+  }, [state.companyUrl, state.url, state.companyName, state.result, state.currentAnalysisId, updateState]);
 
   const addKeyword = useCallback(() => {
     const trimmed = state.keywordInput.trim().toLowerCase();
@@ -654,6 +761,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         loadingCompetitors: willFetchCompetitors,
         competitorProgress: willFetchCompetitors ? { current: 0, total: competitorUrlsToFetch.length } : null,
         analysisStep: willFetchPageSpeed || willFetchCompetitors ? 5 : state.analysisStep,
+        activeTab: 'overview',
         ...(isSubpage ? { articleSuggestions: null, articleSuggestionsSavedAt: null } : {}),
       });
       if (!willFetchPageSpeed && !willFetchCompetitors) toast.success('Analyse fullført!');
@@ -818,6 +926,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           : [];
       const response = await fetch('/api/suggest-articles', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           url: targetUrl,
@@ -863,6 +972,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     try {
       const response = await fetch('/api/generate-article', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: suggestion.title,
@@ -888,6 +998,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       if (data.article) {
         updateState({
           generatedArticleResult: {
+            articleId: data.articleId,
             title: data.title ?? suggestion.title.trim(),
             article: data.article,
             metaTitle: data.metaTitle,
@@ -907,10 +1018,150 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     } finally {
       updateState({ generatingArticleIndex: null });
     }
-  }, [state.remainingArticleGenerations, state.companyName, updateState]);
+  }, [state.remainingArticleGenerations, state.companyName, state.companyUrl, updateState]);
 
   const setGeneratedArticle = useCallback((result: GeneratedArticleResult | null) => {
     updateState({ generatedArticleResult: result });
+  }, [updateState]);
+
+  const setSelectedSocialPlatform = useCallback((platform: SocialPlatform) => {
+    updateState({ selectedSocialPlatform: platform });
+  }, [updateState]);
+
+  const loadSocialSuggestionsForPlatform = useCallback(async (platform: SocialPlatform) => {
+    if (!state.currentAnalysisId) return;
+    try {
+      const res = await fetch(`/api/suggest-social-posts?analysisId=${state.currentAnalysisId}&platform=${platform}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      updateState({
+        socialPostSuggestions: data.suggestions && Array.isArray(data.suggestions) ? data.suggestions : null,
+        socialPostSuggestionsSavedAt: data.savedAt || null,
+      });
+    } catch {
+      // Ignore
+    }
+  }, [state.currentAnalysisId, updateState]);
+
+  const fetchSocialPostSuggestions = useCallback(async (withCompetitors: boolean, platform: SocialPlatform) => {
+    const targetUrl = state.companyUrl || state.url;
+    if (!targetUrl) {
+      toast.error('Ingen analyse lastet. Kjør en analyse først.');
+      return;
+    }
+    updateState({
+      loadingSocialPostSuggestions: true,
+      socialPostSuggestions: null,
+      socialPostSuggestionsSavedAt: null,
+      selectedSocialPlatform: platform,
+    });
+    try {
+      const competitorUrls =
+        withCompetitors && state.result?.competitors
+          ? state.result.competitors.map((c) => c.url)
+          : [];
+      const response = await fetch('/api/suggest-social-posts', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: targetUrl,
+          companyName: state.companyName,
+          keywords: state.keywords.length > 0 ? state.keywords : (state.result?.keywordResearch?.map((k) => k.keyword) ?? []),
+          competitorUrls,
+          withCompetitors: withCompetitors && competitorUrls.length > 0,
+          analysisId: state.currentAnalysisId,
+          platform,
+        }),
+      });
+      if (!response.ok) throw new Error('Kunne ikke hente postforslag');
+      const data = await response.json();
+      if (data.suggestions && Array.isArray(data.suggestions)) {
+        updateState({
+          socialPostSuggestions: data.suggestions,
+          socialPostSuggestionsSavedAt: data.savedAt || null,
+        });
+      } else {
+        updateState({ socialPostSuggestions: [], socialPostSuggestionsSavedAt: null });
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Kunne ikke hente postforslag');
+      updateState({ socialPostSuggestions: null, socialPostSuggestionsSavedAt: null });
+    } finally {
+      updateState({ loadingSocialPostSuggestions: false });
+    }
+  }, [state.companyUrl, state.url, state.companyName, state.keywords, state.result?.competitors, state.result?.keywordResearch, state.currentAnalysisId, updateState]);
+
+  const fetchGenerateSocialPost = useCallback(async (
+    suggestion: { title: string; rationale?: string },
+    index: number,
+    platform: SocialPlatform,
+    options?: GenerateSocialPostOptions
+  ) => {
+    if (state.remainingArticleGenerations <= 0) {
+      toast.error('Du har brukt opp genereringer denne måneden (artikler + SoMe-poster).');
+      return;
+    }
+    updateState({ generatingSocialPostIndex: index, generatedSocialPostResult: null });
+    try {
+      const response = await fetch('/api/generate-social-post', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: suggestion.title,
+          rationale: suggestion.rationale,
+          companyName: state.companyName ?? undefined,
+          websiteUrl: state.companyUrl ?? undefined,
+          websiteName: state.companyName ?? undefined,
+          platform,
+          length: options?.length,
+          tone: options?.tone,
+          audience: options?.audience,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        if (response.status === 429) {
+          toast.error(data.error || 'Du har brukt opp genereringer denne måneden.');
+          updateState({ remainingArticleGenerations: 0 });
+        } else {
+          const msg = data.error || 'Kunne ikke generere innlegg';
+          toast.error(data.code ? `${msg} (${data.code})` : msg);
+          if (process.env.NODE_ENV === 'development' && data.details) {
+            console.error('generate-social-post error details:', data.details);
+          }
+        }
+        return;
+      }
+      if (data.content) {
+        updateState({
+          generatedSocialPostResult: {
+            postId: data.postId,
+            platform: data.platform ?? platform,
+            title: data.title ?? suggestion.title.trim(),
+            content: data.content,
+            hashtags: data.hashtags ?? [],
+            cta: data.cta,
+            featuredImageSuggestion: data.featuredImageSuggestion,
+            featuredImageUrl: data.featuredImageUrl,
+            featuredImageDownloadUrl: data.featuredImageDownloadUrl,
+            featuredImageAttribution: data.featuredImageAttribution,
+            featuredImageProfileUrl: data.featuredImageProfileUrl,
+          },
+          remainingArticleGenerations: data.remaining ?? state.remainingArticleGenerations - 1,
+        });
+        toast.success('Innlegg generert!');
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Kunne ikke generere innlegg');
+    } finally {
+      updateState({ generatingSocialPostIndex: null });
+    }
+  }, [state.remainingArticleGenerations, state.companyName, state.companyUrl, updateState]);
+
+  const setGeneratedSocialPost = useCallback((result: GeneratedSocialPostResult | null) => {
+    updateState({ generatedSocialPostResult: result });
   }, [updateState]);
 
   const fetchAISuggestion = useCallback(async (
@@ -1221,6 +1472,17 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     generatingArticleIndex: state.generatingArticleIndex,
     fetchGenerateArticle,
     setGeneratedArticle,
+    socialPostSuggestions: state.socialPostSuggestions,
+    loadingSocialPostSuggestions: state.loadingSocialPostSuggestions,
+    socialPostSuggestionsSavedAt: state.socialPostSuggestionsSavedAt,
+    selectedSocialPlatform: state.selectedSocialPlatform,
+    setSelectedSocialPlatform,
+    loadSocialSuggestionsForPlatform,
+    fetchSocialPostSuggestions,
+    generatedSocialPostResult: state.generatedSocialPostResult,
+    generatingSocialPostIndex: state.generatingSocialPostIndex,
+    fetchGenerateSocialPost,
+    setGeneratedSocialPost,
     analysisHistory: state.analysisHistory,
     startEditingCompetitors,
     addEditCompetitor,

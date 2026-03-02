@@ -22,8 +22,6 @@ import {
 } from 'lucide-react';
 
 // Feature flag: Set to true when AI visibility is ready
-const AI_VISIBILITY_ENABLED = false;
-
 export interface CompetitorsTabProps {
   result: DashboardAnalysisResult;
   isPremium: boolean;
@@ -307,22 +305,10 @@ export function CompetitorsTab({
                             </span>
                           </button>
                         </th>
-                        {AI_VISIBILITY_ENABLED && (
-                          <th className="text-center py-3 px-2 sm:px-3 font-medium text-neutral-600 text-xs sm:text-sm">
-                            <button
-                              onClick={() => setCompetitorSort(competitorSort?.column === 'aiVisibility' ? { column: 'aiVisibility', direction: competitorSort.direction === 'asc' ? 'desc' : 'asc' } : { column: 'aiVisibility', direction: 'desc' })}
-                              className="inline-flex items-center gap-1 hover:text-neutral-900 transition-colors cursor-pointer"
-                            >
-                              AI-søk
-                              {competitorSort?.column === 'aiVisibility' ? (competitorSort.direction === 'asc' ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />) : <ArrowUpDown className="h-3.5 w-3.5 text-neutral-300" />}
-                            </button>
-                          </th>
-                        )}
                   </tr>
                 </thead>
                 <tbody>
                   {(() => {
-                    const userAiScore = result.aiVisibility?.score ?? null;
                     const userSpeedScore = result.pageSpeedResults?.performance ?? null;
                     const allEntries = [
                       {
@@ -334,7 +320,6 @@ export function CompetitorsTab({
                         content: result.contentResults.score,
                         security: result.securityResults.score,
                         speed: userSpeedScore,
-                        aiVisibility: userAiScore,
                       },
                       ...result.competitors.map((c, idx) => ({
                         type: 'competitor' as const,
@@ -345,7 +330,6 @@ export function CompetitorsTab({
                         content: c.results.contentResults.score,
                         security: c.results.securityResults.score,
                         speed: c.results.pageSpeedResults?.performance ?? null,
-                        aiVisibility: c.results.aiVisibility?.score ?? null,
                         competitor: c,
                         index: idx,
                       })),
@@ -425,15 +409,6 @@ export function CompetitorsTab({
                                 <span className="text-neutral-400 text-sm">–</span>
                               )}
                             </td>
-                            {AI_VISIBILITY_ENABLED && (
-                              <td className="text-center py-3 px-3">
-                                {result.aiVisibility?.score != null ? (
-                                  <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">{result.aiVisibility.score}</span>
-                                ) : (
-                                  <span className="text-neutral-400 text-sm">–</span>
-                                )}
-                              </td>
-                            )}
                           </tr>
                         );
                       }
@@ -503,15 +478,6 @@ export function CompetitorsTab({
                               <span className="text-neutral-400 text-sm">–</span>
                             )}
                           </td>
-                          {AI_VISIBILITY_ENABLED && (
-                            <td className="text-center py-3 px-3">
-                              {competitor.results.aiVisibility?.score != null ? (
-                                <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-cyan-100 text-cyan-700 font-bold text-sm">{competitor.results.aiVisibility.score}</span>
-                              ) : (
-                                <span className="text-neutral-400 text-sm">–</span>
-                              )}
-                            </td>
-                          )}
                         </tr>
                       );
                     });

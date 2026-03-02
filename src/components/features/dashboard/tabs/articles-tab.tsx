@@ -39,7 +39,7 @@ const SUGGESTION_MESSAGES = [
   'Formulerer artikkelideer…',
 ];
 
-type ArticleLength = 'short' | 'medium' | 'long';
+type ArticleLength = 'medium' | 'long';
 type ArticleTone = 'professional' | 'casual' | 'educational';
 type ArticleAudience = 'general' | 'beginners' | 'experts' | 'business';
 
@@ -62,9 +62,8 @@ export interface ArticlesTabProps {
 }
 
 const LENGTH_OPTIONS: { value: ArticleLength; label: string; desc: string }[] = [
-  { value: 'short', label: 'Kort', desc: '300-500 ord' },
   { value: 'medium', label: 'Medium', desc: '800-1200 ord' },
-  { value: 'long', label: 'Lang', desc: '1200-1500 ord' },
+  { value: 'long', label: 'Lang', desc: '1500-2000 ord' },
 ];
 
 const TONE_OPTIONS: { value: ArticleTone; label: string }[] = [
@@ -157,53 +156,50 @@ export function ArticlesTab({
 
   const regenerateImage = async () => {
     if (!generatedArticleResult) return;
-    
-    // Use the search query from the article result, or fall back to the suggestion text
+    if (!generatedArticleResult.articleId) {
+      toast.error('Lagre artikkelen først for å kunne oppdatere forsidebilde.');
+      return;
+    }
     const searchQuery = generatedArticleResult.featuredImageSuggestion;
     if (!searchQuery) {
       toast.error('Ingen bildesøk tilgjengelig');
       return;
     }
+    const articleId = generatedArticleResult.articleId;
 
     setRegeneratingImage(true);
     try {
       const response = await fetch('/api/regenerate-image', {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ searchQuery }),
+        body: JSON.stringify({ searchQuery, articleId }),
       });
-      
       const data = await response.json();
-      
       if (!response.ok) {
         toast.error(data.error || 'Kunne ikke hente nytt bilde');
         return;
       }
-
-      // Save the new image to the database if we have an article ID
-      if (generatedArticleResult.articleId) {
-        const saveResponse = await fetch(`/api/generated-articles/${generatedArticleResult.articleId}`, {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            featured_image_url: data.featuredImageUrl,
-            featured_image_attribution: data.featuredImageAttribution,
-          }),
-        });
-
-        if (!saveResponse.ok) {
-          console.error('Failed to save image to database');
-        }
+      const saveResponse = await fetch(`/api/generated-articles/${articleId}`, {
+        method: 'PATCH',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          featured_image_url: data.featuredImageUrl,
+          featured_image_attribution: data.featuredImageAttribution,
+        }),
+      });
+      if (!saveResponse.ok) {
+        const patchBody = await saveResponse.json().catch(() => ({}));
+        toast.error(patchBody.error || 'Bilde ble ikke lagret. Prøv igjen.');
+        return;
       }
-
-      // Update the generated article result with the new image
       setGeneratedArticle({
         ...generatedArticleResult,
         featuredImageUrl: data.featuredImageUrl,
         featuredImageAttribution: data.featuredImageAttribution,
         featuredImageProfileUrl: data.featuredImageProfileUrl,
       });
-      
       toast.success('Nytt bilde lagret');
     } catch {
       toast.error('Kunne ikke hente nytt bilde');
@@ -233,36 +229,55 @@ export function ArticlesTab({
           </div>
         </div>
         <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              onClick={() => fetchArticleSuggestions(false)}
-              disabled={loadingArticleSuggestions}
-              className="rounded-lg text-xs bg-neutral-900 hover:bg-neutral-800"
-            >
-              {loadingArticleSuggestions ? (
-                <>
-                  <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-                  Genererer...
-                </>
-              ) : (
-                <>
-                  <Lightbulb className="h-3.5 w-3.5 mr-1.5" />
-                  {articleSuggestions && articleSuggestions.length > 0 ? 'Generer nye forslag' : 'Generer artikkelforslag'}
-                </>
-              )}
-            </Button>
-            {hasCompetitors && (
+          <p className="text-xs text-neutral-500">
+            Basert på nettsiden og nøkkelord — eller også konkurrentene for mer målrettede forslag.
+          </p>
+          <div className={`grid gap-3 ${hasCompetitors ? 'sm:grid-cols-2' : ''}`}>
+            <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-3 sm:p-4 flex flex-col gap-3">
+              <div>
+                <p className="text-xs font-medium text-neutral-900 mb-0.5">Nettside og nøkkelord</p>
+                <p className="text-sm text-neutral-500 leading-snug">
+                  Generelle artikkelideer. Bruker kun nettsiden og nøkkelord.
+                </p>
+              </div>
               <Button
                 type="button"
-                variant="outline"
-                onClick={() => fetchArticleSuggestions(true)}
+                onClick={() => fetchArticleSuggestions(false)}
                 disabled={loadingArticleSuggestions}
-                className="rounded-lg text-xs"
+                className="rounded-lg text-xs bg-neutral-900 hover:bg-neutral-800 w-fit"
               >
-                <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
-                {articleSuggestions && articleSuggestions.length > 0 ? 'Nye (med konkurrenter)' : 'Med konkurrentanalyse'}
+                {loadingArticleSuggestions ? (
+                  <>
+                    <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
+                    Genererer...
+                  </>
+                ) : (
+                  <>
+                    <Lightbulb className="h-3.5 w-3.5 mr-1.5" />
+                    {articleSuggestions && articleSuggestions.length > 0 ? 'Nye forslag' : 'Generer forslag'}
+                  </>
+                )}
               </Button>
+            </div>
+            {hasCompetitors && (
+              <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-3 sm:p-4 flex flex-col gap-3">
+                <div>
+                  <p className="text-xs font-medium text-neutral-900 mb-0.5">Med konkurrentanalyse</p>
+                  <p className="text-sm text-neutral-500 leading-snug">
+                    Mer målrettet: utkonkurrering og innholdshull mot konkurrentene.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fetchArticleSuggestions(true)}
+                  disabled={loadingArticleSuggestions}
+                  className="rounded-lg text-xs w-fit border-neutral-300 bg-white hover:bg-neutral-50"
+                >
+                  <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
+                  {articleSuggestions && articleSuggestions.length > 0 ? 'Nye forslag (konkurrenter)' : 'Generer forslag (konkurrenter)'}
+                </Button>
+              </div>
             )}
           </div>
 
@@ -460,11 +475,7 @@ export function ArticlesTab({
                 </span>
               </div>
               <p className="text-[11px] text-neutral-400">
-                {usedSettings?.length === 'long' 
-                  ? 'ca. 30–60 sek' 
-                  : usedSettings?.length === 'short'
-                  ? 'ca. 15–30 sek'
-                  : 'ca. 20–40 sek'}
+                {usedSettings?.length === 'long' ? 'ca. 40–90 sek' : 'ca. 20–40 sek'}
               </p>
             </div>
           </div>
@@ -541,26 +552,30 @@ export function ArticlesTab({
                                   {generatedArticleResult.featuredImageAttribution}
                                 </a>
                               )}
-                              <div className="flex items-center gap-3">
-                                <button
-                                  type="button"
-                                  onClick={regenerateImage}
-                                  disabled={regeneratingImage}
-                                  className="inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer disabled:opacity-50"
-                                >
-                                  <RefreshCw className={`h-3 w-3 ${regeneratingImage ? 'animate-spin' : ''}`} />
-                                  {regeneratingImage ? 'Henter nytt bilde...' : 'Ikke fornøyd? Generer et nytt bilde'}
-                                </button>
-                                <a
-                                  href={generatedArticleResult.featuredImageUrl}
-                                  download={`featured-image-${generatedArticleResult.title?.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() || 'article'}.jpg`}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-[11px] text-neutral-600 hover:text-neutral-900 transition-colors cursor-pointer"
-                                >
-                                  <Download className="h-3 w-3" />
-                                  Last ned
-                                </a>
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-3">
+                                  <button
+                                    type="button"
+                                    onClick={regenerateImage}
+                                    disabled={regeneratingImage || !generatedArticleResult.articleId}
+                                    title={!generatedArticleResult.articleId ? 'Lagre artikkelen først for å kunne oppdatere forsidebilde' : undefined}
+                                    className="inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer disabled:opacity-50"
+                                  >
+                                    <RefreshCw className={`h-3 w-3 ${regeneratingImage ? 'animate-spin' : ''}`} />
+                                    {regeneratingImage ? 'Henter nytt bilde...' : 'Ikke fornøyd? Generer et nytt bilde'}
+                                  </button>
+                                  <a
+                                    href={generatedArticleResult.featuredImageUrl}
+                                    download={`featured-image-${generatedArticleResult.title?.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() || 'article'}.jpg`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-1 text-[11px] text-neutral-600 hover:text-neutral-900 transition-colors cursor-pointer"
+                                  >
+                                    <Download className="h-3 w-3" />
+                                    Last ned
+                                  </a>
+                                </div>
+                                <p className="text-[11px] text-neutral-400">Maks 3 nye bilder per time.</p>
                               </div>
                             </div>
                           </div>
