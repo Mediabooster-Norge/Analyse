@@ -46,8 +46,16 @@ import {
   ChevronDown,
   Copy,
   User as UserIcon,
+  Tag,
+  Eye,
+  FileText,
+  Share2,
+  Lightbulb,
+  PenLine,
 } from 'lucide-react';
+import type { DashboardTab } from '@/types/dashboard';
 import { HeroShapes, SectionShapes, IllustrationShape } from '@/components/landing/hero-shapes';
+import { SummaryCard } from '@/components/features/dashboard';
 
 
 // Score Ring Component (same as dashboard)
@@ -107,7 +115,7 @@ function ScoreRing({ score, label, size = 'md' }: { score: number; label: string
 export default function LandingPage() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [demoTab, setDemoTab] = useState<'oversikt' | 'konkurrenter' | 'ai'>('oversikt');
+  const [demoTab, setDemoTab] = useState<DashboardTab>('overview');
   const [selectedIssue, setSelectedIssue] = useState<string | null>('meta');
   const [selectedStep, setSelectedStep] = useState<number>(1);
 
@@ -244,31 +252,38 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Tabs - scrollable on mobile */}
-              <div className="border-b border-neutral-100 px-3 sm:px-6 pt-2 sm:pt-3 bg-white overflow-x-auto scrollbar-hide">
+              {/* Tabs – samme design som dashboard TabNavigation (desktop) */}
+              <div className="px-3 sm:px-6 pt-2 sm:pt-3 pb-2 sm:pb-3 bg-white">
                 <div className="flex items-center gap-1.5 text-[10px] sm:text-xs text-green-600 mb-1.5 sm:mb-2">
                   <span>Klikk for å utforske</span>
                   <ChevronDown className="w-3 h-3 animate-bounce" />
                 </div>
-                <div className="flex gap-0.5 sm:gap-1 w-max pb-px">
+                <div className="flex flex-nowrap items-center gap-1 p-1 bg-neutral-100 rounded-xl overflow-x-auto scrollbar-hide min-h-[40px]">
                   {[
-                    { id: 'oversikt', label: 'Oversikt', icon: BarChart3 },
-                    { id: 'konkurrenter', label: 'Konkurrenter', icon: Globe },
-                    { id: 'ai', label: 'AI-analyse', icon: Sparkles },
-                  ].map((tab) => (
-                    <button
-                      key={tab.id}
-                      onClick={() => setDemoTab(tab.id as typeof demoTab)}
-                      className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium rounded-t-lg transition-all cursor-pointer shrink-0 ${
-                        demoTab === tab.id
-                          ? 'bg-white text-neutral-900 border-t border-l border-r border-neutral-200 -mb-px'
-                          : 'text-neutral-500 hover:text-neutral-700 hover:bg-neutral-50'
-                      }`}
-                    >
-                      <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                      {tab.label}
-                    </button>
-                  ))}
+                    { id: 'overview' as const, label: 'Nettside', shortLabel: 'Nettside', icon: BarChart3 },
+                    { id: 'competitors' as const, label: 'Konkurrenter', shortLabel: 'Konk.', icon: TrendingUp },
+                    { id: 'keywords' as const, label: 'SEO / Nøkkelord', shortLabel: 'SEO', icon: Tag },
+                    { id: 'ai-visibility' as const, label: 'AI-synlighet', shortLabel: 'AI-syn', icon: Eye },
+                    { id: 'articles' as const, label: 'Artikkel generator', shortLabel: 'Artikkel', icon: FileText },
+                    { id: 'social' as const, label: 'SoMe-post generator', shortLabel: 'SoMe', icon: Share2 },
+                    { id: 'ai' as const, label: 'AI anbefalinger', shortLabel: 'AI', icon: Sparkles },
+                  ].map((tab) => {
+                    const isActive = demoTab === tab.id;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setDemoTab(tab.id)}
+                        title={tab.label}
+                        className={`shrink-0 px-2.5 py-1.5 rounded-lg text-[11px] xl:text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1 xl:gap-1.5 ${
+                          isActive ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900'
+                        }`}
+                      >
+                        <tab.icon className="h-3.5 w-3.5 xl:h-4 xl:w-4 shrink-0" />
+                        <span className="inline xl:hidden">{tab.shortLabel}</span>
+                        <span className="hidden xl:inline">{tab.label}</span>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
         
@@ -281,84 +296,64 @@ export default function LandingPage() {
               }}
             >
               
-              {/* Oversikt Tab (also shown for Hastighet) */}
-              {demoTab === 'oversikt' && (
+              {/* Nettside (Oversikt) Tab – samme design som dashboard OverviewTab */}
+              {demoTab === 'overview' && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-4"
+                  className="space-y-2 max-[400px]:space-y-2 min-[401px]:space-y-3 sm:space-y-4"
                 >
-                  {/* Summary Card – positiv framing */}
-                  <div className="rounded-xl sm:rounded-2xl p-3 sm:p-5 bg-green-50 border border-green-200">
-                    <div className="flex items-start gap-2 sm:gap-4">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg sm:rounded-xl flex items-center justify-center shrink-0 bg-green-100">
-                        <CheckCircle2 className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
+                  <SummaryCard score={82} />
+                  <div className="grid lg:grid-cols-3 gap-2 max-[400px]:gap-2 min-[401px]:gap-3 sm:gap-4">
+                    <div className="lg:col-span-2 rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
+                      <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-5 border-b border-neutral-100">
+                        <h3 className="font-semibold text-neutral-900 mb-0.5 max-[400px]:text-sm min-[401px]:text-base">Poengoversikt</h3>
+                        <p className="text-[10px] max-[400px]:text-[10px] min-[401px]:text-xs sm:text-sm text-neutral-500">Høyere poeng = bedre synlighet</p>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-sm sm:text-base font-semibold text-green-900">
-                          Solid resultat
-                        </h3>
-                        <p className="text-xs sm:text-sm text-green-700 mt-0.5 line-clamp-2">
-                          82 poeng – vi viser deg hvordan du blir enda bedre i Google.
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        <div className="text-2xl sm:text-3xl font-bold text-green-600">82</div>
-                        <p className="text-[10px] sm:text-xs text-neutral-500">av 100</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Score Grid + Improvements Side by Side */}
-                  <div className="grid lg:grid-cols-3 gap-2 sm:gap-4">
-                    {/* Score Grid Section */}
-                    <div className="lg:col-span-2 rounded-xl sm:rounded-2xl border border-neutral-200 bg-white overflow-hidden min-w-0">
-                      <div className="p-2 sm:p-4 border-b border-neutral-100">
-                        <h3 className="font-semibold text-neutral-900 text-xs sm:text-sm">Poengoversikt</h3>
-                        <p className="text-[10px] sm:text-xs text-neutral-500">Høyere poeng = bedre synlighet</p>
-                      </div>
-                      <div className="p-2 sm:p-4">
-                        <div className="grid grid-cols-3 sm:grid-cols-5 gap-1 sm:gap-3">
-                          <div className="text-center">
+                      <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-5">
+                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-1 max-[400px]:gap-1 min-[401px]:gap-2 sm:gap-3 max-[400px]:scale-[0.85] max-[400px]:origin-center">
+                          <div className="text-center min-w-0">
                             <ScoreRing score={82} label="Totalt" size="sm" />
                             <p className="text-[10px] text-neutral-500 mt-1">Samlet</p>
                           </div>
-                          <div className="text-center">
+                          <div className="text-center min-w-0">
                             <ScoreRing score={78} label="SEO" size="sm" />
                             <p className="text-[10px] text-neutral-500 mt-1">Søkemotor</p>
                           </div>
-                          <div className="text-center">
+                          <div className="text-center min-w-0">
                             <ScoreRing score={68} label="Innhold" size="sm" />
                             <p className="text-[10px] text-neutral-500 mt-1">Tekst</p>
                           </div>
-                          <div className="text-center">
+                          <div className="text-center min-w-0">
                             <ScoreRing score={95} label="Sikkerhet" size="sm" />
                             <p className="text-[10px] text-neutral-500 mt-1">Trygghet</p>
                           </div>
-                          <div className="text-center">
+                          <div className="text-center min-w-0">
                             <ScoreRing score={88} label="Speed" size="sm" />
                             <p className="text-[10px] text-neutral-500 mt-1">Hastighet</p>
+                          </div>
+                          <div className="text-center min-w-0 hidden sm:block">
+                            <ScoreRing score={72} label="AI-syn" size="sm" />
+                            <p className="text-[10px] text-neutral-500 mt-1">AI-syn</p>
                           </div>
                         </div>
                       </div>
                     </div>
-
-                    {/* Muligheter – positiv formulering */}
-                    <div className="rounded-xl sm:rounded-2xl border border-neutral-200 bg-white p-2 sm:p-4 min-w-0">
-                      <div className="flex items-center justify-between mb-2 sm:mb-3">
-                        <h3 className="font-semibold text-neutral-900 flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm">
-                          <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-green-500" />
+                    <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-4 min-w-0">
+                      <div className="flex items-center justify-between mb-2 max-[400px]:mb-2 min-[401px]:mb-3">
+                        <h3 className="font-semibold text-neutral-900 flex items-center gap-1.5 max-[400px]:gap-1.5 min-[401px]:gap-2 text-xs max-[400px]:text-xs min-[401px]:text-sm">
+                          <TrendingUp className="h-3.5 w-3.5 max-[400px]:h-3.5 min-[401px]:h-4 sm:w-4 text-green-500" />
                           Tips for å bli enda bedre
                         </h3>
-                        <span className="text-[10px] sm:text-xs text-neutral-400">4 muligheter</span>
+                        <span className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-400">4 muligheter</span>
                       </div>
-                      <div className="space-y-1 sm:space-y-1.5">
+                      <div className="space-y-1 max-[400px]:space-y-1 min-[401px]:space-y-1.5">
                         {[
-                          { label: 'Meta-beskrivelse', desc: 'Mangler beskrivelse', priority: 'high' },
-                          { label: 'Innhold', desc: 'For lite tekst', priority: 'medium' },
-                          { label: 'H2-overskrifter', desc: 'Mangler underoverskrifter', priority: 'low' },
-                          { label: 'Open Graph', desc: 'Mangler OG-tags', priority: 'low' },
+                          { label: 'Meta-beskrivelse', desc: 'Mangler beskrivelse', priority: 'high' as const },
+                          { label: 'Innhold', desc: 'For lite tekst', priority: 'medium' as const },
+                          { label: 'H2-overskrifter', desc: 'Mangler underoverskrifter', priority: 'low' as const },
+                          { label: 'Open Graph', desc: 'Mangler OG-tags', priority: 'low' as const },
                         ].map((issue, i) => (
                           <div key={i} className="flex items-center gap-2 p-2 rounded-lg bg-neutral-50 hover:bg-neutral-100 transition-colors cursor-pointer group">
                             <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${
@@ -379,222 +374,526 @@ export default function LandingPage() {
                 </motion.div>
               )}
 
-              {/* Konkurrenter Tab */}
-              {demoTab === 'konkurrenter' && (
+              {/* Konkurrenter Tab – samme design som dashboard CompetitorsTab */}
+              {demoTab === 'competitors' && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-4"
+                  className="space-y-3 min-[401px]:space-y-4"
                 >
-                  {/* Header */}
-                  <div>
-                    <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-2">
-                      <BarChart3 className="h-4 w-4 text-neutral-600" />
-                      Konkurrentsammenligning (1 konkurrent)
+                  <div className="p-2 min-[401px]:p-3 sm:p-4">
+                    <h3 className="inline-flex items-center gap-1.5 px-2 min-[401px]:px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-[11px] max-[400px]:text-[10px] min-[401px]:text-xs sm:text-sm font-medium mb-1.5">
+                      <TrendingUp className="h-3.5 w-3.5 text-neutral-600" />
+                      Konkurrentsammenligning (2 konkurrenter)
                     </h3>
-                    <p className="text-sm text-neutral-600">Sammenlign din nettside med konkurrentene dine</p>
+                    <p className="text-[10px] min-[401px]:text-xs sm:text-sm text-neutral-500">Sammenlign din nettside med konkurrentene dine</p>
                   </div>
-
-                  {/* Score Comparison Table */}
-                  <div className="overflow-x-auto rounded-xl border border-neutral-200 -mx-1 sm:mx-0">
-                    <table className="w-full text-sm min-w-[400px]">
-                      <thead>
-                        <tr className="bg-neutral-50 border-b border-neutral-200">
-                          <th className="text-left py-2.5 px-3 font-medium text-neutral-600 text-xs">Nettside</th>
-                          <th className="text-center py-2.5 px-2 font-medium text-neutral-600 text-xs">Total</th>
-                          <th className="text-center py-2.5 px-2 font-medium text-neutral-600 text-xs">SEO</th>
-                          <th className="text-center py-2.5 px-2 font-medium text-neutral-600 text-xs">Innhold</th>
-                          <th className="text-center py-2.5 px-2 font-medium text-neutral-600 text-xs">Sikkerhet</th>
-                          <th className="text-center py-2.5 px-2 font-medium text-neutral-600 text-xs">Hastighet</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {/* User row */}
-                        <tr className="border-b border-neutral-100 bg-green-50/50">
-                          <td className="py-2.5 px-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
-                                <Globe className="h-3.5 w-3.5 text-green-600" />
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-medium text-neutral-900 text-xs">Du</p>
-                                <p className="text-[10px] text-neutral-500">eksempel.no</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-700 font-bold text-xs">78</span>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="font-semibold text-green-600 text-xs">72</span>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="font-semibold text-red-600 text-xs">58</span>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="font-semibold text-green-600 text-xs">95</span>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="font-semibold text-green-600 text-xs">88</span>
-                          </td>
-                        </tr>
-                        {/* Competitor 1 */}
-                        <tr className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
-                          <td className="py-2.5 px-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
-                                <span className="text-[10px] font-bold text-neutral-500">#1</span>
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-medium text-neutral-700 text-xs">konkurrent.no</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-neutral-100 text-neutral-600 font-bold text-xs">65</span>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="font-semibold text-neutral-600 text-xs">68</span>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="font-semibold text-neutral-600 text-xs">62</span>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="font-semibold text-neutral-600 text-xs">72</span>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="font-semibold text-neutral-600 text-xs">64</span>
-                          </td>
-                        </tr>
-                        {/* Competitor 2 */}
-                        <tr className="hover:bg-neutral-50 transition-colors">
-                          <td className="py-2.5 px-3">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
-                                <span className="text-[10px] font-bold text-neutral-500">#2</span>
-                              </div>
-                              <div className="min-w-0">
-                                <p className="font-medium text-neutral-700 text-xs">annen.no</p>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-700 font-bold text-xs">71</span>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="font-semibold text-red-600 text-xs">74</span>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="font-semibold text-red-600 text-xs">68</span>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="font-semibold text-neutral-600 text-xs">70</span>
-                          </td>
-                          <td className="text-center py-2.5 px-2">
-                            <span className="font-semibold text-red-600 text-xs">91</span>
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                  <div className="overflow-x-auto -mx-3 max-[400px]:-mx-3 min-[401px]:-mx-4 sm:mx-0 scrollbar-hide touch-pan-x">
+                    <div className="min-w-[580px] max-[400px]:min-w-[520px] px-3 max-[400px]:px-3 min-[401px]:px-4 sm:px-0">
+                      <div className="overflow-hidden rounded-xl border border-neutral-200">
+                        <table className="w-full text-sm">
+                          <thead>
+                            <tr className="bg-neutral-50 border-b border-neutral-200">
+                              <th className="text-left py-3 px-3 sm:px-4 font-medium text-neutral-600 text-xs sm:text-sm">Nettside</th>
+                              <th className="text-center py-3 px-2 sm:px-3 font-medium text-neutral-600 text-xs sm:text-sm">Total</th>
+                              <th className="text-center py-3 px-2 sm:px-3 font-medium text-neutral-600 text-xs sm:text-sm">SEO</th>
+                              <th className="text-center py-3 px-2 sm:px-3 font-medium text-neutral-600 text-xs sm:text-sm">Innhold</th>
+                              <th className="text-center py-3 px-2 sm:px-3 font-medium text-neutral-600 text-xs sm:text-sm">Sikkerhet</th>
+                              <th className="text-center py-3 px-2 sm:px-3 font-medium text-neutral-600 text-xs sm:text-sm">Speed</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-b border-neutral-100 bg-green-50/50 hover:bg-green-50 transition-colors group">
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
+                                    <Globe className="h-4 w-4 text-green-600" />
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-neutral-900 text-xs sm:text-sm">Du</p>
+                                    <p className="text-[10px] text-neutral-500">eksempel.no</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="text-center py-3 px-2 sm:px-3">
+                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-green-100 text-green-700 font-bold text-xs sm:text-sm">78</span>
+                              </td>
+                              <td className="text-center py-3 px-2 sm:px-3"><span className="font-semibold text-green-600 text-xs sm:text-sm">72</span></td>
+                              <td className="text-center py-3 px-2 sm:px-3"><span className="font-semibold text-red-600 text-xs sm:text-sm">58</span></td>
+                              <td className="text-center py-3 px-2 sm:px-3"><span className="font-semibold text-green-600 text-xs sm:text-sm">95</span></td>
+                              <td className="text-center py-3 px-2 sm:px-3"><span className="font-semibold text-green-600 text-xs sm:text-sm">88</span></td>
+                            </tr>
+                            <tr className="border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
+                                    <span className="text-[10px] font-bold text-neutral-500">#1</span>
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-neutral-700 text-xs sm:text-sm">konkurrent.no</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="text-center py-3 px-2 sm:px-3">
+                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-neutral-100 text-neutral-600 font-bold text-xs sm:text-sm">65</span>
+                              </td>
+                              <td className="text-center py-3 px-2 sm:px-3"><span className="font-semibold text-neutral-600 text-xs sm:text-sm">68</span></td>
+                              <td className="text-center py-3 px-2 sm:px-3"><span className="font-semibold text-neutral-600 text-xs sm:text-sm">62</span></td>
+                              <td className="text-center py-3 px-2 sm:px-3"><span className="font-semibold text-neutral-600 text-xs sm:text-sm">72</span></td>
+                              <td className="text-center py-3 px-2 sm:px-3"><span className="font-semibold text-neutral-600 text-xs sm:text-sm">64</span></td>
+                            </tr>
+                            <tr className="hover:bg-neutral-50 transition-colors">
+                              <td className="py-3 px-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-8 h-8 rounded-lg bg-neutral-100 flex items-center justify-center shrink-0">
+                                    <span className="text-[10px] font-bold text-neutral-500">#2</span>
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-neutral-700 text-xs sm:text-sm">annen.no</p>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="text-center py-3 px-2 sm:px-3">
+                                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-red-100 text-red-700 font-bold text-xs sm:text-sm">71</span>
+                              </td>
+                              <td className="text-center py-3 px-2 sm:px-3"><span className="font-semibold text-red-600 text-xs sm:text-sm">74</span></td>
+                              <td className="text-center py-3 px-2 sm:px-3"><span className="font-semibold text-red-600 text-xs sm:text-sm">68</span></td>
+                              <td className="text-center py-3 px-2 sm:px-3"><span className="font-semibold text-neutral-600 text-xs sm:text-sm">70</span></td>
+                              <td className="text-center py-3 px-2 sm:px-3"><span className="font-semibold text-red-600 text-xs sm:text-sm">91</span></td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
                   </div>
-
-                  {/* AI Summary */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="p-3 rounded-xl bg-white border border-neutral-200">
-                      <h5 className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-100 text-neutral-900 text-[10px] font-medium mb-2">
+                  <div className="grid grid-cols-2 gap-2 min-[401px]:gap-3">
+                    <div className="p-2 min-[401px]:p-3 rounded-xl bg-white border border-neutral-200">
+                      <h5 className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-green-100 text-neutral-900 text-[10px] font-medium mb-1.5">
                         <CheckCircle2 className="h-3 w-3 text-green-600" />
                         Dine styrker
                       </h5>
-                      <p className="text-xs text-neutral-600">Sikkerhet, Total score</p>
+                      <p className="text-[10px] min-[401px]:text-xs text-neutral-600">Sikkerhet, Total score</p>
                     </div>
-                    <div className="p-3 rounded-xl bg-white border border-neutral-200">
-                      <h5 className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-100 text-neutral-900 text-[10px] font-medium mb-2">
+                    <div className="p-2 min-[401px]:p-3 rounded-xl bg-white border border-neutral-200">
+                      <h5 className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-100 text-neutral-900 text-[10px] font-medium mb-1.5">
                         <AlertCircle className="h-3 w-3 text-red-600" />
                         Konkurrentens styrker
                       </h5>
-                      <p className="text-xs text-neutral-600">SEO, Innhold</p>
+                      <p className="text-[10px] min-[401px]:text-xs text-neutral-600">SEO, Innhold</p>
                     </div>
                   </div>
                 </motion.div>
               )}
 
-              {/* AI-analyse Tab */}
+              {/* SEO / Nøkkelord Tab – samme design som dashboard KeywordsTab */}
+              {demoTab === 'keywords' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-3 min-[401px]:space-y-4"
+                >
+                  <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
+                    <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 border-b border-neutral-100">
+                      <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-xs sm:text-sm font-medium mb-2 sm:mb-3">
+                        <Tag className="h-4 w-4 text-neutral-600" />
+                        Nøkkelordanalyse
+                      </h3>
+                      <p className="text-[10px] sm:text-sm text-neutral-500">Estimert søkedata for norsk marked</p>
+                      <span className="inline-block mt-2 px-2.5 py-1 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">AI-estimater</span>
+                    </div>
+                    <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 mb-3 sm:mb-4">
+                        <div className="p-2 sm:p-3 min-[401px]:p-4 rounded-xl bg-neutral-50">
+                          <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Est. total søkevolum</p>
+                          <p className="text-sm sm:text-base min-[401px]:text-xl font-bold text-neutral-900 mt-1">~1 800</p>
+                        </div>
+                        <div className="p-2 sm:p-3 min-[401px]:p-4 rounded-xl bg-neutral-50">
+                          <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Est. gj.snitt CPC</p>
+                          <p className="text-sm sm:text-base min-[401px]:text-xl font-bold text-green-600 mt-1">~22 kr</p>
+                        </div>
+                        <div className="p-2 sm:p-3 min-[401px]:p-4 rounded-xl bg-neutral-50">
+                          <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Gj.snitt vanskelighet</p>
+                          <p className="text-sm sm:text-base min-[401px]:text-xl font-bold text-neutral-900 mt-1">42/100</p>
+                        </div>
+                        <div className="p-2 sm:p-3 min-[401px]:p-4 rounded-xl bg-neutral-50">
+                          <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Beste mulighet</p>
+                          <p className="text-[10px] sm:text-xs font-semibold text-neutral-900 mt-1 truncate">vvs tjenester</p>
+                        </div>
+                      </div>
+                      <div className="overflow-x-auto -mx-3 sm:mx-0 scrollbar-hide">
+                        <div className="min-w-[520px] px-3 sm:px-0">
+                          <table className="w-full">
+                            <thead>
+                              <tr className="border-b border-neutral-100">
+                                <th className="text-left py-2.5 px-3 sm:px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Nøkkelord</th>
+                                <th className="text-right py-2.5 px-3 sm:px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Søkevolum ~</th>
+                                <th className="text-right py-2.5 px-3 sm:px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wide">CPC ~</th>
+                                <th className="text-center py-2.5 px-3 sm:px-4 text-xs font-semibold text-neutral-500 uppercase tracking-wide">Konkurranse</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {[
+                                { keyword: 'vvs tjenester', volume: 720, cpc: 12.5, competition: 'lav' },
+                                { keyword: 'rørlegger oslo', volume: 480, cpc: 18.2, competition: 'medium' },
+                                { keyword: 'bad renovering', volume: 390, cpc: 22, competition: 'medium' },
+                                { keyword: 'nød vvs', volume: 210, cpc: 35, competition: 'lav' },
+                              ].map((row, i) => (
+                                <tr key={i} className="border-b border-neutral-100 hover:bg-neutral-50/50">
+                                  <td className="py-2.5 px-3 sm:px-4 text-xs sm:text-sm font-medium text-neutral-900">{row.keyword}</td>
+                                  <td className="py-2.5 px-3 sm:px-4 text-right text-xs sm:text-sm text-neutral-600">~{row.volume}</td>
+                                  <td className="py-2.5 px-3 sm:px-4 text-right text-xs sm:text-sm text-neutral-600">~{row.cpc} kr</td>
+                                  <td className="py-2.5 px-3 sm:px-4 text-center">
+                                    <span className={`text-[10px] sm:text-xs px-2 py-0.5 rounded-full font-medium ${
+                                      row.competition === 'lav' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                                    }`}>{row.competition}</span>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* AI-synlighet Tab – samme design som dashboard AiVisibilityTab */}
+              {demoTab === 'ai-visibility' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-3 min-[401px]:space-y-4"
+                >
+                  <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
+                    <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 border-b border-neutral-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <div className="min-w-0">
+                        <h3 className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-xs sm:text-sm font-medium mb-1.5">
+                          <Eye className="h-3.5 w-3.5 text-neutral-600" />
+                          AI-synlighet
+                        </h3>
+                        <p className="text-[10px] sm:text-sm text-neutral-500">Spør AI om den kjenner til bedriften og kan anbefale den.</p>
+                      </div>
+                    </div>
+                    <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6">
+                      <div className="text-center">
+                        <div className="w-24 h-24 sm:w-32 sm:h-32 mx-auto rounded-full flex items-center justify-center mb-3 sm:mb-4 bg-gradient-to-br from-amber-100 to-amber-200">
+                          <div className="text-center">
+                            <span className="text-3xl sm:text-4xl font-bold text-amber-600">72</span>
+                            <p className="text-[10px] sm:text-xs text-neutral-500 mt-0.5">av 100</p>
+                          </div>
+                        </div>
+                        <h4 className="font-semibold mb-1 text-amber-700 text-sm sm:text-base">Moderat AI-synlighet</h4>
+                        <p className="text-[10px] sm:text-sm text-neutral-500">Kjør sjekk i dashboard for oppdatert score og tips.</p>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Artikkel generator Tab – innhold matcher dashboard ArticlesTab */}
+              {demoTab === 'articles' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-3 min-[401px]:space-y-4"
+                >
+                  <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
+                    <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 border-b border-neutral-100">
+                      <h3 className="inline-flex items-center gap-1.5 max-[400px]:gap-1.5 px-2 max-[400px]:px-2 min-[401px]:px-3 py-1 max-[400px]:py-1 min-[401px]:py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-[11px] max-[400px]:text-[10px] min-[401px]:text-xs sm:text-sm font-medium mb-2 max-[400px]:mb-1 min-[401px]:mb-2 sm:mb-3">
+                        <FileText className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-neutral-600" />
+                        AI-genererte artikler
+                      </h3>
+                      <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs sm:text-sm text-neutral-600 mb-3">
+                        Få AI-forslag til artikkelideer basert på analysen. Du kan generere full artikkel fra hvert forslag.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs sm:text-sm">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
+                          <strong className="text-neutral-900">5/10</strong> artikler igjen denne måneden
+                        </span>
+                        <Link href="/dashboard/articles" className="text-neutral-500 hover:text-neutral-900 underline">
+                          Se mine artikler →
+                        </Link>
+                      </div>
+                    </div>
+                    <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 space-y-4">
+                      <p className="text-xs text-neutral-500">
+                        Basert på nettsiden og nøkkelord — eller også konkurrentene for mer målrettede forslag.
+                      </p>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-3 sm:p-4 flex flex-col gap-3">
+                          <div>
+                            <p className="text-xs font-medium text-neutral-900 mb-0.5">Nettside og nøkkelord</p>
+                            <p className="text-sm text-neutral-500 leading-snug">
+                              Generelle artikkelideer. Bruker kun nettsiden og nøkkelord.
+                            </p>
+                          </div>
+                          <Button size="sm" className="rounded-lg text-xs bg-neutral-900 hover:bg-neutral-800 w-fit pointer-events-none opacity-90" asChild>
+                            <span className="inline-flex items-center gap-1.5">
+                              <Lightbulb className="h-3.5 w-3.5" />
+                              Generer forslag
+                            </span>
+                          </Button>
+                        </div>
+                        <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-3 sm:p-4 flex flex-col gap-3">
+                          <div>
+                            <p className="text-xs font-medium text-neutral-900 mb-0.5">Med konkurrentanalyse</p>
+                            <p className="text-sm text-neutral-500 leading-snug">
+                              Mer målrettet: utkonkurrering og innholdshull mot konkurrentene.
+                            </p>
+                          </div>
+                          <Button size="sm" variant="outline" className="rounded-lg text-xs w-fit border-neutral-300 bg-white pointer-events-none opacity-90" asChild>
+                            <span className="inline-flex items-center gap-1.5">
+                              <BarChart3 className="h-3.5 w-3.5" />
+                              Generer forslag (konkurrenter)
+                            </span>
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">2 artikkelideer</p>
+                      </div>
+                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {[
+                          { title: '5 vanlige VVS-problemer og hvordan du unngår dem', priority: 'high' as const, rationale: 'Høy søkeintensjon, konkurrerende innhold finnes – god mulighet for featured snippet med nummerert liste.' },
+                          { title: 'Vedlikehold av bad: sjekkliste for huseiere', priority: 'medium' as const, rationale: 'Informasjonssøk, passer nettsidens tema. Kan knyttes til nøkkelord som «bad renovering».' },
+                        ].map((s, i) => (
+                          <li key={i} className="rounded-xl border border-neutral-200 bg-white overflow-hidden">
+                            <div className="p-4">
+                              <div className="flex items-start gap-3">
+                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-xs font-semibold text-neutral-600">
+                                  {i + 1}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-neutral-900">{s.title}</p>
+                                  <span
+                                    className={`mt-1.5 inline-block text-[10px] px-2 py-0.5 rounded font-medium ${
+                                      s.priority === 'high' ? 'bg-amber-100 text-amber-700' : 'bg-neutral-200 text-neutral-700'
+                                    }`}
+                                  >
+                                    {s.priority === 'high' ? 'høy' : 'medium'}
+                                  </span>
+                                  <div className="mt-3 pt-3 border-t border-neutral-100">
+                                    <p className="text-[11px] font-medium text-neutral-500 uppercase tracking-wide mb-1">Begrunnelse</p>
+                                    <p className="text-sm text-neutral-700 leading-relaxed">{s.rationale}</p>
+                                  </div>
+                                  <div className="mt-3 flex flex-wrap gap-2">
+                                    <Button size="sm" variant="outline" className="rounded-lg text-xs pointer-events-none opacity-90" asChild>
+                                      <span className="inline-flex items-center gap-1.5">
+                                        <PenLine className="h-3.5 w-3.5" />
+                                        Generer artikkel
+                                      </span>
+                                    </Button>
+                                    <span className="shrink-0 p-2 rounded-lg bg-neutral-100 text-neutral-400">
+                                      <Copy className="h-4 w-4" />
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* SoMe-post generator Tab – innhold matcher dashboard SocialTab */}
+              {demoTab === 'social' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-3 min-[401px]:space-y-4"
+                >
+                  <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
+                    <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 border-b border-neutral-100">
+                      <h3 className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-xs sm:text-sm font-medium mb-2 sm:mb-3">
+                        <Share2 className="h-3.5 w-3.5 text-neutral-600" />
+                        SoMe-post generator
+                      </h3>
+                      <p className="text-[10px] sm:text-sm text-neutral-600 mb-3">
+                        Få AI-forslag til innlegg for LinkedIn, Instagram og X. Generer ferdig tekst til valgt kanal.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-2 text-[10px] sm:text-sm">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
+                          <strong className="text-neutral-900">5/10</strong> genereringer igjen (artikler + SoMe)
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 space-y-4">
+                      <div className="space-y-2">
+                        <p className="text-xs text-neutral-500">Velg kanal</p>
+                        <div className="flex flex-wrap gap-2">
+                          <span className="rounded-lg text-xs px-3 py-2 font-medium bg-neutral-900 text-white">LinkedIn</span>
+                          <span className="rounded-lg text-xs px-3 py-2 font-medium bg-neutral-100 text-neutral-600">Instagram</span>
+                          <span className="rounded-lg text-xs px-3 py-2 font-medium bg-neutral-100 text-neutral-600">X (Twitter)</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-neutral-500">
+                        Basert på nettsiden og nøkkelord — eller også konkurrentene for mer målrettede forslag.
+                      </p>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-3 sm:p-4 flex flex-col gap-3">
+                          <div>
+                            <p className="text-xs font-medium text-neutral-900 mb-0.5">Nettside og nøkkelord</p>
+                            <p className="text-sm text-neutral-500 leading-snug">
+                              Generelle postideer. Bruker kun nettsiden og nøkkelord.
+                            </p>
+                          </div>
+                          <Button size="sm" className="rounded-lg text-xs bg-neutral-900 hover:bg-neutral-800 w-fit pointer-events-none opacity-90" asChild>
+                            <span className="inline-flex items-center gap-1.5">
+                              <Lightbulb className="h-3.5 w-3.5" />
+                              Generer forslag
+                            </span>
+                          </Button>
+                        </div>
+                        <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-3 sm:p-4 flex flex-col gap-3">
+                          <div>
+                            <p className="text-xs font-medium text-neutral-900 mb-0.5">Med konkurrentanalyse</p>
+                            <p className="text-sm text-neutral-500 leading-snug">
+                              Mer målrettet: utkonkurrering og innholdshull mot konkurrentene.
+                            </p>
+                          </div>
+                          <Button size="sm" variant="outline" className="rounded-lg text-xs w-fit border-neutral-300 bg-white pointer-events-none opacity-90" asChild>
+                            <span className="inline-flex items-center gap-1.5">
+                              <BarChart3 className="h-3.5 w-3.5" />
+                              Generer forslag (konkurrenter)
+                            </span>
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-xs font-medium text-neutral-500 uppercase tracking-wide">2 postideer for LinkedIn</p>
+                      </div>
+                      <ul className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                        {[
+                          { title: '3 enkle VVS-tips som sparer deg for penger', priority: 'high' as const, rationale: 'Kort og nyttig – passer LinkedIn. Kan knyttes til «vvs tips» og «vedlikehold».' },
+                          { title: 'Når bør du ringe rørlegger?', priority: 'medium' as const, rationale: 'Vanlig søkespørsmål. God mulighet for engasjement og kommentarer.' },
+                        ].map((s, i) => (
+                          <li key={i} className="rounded-xl border border-neutral-200 bg-white overflow-hidden">
+                            <div className="p-4">
+                              <div className="flex items-start gap-3">
+                                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-xs font-semibold text-neutral-600">
+                                  {i + 1}
+                                </span>
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm font-medium text-neutral-900">{s.title}</p>
+                                  <span
+                                    className={`mt-1.5 inline-block text-[10px] px-2 py-0.5 rounded font-medium ${
+                                      s.priority === 'high' ? 'bg-amber-100 text-amber-700' : 'bg-neutral-200 text-neutral-700'
+                                    }`}
+                                  >
+                                    {s.priority === 'high' ? 'høy' : 'medium'}
+                                  </span>
+                                  <div className="mt-3 pt-3 border-t border-neutral-100">
+                                    <p className="text-[11px] font-medium text-neutral-500 uppercase tracking-wide mb-1">Begrunnelse</p>
+                                    <p className="text-sm text-neutral-700 leading-relaxed">{s.rationale}</p>
+                                  </div>
+                                  <div className="mt-3 flex flex-wrap gap-2">
+                                    <Button size="sm" variant="outline" className="rounded-lg text-xs pointer-events-none opacity-90" asChild>
+                                      <span className="inline-flex items-center gap-1.5">
+                                        <PenLine className="h-3.5 w-3.5" />
+                                        Generer innlegg
+                                      </span>
+                                    </Button>
+                                    <span className="shrink-0 p-2 rounded-lg bg-neutral-100 text-neutral-400">
+                                      <Copy className="h-4 w-4" />
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* AI anbefalinger Tab – samme design som dashboard AiTab */}
               {demoTab === 'ai' && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3 }}
-                  className="space-y-4"
+                  className="space-y-3 min-[401px]:space-y-4"
                 >
-                  {/* Header */}
-                  <div>
-                    <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-2">
-                      <Sparkles className="h-4 w-4 text-neutral-600" />
-                      AI-analyse
-                    </h3>
-                    <p className="text-sm text-neutral-600">AI-genererte innsikter og anbefalinger basert på analysen</p>
-                  </div>
-
-                  {/* Content Grid */}
-                  <div className="grid md:grid-cols-2 gap-5">
-                    {/* Left - AI Summary & Findings */}
-                    <div>
-                      <h4 className="text-sm font-semibold text-neutral-700 mb-2">AI-vurdering</h4>
-                      <p className="text-sm text-neutral-600 leading-relaxed mb-4">
-                        Nettsiden har solid sikkerhet (SSL A+), men mangler viktige SEO-elementer som meta description.
-                      </p>
-                      <h5 className="text-xs font-medium text-neutral-500 mb-2">Viktigste funn</h5>
-                      <div className="space-y-1.5">
-                        {[
-                          { text: 'SSL A+ - utmerket sikkerhet', type: 'success' },
-                          { text: 'Meta description mangler', type: 'warning' },
-                          { text: 'For lite innhold (847 ord)', type: 'warning' },
-                          { text: 'God sidetittel (58 tegn)', type: 'success' },
-                        ].map((item, i) => (
-                          <div key={i} className={`flex items-center gap-2 p-2 rounded-lg text-xs ${
-                            item.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
-                          }`}>
-                            {item.type === 'success' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
-                            {item.text}
-                          </div>
-                        ))}
-                      </div>
+                  <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
+                    <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6 border-b border-neutral-100">
+                      <h3 className="inline-flex items-center gap-1.5 px-2 max-[400px]:px-2 min-[401px]:px-3 py-1 max-[400px]:py-1 min-[401px]:py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-[11px] max-[400px]:text-[10px] min-[401px]:text-xs sm:text-sm font-medium mb-1 max-[400px]:mb-1 min-[401px]:mb-2 sm:mb-3">
+                        <Sparkles className="h-3.5 w-3.5 text-neutral-600" />
+                        AI anbefalinger
+                      </h3>
+                      <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs sm:text-sm text-neutral-600">AI-innsikter og anbefalinger</p>
                     </div>
-
-                    {/* Right - Recommendations & Action Plan */}
-                    <div>
-                      <h5 className="text-xs font-medium text-neutral-500 mb-2">Anbefalinger</h5>
-                      <div className="space-y-1.5 mb-4">
-                        {[
-                          { priority: 'høy', title: 'Legg til meta description', desc: 'Viktig for CTR' },
-                          { priority: 'høy', title: 'Øk innholdsmengden', desc: 'Minst 1500 ord' },
-                          { priority: 'medium', title: 'Legg til alt-tekst', desc: '3 bilder mangler' },
-                        ].map((rec, i) => (
-                          <div key={i} className="p-2.5 bg-neutral-50 rounded-xl border border-neutral-100">
-                            <div className="flex items-center gap-2 mb-0.5">
-                              <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                                rec.priority === 'høy' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
-                              }`}>{rec.priority}</span>
-                              <span className="text-xs font-medium text-neutral-800">{rec.title}</span>
-                            </div>
-                            <p className="text-[11px] text-neutral-500 ml-10">{rec.desc}</p>
+                    <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-[400px]:gap-4 min-[401px]:gap-5 sm:gap-8">
+                        <div>
+                          <h4 className="text-xs sm:text-sm font-semibold text-neutral-700 mb-3">AI-vurdering</h4>
+                          <p className="text-xs sm:text-sm text-neutral-600 leading-relaxed mb-4 sm:mb-6">
+                            Nettsiden har solid sikkerhet (SSL A+), men mangler viktige SEO-elementer som meta description.
+                          </p>
+                          <h5 className="text-xs sm:text-sm font-medium text-neutral-700 mb-3">Viktigste funn</h5>
+                          <div className="space-y-2">
+                            {[
+                              { text: 'SSL A+ - utmerket sikkerhet', type: 'positive' as const },
+                              { text: 'Meta description mangler', type: 'negative' as const },
+                              { text: 'For lite innhold (847 ord)', type: 'negative' as const },
+                              { text: 'God sidetittel (58 tegn)', type: 'positive' as const },
+                            ].map((item, i) => (
+                              <div
+                                key={i}
+                                className={`flex items-center gap-2 p-2 rounded-lg text-xs sm:text-sm ${
+                                  item.type === 'positive' ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                                }`}
+                              >
+                                {item.type === 'positive' ? <CheckCircle2 className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                                <span>{item.text}</span>
+                              </div>
+                            ))}
                           </div>
-                        ))}
-                      </div>
-                      <h5 className="text-xs font-medium text-neutral-500 mb-2">Handlingsplan</h5>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        <div className="p-2 rounded-lg bg-red-50 border border-red-100">
-                          <div className="text-[10px] font-medium text-red-700 mb-0.5">Nå</div>
-                          <p className="text-[11px] text-neutral-600">Meta desc</p>
                         </div>
-                        <div className="p-2 rounded-lg bg-amber-50 border border-amber-100">
-                          <div className="text-[10px] font-medium text-amber-700 mb-0.5">Kort sikt</div>
-                          <p className="text-[11px] text-neutral-600">Innhold</p>
-                        </div>
-                        <div className="p-2 rounded-lg bg-green-50 border border-green-100">
-                          <div className="text-[10px] font-medium text-green-700 mb-0.5">Lang sikt</div>
-                          <p className="text-[11px] text-neutral-600">Schema</p>
+                        <div>
+                          <h5 className="text-xs sm:text-sm font-medium text-neutral-700 mb-3">Anbefalinger</h5>
+                          <div className="space-y-2 mb-4 sm:mb-6">
+                            {[
+                              { priority: 'high' as const, title: 'Legg til meta description', desc: 'Viktig for CTR' },
+                              { priority: 'high' as const, title: 'Øk innholdsmengden', desc: 'Minst 1500 ord' },
+                              { priority: 'medium' as const, title: 'Legg til alt-tekst', desc: '3 bilder mangler' },
+                            ].map((rec, i) => (
+                              <div key={i} className="p-3 bg-white rounded-xl border-2 border-neutral-200">
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className={`text-xs px-2 py-0.5 rounded font-medium ${
+                                    rec.priority === 'high' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'
+                                  }`}>{rec.priority === 'high' ? 'høy' : 'medium'}</span>
+                                  <span className="text-sm font-medium text-neutral-800">{rec.title}</span>
+                                </div>
+                                <p className="text-[11px] sm:text-xs text-neutral-500">{rec.desc}</p>
+                              </div>
+                            ))}
+                          </div>
+                          <h5 className="text-xs sm:text-sm font-medium text-neutral-700 mb-2">Handlingsplan</h5>
+                          <div className="grid grid-cols-3 gap-1.5">
+                            <div className="p-2 rounded-lg bg-red-50 border border-red-100">
+                              <div className="text-[10px] font-medium text-red-700 mb-0.5">Nå</div>
+                              <p className="text-[11px] text-neutral-600">Meta desc</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-amber-50 border border-amber-100">
+                              <div className="text-[10px] font-medium text-amber-700 mb-0.5">Kort sikt</div>
+                              <p className="text-[11px] text-neutral-600">Innhold</p>
+                            </div>
+                            <div className="p-2 rounded-lg bg-green-50 border border-green-100">
+                              <div className="text-[10px] font-medium text-green-700 mb-0.5">Lang sikt</div>
+                              <p className="text-[11px] text-neutral-600">Schema</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
