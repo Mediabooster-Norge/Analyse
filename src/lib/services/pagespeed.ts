@@ -25,7 +25,7 @@ const pageSpeedCache = new Map<string, { results: PageSpeedResults; timestamp: n
 function getDomainFromUrl(url: string): string {
   try {
     const normalized = url.startsWith('http') ? url : `https://${url}`;
-    return new URL(normalized).hostname.replace('www.', '');
+    return new URL(normalized).hostname.replace(/^www\./, '');
   } catch {
     return url;
   }

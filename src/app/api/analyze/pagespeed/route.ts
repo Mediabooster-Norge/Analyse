@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     let domain = '';
     try {
-      domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace('www.', '');
+      domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\./, '');
     } catch { /* ignore */ }
 
     if (domain) {

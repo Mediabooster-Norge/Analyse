@@ -46,7 +46,7 @@ async function runOneVisibilityCheck(
   let domain: string;
   try {
     const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
-    domain = urlObj.hostname.replace('www.', '');
+    domain = urlObj.hostname.replace(/^www\./, '');
   } catch {
     throw new Error('Invalid URL');
   }
