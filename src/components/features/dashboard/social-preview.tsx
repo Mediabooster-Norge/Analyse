@@ -119,7 +119,7 @@ export function SocialPreview({ url, pageTitle, pageDescription, ogTags, onGetTi
     <div className="space-y-3">
       {/* Én linje: status + AI-tips */}
       <div className="flex items-center justify-between gap-2">
-        <span className={`text-xs ${allOgTagsSet ? 'text-[#14b8a6]' : 'text-[#b8860b]'}`}>
+        <span className={`text-xs ${allOgTagsSet ? 'text-green-600' : 'text-amber-700'}`}>
           {allOgTagsSet ? 'Tittel, beskrivelse og bilde er satt for deling' : `${missingTags.join(', ')} mangler for deling`}
         </span>
         {onGetTips && (
@@ -176,7 +176,7 @@ export function SocialPreview({ url, pageTitle, pageDescription, ogTags, onGetTi
         )}
       </div>
       {showInfo && missingTags.length > 0 && (
-        <p className="text-[11px] text-[#b8860b]">
+        <p className="text-[11px] text-amber-700">
           Mangler: {missingTags.join(', ')}. Legg dem i HTML-head for bedre deling.
         </p>
       )}

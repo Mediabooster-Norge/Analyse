@@ -1,38 +1,53 @@
 /**
- * Utility functions for score calculations and formatting
- * Brand green: #0f515a. 90+ (best) tydelig grønn #14b8a6, 70+ teal #1a6b75, gul #fdba32 (ok), rød-oransje #fd966f (dårlig)
+ * Utility functions for score calculations and formatting.
+ *
+ * Pastel colour palette (3-4 tiers):
+ *   Excellent  ≥90  → green-600  / green-50  bg / green-200  border
+ *   Good       ≥70  → green-500  / green-50  bg / green-200  border
+ *   Warning    ≥50  → amber-500  / amber-50  bg / amber-200  border
+ *   Poor       <50  → red-500    / red-50    bg / red-200    border
  */
 
-/** Brand green (teal) */
-export const BRAND_GREEN = '#0f515a';
-/** Darker teal for hover/primary */
-export const BRAND_GREEN_HOVER = '#0c4047';
-/** Tydelig grønn for «beste» score (90+) – skiller seg fra nest beste */
-export const BRAND_GREEN_BEST = '#14b8a6';
+/** Primary brand colour */
+export const BRAND_GREEN = '#16a34a'; // green-600
+/** Darker brand for hover / active states */
+export const BRAND_GREEN_HOVER = '#15803d'; // green-700
+/** Lighter brand for "excellent" highlight accent */
+export const BRAND_GREEN_BEST = '#22c55e'; // green-500
+
+// ---------------------------------------------------------------------------
+// Hex literals used for SVG strokes (Tailwind `currentColor` via text class)
+// ---------------------------------------------------------------------------
+export const SCORE_HEX = {
+  excellent: '#16a34a', // green-600
+  good:      '#22c55e', // green-500
+  warning:   '#f59e0b', // amber-500
+  poor:      '#ef4444', // red-500
+} as const;
 
 /**
- * Get text color class based on score
+ * Tailwind text-colour class for a score value (used on SVG strokes via
+ * `currentColor` and on plain numeric labels).
  */
 export function getScoreColor(score: number): string {
-  if (score >= 90) return 'text-[#14b8a6]';
-  if (score >= 70) return 'text-[#1a6b75]';
-  if (score >= 50) return 'text-[#b8860b]';
-  return 'text-[#c45c3e]';
+  if (score >= 90) return 'text-green-600';
+  if (score >= 70) return 'text-green-500';
+  if (score >= 50) return 'text-amber-500';
+  return 'text-red-500';
 }
 
 /**
- * Get badge color classes based on score
- * 90+ tydelig grønn (best), 70+ teal
+ * Tailwind badge classes (bg + text + border) for a pill/badge element.
  */
 export function getScoreBadge(score: number): string {
-  if (score >= 90) return 'bg-[#14b8a6]/25 text-[#14b8a6] border-[#14b8a6]/55';
-  if (score >= 70) return 'bg-[#1a6b75]/25 text-[#1a6b75] border-[#1a6b75]/55';
-  if (score >= 50) return 'bg-[#fdba32]/25 text-[#b8860b] border-[#fdba32]/50';
-  return 'bg-[#fd966f]/25 text-[#c45c3e] border-[#fd966f]/50';
+  if (score >= 90) return 'bg-green-50 text-green-700 border-green-200';
+  if (score >= 70) return 'bg-green-50 text-green-600 border-green-200';
+  if (score >= 50) return 'bg-amber-50 text-amber-700 border-amber-200';
+  return 'bg-red-50 text-red-600 border-red-200';
 }
 
 /**
- * Get human-readable label based on score
+ * Human-readable label for a score.
  */
 export function getScoreLabel(score: number): string {
   if (score >= 90) return 'Veldig bra';
@@ -42,7 +57,8 @@ export function getScoreLabel(score: number): string {
 }
 
 /**
- * Get background color classes based on score threshold (pastel palette)
+ * Structured background/border/text/icon Tailwind classes for card areas.
+ * Uses a 3-tier split (≥80 / ≥60 / <60) suited for larger UI surfaces.
  */
 export function getScoreBackground(score: number): {
   bg: string;
@@ -52,30 +68,30 @@ export function getScoreBackground(score: number): {
 } {
   if (score >= 80) {
     return {
-      bg: 'bg-[#14b8a6]/20',
-      border: 'border-[#14b8a6]/50',
-      text: 'text-[#14b8a6]',
-      icon: 'text-[#14b8a6]',
+      bg:     'bg-green-50',
+      border: 'border-green-200',
+      text:   'text-green-700',
+      icon:   'text-green-600',
     };
   }
   if (score >= 60) {
     return {
-      bg: 'bg-[#fdba32]/20',
-      border: 'border-[#fdba32]/50',
-      text: 'text-[#b8860b]',
-      icon: 'text-[#b8860b]',
+      bg:     'bg-amber-50',
+      border: 'border-amber-200',
+      text:   'text-amber-700',
+      icon:   'text-amber-600',
     };
   }
   return {
-    bg: 'bg-[#fd966f]/20',
-    border: 'border-[#fd966f]/50',
-    text: 'text-[#c45c3e]',
-    icon: 'text-[#c45c3e]',
+    bg:     'bg-red-50',
+    border: 'border-red-200',
+    text:   'text-red-700',
+    icon:   'text-red-600',
   };
 }
 
 /**
- * Get status indicator color based on boolean or score
+ * Simple status colour token for dot indicators and inline labels.
  */
 export function getStatusColor(
   value: boolean | number,
@@ -84,31 +100,30 @@ export function getStatusColor(
   if (typeof value === 'boolean') {
     return value ? 'green' : 'red';
   }
-  
   const { good = 80, warning = 60 } = thresholds || {};
-  if (value >= good) return 'green';
+  if (value >= good)    return 'green';
   if (value >= warning) return 'yellow';
   return 'red';
 }
 
 /**
- * Normalize URL by adding https:// if missing
+ * Normalize URL by prepending https:// if no protocol is present.
  */
 export function normalizeUrl(inputUrl: string): string {
-  let normalized = inputUrl.trim();
+  const normalized = inputUrl.trim();
   if (normalized && !normalized.startsWith('http://') && !normalized.startsWith('https://')) {
-    normalized = 'https://' + normalized;
+    return 'https://' + normalized;
   }
   return normalized;
 }
 
 /**
- * Extract domain name from URL
+ * Extract bare hostname from a URL string.
  */
 export function extractDomain(url: string): string {
   try {
-    const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
-    return new URL(normalizedUrl).hostname.replace(/^www\./, '');
+    const normalized = url.startsWith('http') ? url : `https://${url}`;
+    return new URL(normalized).hostname.replace(/^www\./, '');
   } catch {
     return url;
   }

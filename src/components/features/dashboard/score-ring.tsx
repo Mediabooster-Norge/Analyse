@@ -19,13 +19,12 @@ const sizes = {
   xl: { ring: 120, stroke: 7, text: 'text-3xl', label: 'text-sm' },
 };
 
-/* 90+ tydelig grønn (best), 70+ teal, 50+ gul #fdba32, <50 #fd966f */
 function getScoreColor(score: number, neutral: boolean): string {
   if (neutral) return 'text-neutral-400';
-  if (score >= 90) return 'text-[#14b8a6]';
-  if (score >= 70) return 'text-[#1a6b75]';
-  if (score >= 50) return 'text-[#fdba32]';
-  return 'text-[#fd966f]';
+  if (score >= 90) return 'text-green-600';
+  if (score >= 70) return 'text-green-500';
+  if (score >= 50) return 'text-amber-500';
+  return 'text-red-500';
 }
 
 function getStatusLabel(score: number): string {

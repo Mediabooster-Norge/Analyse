@@ -62,8 +62,8 @@ export function AiTab({ result, fetchAISuggestion }: AiTabProps) {
                       <div
                         key={i}
                         className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
-                          type === 'positive' ? 'bg-[#14b8a6]/10 text-[#14b8a6]' :
-                          type === 'negative' ? 'bg-[#fdba32]/15 text-[#b8860b]' :
+                          type === 'positive' ? 'bg-green-50 text-green-600' :
+                          type === 'negative' ? 'bg-amber-50 text-amber-700' :
                           'bg-[#f5f3ff] text-[#6d28d9]'
                         }`}
                       >
@@ -108,9 +108,9 @@ export function AiTab({ result, fetchAISuggestion }: AiTabProps) {
                         <div className="flex items-center gap-2">
                           <span
                             className={`text-xs px-2 py-0.5 rounded font-medium ${
-                              rec.priority === 'high' ? 'bg-[#fd966f]/25 text-[#c45c3e]' :
-                              rec.priority === 'medium' ? 'bg-[#fdba32]/25 text-[#b8860b]' :
-                              'bg-[#14b8a6]/15 text-[#14b8a6]'
+                              rec.priority === 'high' ? 'bg-red-100 text-red-600' :
+                              rec.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
+                              'bg-green-50 text-green-600'
                             }`}
                           >
                             {rec.priority === 'high' ? 'høy' : rec.priority === 'medium' ? 'medium' : 'lav'}
@@ -121,7 +121,7 @@ export function AiTab({ result, fetchAISuggestion }: AiTabProps) {
                       </div>
                       <p className="text-xs text-neutral-500">{rec.description}</p>
                       {rec.expectedImpact && (
-                        <p className="text-xs text-[#14b8a6] mt-1 flex items-center gap-1">
+                        <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
                           <TrendingUp className="w-3 h-3" />
                           {rec.expectedImpact}
                         </p>

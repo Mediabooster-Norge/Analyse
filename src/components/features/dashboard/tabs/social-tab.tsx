@@ -381,7 +381,7 @@ export function SocialTab({
                           {s.priority && (
                             <span
                               className={`mt-1.5 inline-block text-[10px] px-2 py-0.5 rounded font-medium ${
-                                s.priority === 'high' ? 'bg-[#fdba32]/25 text-[#b8860b]' :
+                                s.priority === 'high' ? 'bg-amber-100 text-amber-700' :
                                 s.priority === 'medium' ? 'bg-neutral-200 text-neutral-700' :
                                 'bg-neutral-100 text-neutral-600'
                               }`}

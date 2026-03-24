@@ -300,10 +300,10 @@ export default function AnalysisPage() {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-[#14b8a6]';
-    if (score >= 70) return 'text-[#1a6b75]';
-    if (score >= 50) return 'text-[#b8860b]';
-    return 'text-[#c45c3e]';
+    if (score >= 90) return 'text-green-600';
+    if (score >= 70) return 'text-green-700';
+    if (score >= 50) return 'text-amber-700';
+    return 'text-red-600';
   };
 
   const formatDate = (dateString: string) => {
@@ -385,15 +385,15 @@ export default function AnalysisPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-[#fd966f]/25 flex items-center justify-center">
-                <AlertTriangle className="h-5 w-5 text-[#c45c3e]" />
+              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
               </div>
               <DialogTitle>Slett analyse</DialogTitle>
             </div>
             <DialogDescription className="text-left">
               Er du sikker på at du vil slette analysen for <strong>{deleteConfirm?.url}</strong>?
               {!isPremium && (
-                <span className="block mt-2 text-[#b8860b] font-medium">
+                <span className="block mt-2 text-amber-700 font-medium">
                   Merk: Du får ikke tilbake analysen din selv om du sletter.
                 </span>
               )}
@@ -410,7 +410,7 @@ export default function AnalysisPage() {
             </Button>
             <Button
               variant="destructive"
-              className="flex-1 rounded-xl bg-[#fd966f] hover:bg-[#c45c3e]"
+              className="flex-1 rounded-xl bg-red-500 hover:bg-red-600"
               onClick={() => deleteConfirm && handleDeleteAnalysis(deleteConfirm.id)}
               disabled={deleting}
             >
@@ -473,14 +473,14 @@ export default function AnalysisPage() {
                 <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
                   {/* Score Circle */}
                   <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${
-                    analysis.overall_score >= 90 ? 'bg-[#14b8a6]/25' :
-                    analysis.overall_score >= 70 ? 'bg-[#1a6b75]/30' :
-                    analysis.overall_score >= 50 ? 'bg-[#fdba32]/25' : 'bg-[#fd966f]/25'
+                    analysis.overall_score >= 90 ? 'bg-green-100' :
+                    analysis.overall_score >= 70 ? 'bg-green-50' :
+                    analysis.overall_score >= 50 ? 'bg-amber-100' : 'bg-red-100'
                   }`}>
                     <span className={`text-lg sm:text-xl font-bold ${
-                      analysis.overall_score >= 90 ? 'text-[#14b8a6]' :
-                      analysis.overall_score >= 70 ? 'text-[#1a6b75]' :
-                      analysis.overall_score >= 50 ? 'text-[#b8860b]' : 'text-[#c45c3e]'
+                      analysis.overall_score >= 90 ? 'text-green-600' :
+                      analysis.overall_score >= 70 ? 'text-green-700' :
+                      analysis.overall_score >= 50 ? 'text-amber-700' : 'text-red-600'
                     }`}>
                       {analysis.overall_score}
                     </span>
@@ -551,7 +551,7 @@ export default function AnalysisPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-9 sm:h-10 w-9 sm:w-10 p-0 rounded-xl border-neutral-200 hover:bg-[#fd966f]/15 hover:border-[#fd966f]/40 hover:text-[#c45c3e] text-neutral-400"
+                      className="h-9 sm:h-10 w-9 sm:w-10 p-0 rounded-xl border-neutral-200 hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-neutral-400"
                       onClick={() => setDeleteConfirm({ id: analysis.id, url: analysis.url })}
                     >
                       <Trash2 className="h-3.5 sm:h-4 w-3.5 sm:w-4" />

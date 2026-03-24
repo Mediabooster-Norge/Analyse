@@ -11,10 +11,10 @@ export function SummaryCard({ score }: SummaryCardProps) {
   const isOk = score >= 60;
 
   const colors = isGood
-    ? { bg: 'bg-[#14b8a6]/10 border-[#14b8a6]/30', icon: 'bg-[#14b8a6]/15', iconColor: 'text-[#14b8a6]', title: 'text-[#14b8a6]', text: 'text-[#14b8a6]', score: 'text-[#14b8a6]' }
+    ? { bg: 'bg-green-50 border-green-200', icon: 'bg-green-50', iconColor: 'text-green-600', title: 'text-green-600', text: 'text-green-600', score: 'text-green-600' }
     : isOk
-    ? { bg: 'bg-[#fdba32]/15 border-[#fdba32]/40', icon: 'bg-[#fdba32]/25', iconColor: 'text-[#b8860b]', title: 'text-[#b8860b]', text: 'text-[#b8860b]', score: 'text-[#b8860b]' }
-    : { bg: 'bg-[#fd966f]/15 border-[#fd966f]/40', icon: 'bg-[#fd966f]/25', iconColor: 'text-[#c45c3e]', title: 'text-[#c45c3e]', text: 'text-[#c45c3e]', score: 'text-[#c45c3e]' };
+    ? { bg: 'bg-amber-50 border-amber-200', icon: 'bg-amber-100', iconColor: 'text-amber-700', title: 'text-amber-700', text: 'text-amber-700', score: 'text-amber-700' }
+    : { bg: 'bg-red-50 border-red-200', icon: 'bg-red-100', iconColor: 'text-red-600', title: 'text-red-600', text: 'text-red-600', score: 'text-red-600' };
 
   const title = isGood
     ? 'Nettsiden din ser bra ut!'

@@ -327,7 +327,7 @@ export function AnalysisDialog({
                     {competitorUrls.map((competitor) => (
                       <span
                         key={competitor}
-                        className="px-2 py-1 rounded-md bg-white text-neutral-700 text-xs font-medium border border-neutral-200 cursor-pointer hover:bg-[#fd966f]/15 hover:border-[#fd966f]/40 hover:text-[#c45c3e] transition-colors group flex items-center gap-1"
+                        className="px-2 py-1 rounded-md bg-white text-neutral-700 text-xs font-medium border border-neutral-200 cursor-pointer hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-colors group flex items-center gap-1"
                         onClick={() => removeCompetitor(competitor)}
                       >
                         {(() => {
@@ -354,7 +354,7 @@ export function AnalysisDialog({
                       <button
                         type="button"
                         onClick={clearKeywords}
-                        className="text-xs text-neutral-500 hover:text-[#c45c3e] transition-colors"
+                        className="text-xs text-neutral-500 hover:text-red-600 transition-colors"
                       >
                         Fjern alle
                       </button>
@@ -437,7 +437,7 @@ export function AnalysisDialog({
                     {keywords.map((keyword) => (
                       <span
                         key={keyword}
-                        className="px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 text-xs font-medium cursor-pointer hover:bg-[#fd966f]/15 hover:text-[#c45c3e] transition-colors group flex items-center gap-1 shrink-0"
+                        className="px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 text-xs font-medium cursor-pointer hover:bg-red-50 hover:text-red-600 transition-colors group flex items-center gap-1 shrink-0"
                         onClick={() => removeKeyword(keyword)}
                       >
                         {keyword}

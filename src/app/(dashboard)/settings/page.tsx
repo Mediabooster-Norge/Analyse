@@ -360,7 +360,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="w-full bg-neutral-200 rounded-full h-2">
                   <div 
-                    className={`h-2 rounded-full ${analysisCount >= limits.monthlyAnalyses ? 'bg-[#fd966f]' : 'bg-[#0f515a]'}`}
+                    className={`h-2 rounded-full ${analysisCount >= limits.monthlyAnalyses ? 'bg-red-400' : 'bg-green-600'}`}
                     style={{ width: `${Math.min((analysisCount / limits.monthlyAnalyses) * 100, 100)}%` }}
                   />
                 </div>

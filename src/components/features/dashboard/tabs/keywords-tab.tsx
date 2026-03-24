@@ -72,7 +72,7 @@ export function KeywordsTab({
                 Rediger nøkkelord
               </h3>
               {!isPremium && (
-                <span className="px-2 py-0.5 rounded-full bg-[#fdba32]/25 text-neutral-900 text-xs font-medium">
+                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">
                   {remainingKeywordUpdates} oppdatering{remainingKeywordUpdates !== 1 ? 'er' : ''} igjen
                 </span>
               )}
@@ -135,7 +135,7 @@ export function KeywordsTab({
                   {editKeywords.map((keyword) => (
                     <span
                       key={keyword}
-                      className="px-3 py-1.5 rounded-full bg-white text-neutral-700 text-sm font-medium border border-neutral-200 cursor-pointer hover:bg-[#fd966f]/15 hover:border-[#fd966f]/40 hover:text-[#c45c3e] transition-colors group flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-full bg-white text-neutral-700 text-sm font-medium border border-neutral-200 cursor-pointer hover:bg-red-50 hover:border-red-200 hover:text-red-600 transition-colors group flex items-center gap-1.5"
                       onClick={() => removeEditKeyword(keyword)}
                     >
                       {keyword}
@@ -203,7 +203,7 @@ export function KeywordsTab({
                     )}
                   </Button>
                 )}
-                <span className="px-2.5 py-1 rounded-full bg-[#fdba32]/25 text-neutral-900 text-xs font-medium">
+                <span className="px-2.5 py-1 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">
                   AI-estimater
                 </span>
               </div>
@@ -220,7 +220,7 @@ export function KeywordsTab({
               </div>
               <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
                 <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Est. gj.snitt CPC</p>
-                <p className="text-base sm:text-xl font-bold text-[#14b8a6] mt-1">
+                <p className="text-base sm:text-xl font-bold text-green-600 mt-1">
                   ~{(result.keywordResearch.reduce((sum, kw) => sum + kw.cpc, 0) / result.keywordResearch.length).toFixed(2)} kr
                 </p>
               </div>
@@ -449,12 +449,12 @@ export function KeywordsTab({
                           <span className="text-xs text-neutral-400 ml-1">/mnd</span>
                         </td>
                         <td className="py-4 px-4 text-right">
-                          <span className="font-semibold text-[#14b8a6]">{kw.cpc.toFixed(2)} kr</span>
+                          <span className="font-semibold text-green-600">{kw.cpc.toFixed(2)} kr</span>
                         </td>
                         <td className="py-4 px-4 text-center">
                           <span
                             className={`px-2.5 py-1 rounded-full text-xs font-medium text-neutral-900 ${
-                              kw.competition === 'lav' ? 'bg-[#14b8a6]/15' : kw.competition === 'medium' ? 'bg-[#fdba32]/25' : 'bg-[#fd966f]/25'
+                              kw.competition === 'lav' ? 'bg-green-50' : kw.competition === 'medium' ? 'bg-amber-100' : 'bg-red-100'
                             }`}
                           >
                             {kw.competition}
@@ -465,7 +465,7 @@ export function KeywordsTab({
                             <div className="w-16 h-2 bg-neutral-100 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full ${
-                                  kw.difficulty <= 30 ? 'bg-[#14b8a6]' : kw.difficulty <= 60 ? 'bg-[#fdba32]' : 'bg-[#fd966f]'
+                                  kw.difficulty <= 30 ? 'bg-green-600' : kw.difficulty <= 60 ? 'bg-amber-400' : 'bg-red-400'
                                 }`}
                                 style={{ width: `${kw.difficulty}%` }}
                               />
@@ -477,7 +477,7 @@ export function KeywordsTab({
                           <span
                             className={`px-2.5 py-1 rounded-full text-xs font-medium text-neutral-900 ${
                               kw.intent === 'transactional'
-                                ? 'bg-[#14b8a6]/15'
+                                ? 'bg-green-50'
                                 : kw.intent === 'commercial'
                                   ? 'bg-[#0f515a]/15'
                                   : kw.intent === 'informational'
@@ -497,7 +497,7 @@ export function KeywordsTab({
                         <td className="py-4 px-4 text-center">
                           <span
                             className={`flex items-center justify-center gap-1 text-xs font-medium ${
-                              kw.trend === 'stigende' ? 'text-[#14b8a6]' : kw.trend === 'synkende' ? 'text-[#c45c3e]' : 'text-neutral-500'
+                              kw.trend === 'stigende' ? 'text-green-600' : kw.trend === 'synkende' ? 'text-red-600' : 'text-neutral-500'
                             }`}
                           >
                             {kw.trend === 'stigende' && <TrendingUp className="h-3.5 w-3.5" />}
@@ -534,13 +534,13 @@ export function KeywordsTab({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     {result.aiSummary.keywordAnalysis.missingKeywords?.length > 0 && (
                       <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
-                        <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#fdba32]/25 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-                          <Tag className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-[#b8860b]" />
+                        <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-amber-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                          <Tag className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-amber-700" />
                           Manglende nøkkelord
                         </h5>
                         <div className="flex flex-wrap gap-1.5">
                           {result.aiSummary.keywordAnalysis.missingKeywords.map((kw, i) => (
-                            <span key={i} className="px-2.5 py-1 rounded-full bg-[#fdba32]/15 text-[#b8860b] text-xs font-medium border border-[#fdba32]/40">
+                            <span key={i} className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium border border-amber-200">
                               + {kw}
                             </span>
                           ))}
@@ -549,8 +549,8 @@ export function KeywordsTab({
                     )}
                     {result.aiSummary.keywordAnalysis.recommendations && (
                       <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
-                        <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#14b8a6]/15 text-[#14b8a6] text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-                          <TrendingUp className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-[#14b8a6]" />
+                        <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-green-50 text-green-600 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                          <TrendingUp className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-green-600" />
                           Anbefalinger
                         </h5>
                         <p className="text-xs sm:text-sm text-neutral-700">{result.aiSummary.keywordAnalysis.recommendations}</p>
@@ -621,7 +621,7 @@ export function KeywordsTab({
                       {aiKeywordsAsTable.map((kw, i) => (
                         <tr key={i} className="border-b border-neutral-100 last:border-b-0">
                           <td className="py-4 px-4">
-                            <span className={`font-medium ${kw.keyword.startsWith('+ ') ? 'text-[#b8860b]' : 'text-neutral-900'}`}>
+                            <span className={`font-medium ${kw.keyword.startsWith('+ ') ? 'text-amber-700' : 'text-neutral-900'}`}>
                               {kw.keyword}
                             </span>
                           </td>

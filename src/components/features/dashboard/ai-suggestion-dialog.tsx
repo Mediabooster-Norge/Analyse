@@ -22,10 +22,10 @@ function MissingAltImagesSection({ urls, websiteUrl }: { urls?: string[]; websit
   const hasUrls = urls && urls.length > 0;
 
   return (
-    <div className="p-3 rounded-lg bg-[#fd966f]/15 border border-[#fd966f]/40">
+    <div className="p-3 rounded-lg bg-red-50 border border-red-200">
       <div className="flex items-center gap-2 mb-3">
-        <ImageOff className="h-3.5 w-3.5 text-[#c45c3e] shrink-0" />
-        <p className="text-xs font-medium text-[#c45c3e]">
+        <ImageOff className="h-3.5 w-3.5 text-red-600 shrink-0" />
+        <p className="text-xs font-medium text-red-600">
           {hasUrls ? `${urls.length} bilde${urls.length !== 1 ? 'r' : ''} uten alt-tekst` : 'Bilder mangler alt-tekst'}
         </p>
       </div>
@@ -37,7 +37,7 @@ function MissingAltImagesSection({ urls, websiteUrl }: { urls?: string[]; websit
               href={url}
               target="_blank"
               rel="noopener noreferrer"
-              className="group relative rounded-lg border border-[#fd966f]/40 bg-white overflow-hidden hover:border-[#fd966f]/60 hover:shadow-sm transition-all"
+              className="group relative rounded-lg border border-red-200 bg-white overflow-hidden hover:border-red-400/60 hover:shadow-sm transition-all"
             >
               <div className="aspect-video w-full bg-neutral-100 flex items-center justify-center overflow-hidden">
                 {failedUrls.has(url) ? (
@@ -56,7 +56,7 @@ function MissingAltImagesSection({ urls, websiteUrl }: { urls?: string[]; websit
               )}
               </div>
               <div className="px-1.5 py-1 flex items-center gap-1">
-                <ExternalLink className="h-2.5 w-2.5 text-[#c45c3e] shrink-0" />
+                <ExternalLink className="h-2.5 w-2.5 text-red-600 shrink-0" />
                 <span className="text-[9px] text-neutral-500 truncate leading-tight" title={url}>
                   {getFilename(url)}
                 </span>
@@ -66,17 +66,17 @@ function MissingAltImagesSection({ urls, websiteUrl }: { urls?: string[]; websit
         </div>
       ) : (
         <div className="space-y-2">
-          <p className="text-xs text-[#c45c3e] leading-relaxed">
+          <p className="text-xs text-red-600 leading-relaxed">
             Kjør en ny analyse for å se eksakte bilde-URLer, eller åpne siden og søk i kildekoden etter{' '}
-            <code className="bg-[#fd966f]/25 px-1 rounded font-mono">{'<img'}</code> uten{' '}
-            <code className="bg-[#fd966f]/25 px-1 rounded font-mono">alt</code>-attributt.
+            <code className="bg-red-100 px-1 rounded font-mono">{'<img'}</code> uten{' '}
+            <code className="bg-red-100 px-1 rounded font-mono">alt</code>-attributt.
           </p>
           {websiteUrl && (
             <a
               href={websiteUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 text-xs font-medium text-[#c45c3e] hover:text-[#a63d2e] hover:underline transition-colors"
+              className="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-[#a63d2e] hover:underline transition-colors"
             >
               <ExternalLink className="h-3 w-3 shrink-0" />
               Åpne {websiteUrl}
@@ -152,9 +152,9 @@ export function AISuggestionDialog({
   }, []);
 
   const statusConfig = {
-    good: { bg: 'bg-[#14b8a6]/15', icon: <CheckCircle2 className="h-4 w-4 text-[#14b8a6]" />, label: 'Bra', labelBg: 'bg-[#14b8a6]/15 text-[#14b8a6]' },
-    warning: { bg: 'bg-[#fdba32]/25', icon: <AlertCircle className="h-4 w-4 text-[#b8860b]" />, label: 'Kan forbedres', labelBg: 'bg-[#fdba32]/25 text-[#b8860b]' },
-    bad: { bg: 'bg-[#fd966f]/25', icon: <AlertCircle className="h-4 w-4 text-[#c45c3e]" />, label: 'Bør fikses', labelBg: 'bg-[#fd966f]/25 text-[#c45c3e]' },
+    good: { bg: 'bg-green-50', icon: <CheckCircle2 className="h-4 w-4 text-green-600" />, label: 'Bra', labelBg: 'bg-green-50 text-green-600' },
+    warning: { bg: 'bg-amber-100', icon: <AlertCircle className="h-4 w-4 text-amber-700" />, label: 'Kan forbedres', labelBg: 'bg-amber-100 text-amber-700' },
+    bad: { bg: 'bg-red-100', icon: <AlertCircle className="h-4 w-4 text-red-600" />, label: 'Bør fikses', labelBg: 'bg-red-100 text-red-600' },
   };
 
   const status = selectedElement ? statusConfig[selectedElement.status] : null;
@@ -214,10 +214,10 @@ export function AISuggestionDialog({
                       }`}
                     >
                       <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 transition-all duration-300 ${
-                        isDone ? 'bg-[#14b8a6]/15' : isCurrent ? 'bg-neutral-200' : 'bg-neutral-100'
+                        isDone ? 'bg-green-50' : isCurrent ? 'bg-neutral-200' : 'bg-neutral-100'
                       }`}>
                         {isDone ? (
-                          <CheckCircle2 className="h-3.5 w-3.5 text-[#14b8a6]" />
+                          <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
                         ) : isCurrent ? (
                           <Loader2 className="h-3.5 w-3.5 text-neutral-600 animate-spin" />
                         ) : (
@@ -225,7 +225,7 @@ export function AISuggestionDialog({
                         )}
                       </div>
                       <span className={`text-sm transition-colors duration-300 ${
-                        isDone ? 'text-[#14b8a6] font-medium' : isCurrent ? 'text-neutral-900 font-medium' : 'text-neutral-400'
+                        isDone ? 'text-green-600 font-medium' : isCurrent ? 'text-neutral-900 font-medium' : 'text-neutral-400'
                       }`}>
                         {step}
                       </span>
@@ -243,7 +243,7 @@ export function AISuggestionDialog({
 
               {/* Timer */}
               <div className="flex items-center justify-center gap-1.5 mt-6">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#14b8a6] animate-pulse" />
+                <div className="w-1.5 h-1.5 rounded-full bg-green-600 animate-pulse" />
                 <span className="text-xs font-medium text-neutral-500 tabular-nums">
                   {elapsed}s
                 </span>
@@ -265,18 +265,18 @@ export function AISuggestionDialog({
               )}
 
               {/* Quick Win - highlighted */}
-              <div className="rounded-xl bg-[#fdba32]/15 border border-[#fdba32]/40 p-4">
+              <div className="rounded-xl bg-amber-50 border border-amber-200 p-4">
                 <div className="flex items-center gap-2 mb-2">
-                  <Zap className="h-4 w-4 text-[#b8860b]" />
-                  <p className="text-xs font-semibold uppercase tracking-wide text-[#b8860b]">Rask forbedring</p>
+                  <Zap className="h-4 w-4 text-amber-700" />
+                  <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">Rask forbedring</p>
                   <button
                     onClick={() => copyToClipboard(aiSuggestion.quickWin, 'quickwin')}
-                    className="ml-auto p-1 rounded hover:bg-[#fdba32]/25 transition-colors cursor-pointer"
+                    className="ml-auto p-1 rounded hover:bg-amber-100 transition-colors cursor-pointer"
                   >
                     {copiedId === 'quickwin' ? (
-                      <Check className="h-3.5 w-3.5 text-[#14b8a6]" />
+                      <Check className="h-3.5 w-3.5 text-green-600" />
                     ) : (
-                      <Copy className="h-3.5 w-3.5 text-[#b8860b]" />
+                      <Copy className="h-3.5 w-3.5 text-amber-700" />
                     )}
                   </button>
                 </div>
@@ -285,11 +285,11 @@ export function AISuggestionDialog({
 
               {/* Problem (if any) */}
               {aiSuggestion.problem && (
-                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-[#fd966f]/15 border border-[#fd966f]/40">
-                  <AlertCircle className="h-4 w-4 text-[#c45c3e] shrink-0 mt-0.5" />
+                <div className="flex items-start gap-2.5 p-3 rounded-lg bg-red-50 border border-red-200">
+                  <AlertCircle className="h-4 w-4 text-red-600 shrink-0 mt-0.5" />
                   <div>
-                    <p className="text-xs font-medium text-[#c45c3e] mb-0.5">Problem</p>
-                    <p className="text-sm text-[#c45c3e] leading-relaxed">{aiSuggestion.problem}</p>
+                    <p className="text-xs font-medium text-red-600 mb-0.5">Problem</p>
+                    <p className="text-sm text-red-600 leading-relaxed">{aiSuggestion.problem}</p>
                   </div>
                 </div>
               )}
@@ -334,10 +334,10 @@ export function AISuggestionDialog({
                         <div className="flex items-start gap-2.5">
                           <div className={`w-6 h-6 rounded-md flex items-center justify-center shrink-0 text-[11px] font-bold mt-0.5 ${
                             suggestion.priority === 'høy'
-                              ? 'bg-[#fd966f]/25 text-[#c45c3e]'
+                              ? 'bg-red-100 text-red-600'
                               : suggestion.priority === 'medium'
-                                ? 'bg-[#fdba32]/25 text-[#b8860b]'
-                                : 'bg-[#14b8a6]/15 text-[#14b8a6]'
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-green-50 text-green-600'
                           }`}>
                             {i + 1}
                           </div>
@@ -346,10 +346,10 @@ export function AISuggestionDialog({
                               <span className="text-sm font-semibold text-neutral-900">{suggestion.title}</span>
                               <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
                                 suggestion.priority === 'høy'
-                                  ? 'bg-[#fd966f]/25 text-[#c45c3e]'
+                                  ? 'bg-red-100 text-red-600'
                                   : suggestion.priority === 'medium'
-                                    ? 'bg-[#fdba32]/25 text-[#b8860b]'
-                                    : 'bg-[#14b8a6]/15 text-[#14b8a6]'
+                                    ? 'bg-amber-100 text-amber-700'
+                                    : 'bg-green-50 text-green-600'
                               }`}>
                                 {suggestion.priority}
                               </span>
@@ -370,7 +370,7 @@ export function AISuggestionDialog({
                               className="p-1 rounded hover:bg-neutral-100 transition-colors cursor-pointer"
                             >
                               {copiedId === `example-${i}` ? (
-                                <Check className="h-3 w-3 text-[#14b8a6]" />
+                                <Check className="h-3 w-3 text-green-600" />
                               ) : (
                                 <Copy className="h-3 w-3 text-neutral-400" />
                               )}

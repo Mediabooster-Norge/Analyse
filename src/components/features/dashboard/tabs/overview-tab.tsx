@@ -237,14 +237,14 @@ export function OverviewTab({
                     {retryPageSpeed ? (
                       <button
                         onClick={retryPageSpeed}
-                        className="inline-flex items-center gap-1 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-[#fdba32]/15 text-[#b8860b] font-medium hover:bg-[#fdba32]/25 transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition-colors cursor-pointer"
                         title="Kjør hastighetstest på nytt"
                       >
                         <RefreshCw className="w-2.5 h-2.5" />
                         Mål på nytt
                       </button>
                     ) : (
-                      <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-[#fdba32]/15 text-[#b8860b] font-medium" title="Hastighet ble ikke målt denne gangen (tidsbegrensning eller feil). Resten av analysen er fullført.">
+                      <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium" title="Hastighet ble ikke målt denne gangen (tidsbegrensning eller feil). Resten av analysen er fullført.">
                         Ikke målt
                       </span>
                     )}
@@ -361,7 +361,7 @@ export function OverviewTab({
             <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-5 flex flex-col h-full min-w-0">
               <div className="flex items-center justify-between mb-2 max-[400px]:mb-2">
                 <h3 className="font-semibold text-neutral-900 flex items-center gap-1.5 max-[400px]:gap-1.5 text-xs max-[400px]:text-xs min-[401px]:text-sm">
-                  <TrendingUp className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-[#b8860b]" />
+                  <TrendingUp className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-amber-700" />
                   Forbedringer
                 </h3>
                 <span className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-400">{issues.length} funn</span>
@@ -380,7 +380,7 @@ export function OverviewTab({
                     }}
                     className="inline-flex items-center gap-1 max-[400px]:gap-1 min-[401px]:gap-1.5 p-1.5 max-[400px]:p-1.5 min-[401px]:p-2 rounded-lg bg-neutral-50 hover:bg-neutral-100 transition-colors cursor-pointer text-left group min-w-0 max-w-full shrink"
                   >
-                    <div className={`w-1.5 h-1.5 max-[400px]:w-1 max-[400px]:h-1 min-[401px]:w-1.5 min-[401px]:h-1.5 rounded-full shrink-0 ${issue.priority === 'high' ? 'bg-[#fd966f]' : issue.priority === 'medium' ? 'bg-[#fdba32]' : 'bg-[#14b8a6]'}`} />
+                    <div className={`w-1.5 h-1.5 max-[400px]:w-1 max-[400px]:h-1 min-[401px]:w-1.5 min-[401px]:h-1.5 rounded-full shrink-0 ${issue.priority === 'high' ? 'bg-red-400' : issue.priority === 'medium' ? 'bg-amber-400' : 'bg-green-600'}`} />
                     <span className="font-medium text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-900 shrink-0">{issue.label}</span>
                     <span className="text-neutral-400 text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs shrink-0">·</span>
                     <span className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 min-w-0 truncate">{issue.desc}</span>
@@ -391,12 +391,12 @@ export function OverviewTab({
               </div>
             </div>
           ) : (
-            <div className="rounded-2xl max-[400px]:rounded-xl border border-[#14b8a6]/30 bg-[#14b8a6]/10 p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-5 h-full min-w-0">
-              <h3 className="font-semibold text-[#14b8a6] mb-1 max-[400px]:mb-1 flex items-center gap-1.5 text-xs max-[400px]:text-xs min-[401px]:text-sm">
-                <CheckCircle2 className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-[#14b8a6]" />
+            <div className="rounded-2xl max-[400px]:rounded-xl border border-green-200 bg-green-50 p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-5 h-full min-w-0">
+              <h3 className="font-semibold text-green-600 mb-1 max-[400px]:mb-1 flex items-center gap-1.5 text-xs max-[400px]:text-xs min-[401px]:text-sm">
+                <CheckCircle2 className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-green-600" />
                 Alt ser bra ut!
               </h3>
-              <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-[#14b8a6]">Ingen kritiske forbedringer funnet.</p>
+              <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-green-600">Ingen kritiske forbedringer funnet.</p>
             </div>
           );
         })()}

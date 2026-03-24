@@ -209,15 +209,15 @@ export function AiVisibilityTab({
                 <p className="text-xs text-neutral-500 mt-1">Test om AI kjenner deg</p>
               </div>
               <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
-                <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-[#fdba32]/25 flex items-center justify-center">
-                  <RocketIcon className="w-5 h-5 text-[#b8860b]" />
+                <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-amber-100 flex items-center justify-center">
+                  <RocketIcon className="w-5 h-5 text-amber-700" />
                 </div>
                 <p className="text-sm font-medium text-neutral-900">Anbefalinger</p>
                 <p className="text-xs text-neutral-500 mt-1">Tips for bedre synlighet</p>
               </div>
               <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
-                <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-[#14b8a6]/15 flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-[#14b8a6]" />
+                <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-green-50 flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-green-600" />
                 </div>
                 <p className="text-sm font-medium text-neutral-900">Score</p>
                 <p className="text-xs text-neutral-500 mt-1">Din AI-synlighet</p>
@@ -354,13 +354,13 @@ export function AiVisibilityTab({
       <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 space-y-4 min-[401px]:space-y-6">
         {isPremium && checkingAiVisibility ? null : !isPremium ? (
           <div className="space-y-4 min-[401px]:space-y-6">
-            <div className="rounded-xl border border-[#fdba32]/40 bg-[#fdba32]/10 p-3 min-[401px]:p-4">
+            <div className="rounded-xl border border-amber-200 bg-amber-400/10 p-3 min-[401px]:p-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#fdba32]/25 flex items-center justify-center shrink-0">
-                  <Lock className="h-5 w-5 text-[#b8860b]" />
+                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                  <Lock className="h-5 w-5 text-amber-700" />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-sm sm:text-base font-semibold text-[#b8860b]">AI-synlighet er en Premium-funksjon</h4>
+                  <h4 className="text-sm sm:text-base font-semibold text-amber-700">AI-synlighet er en Premium-funksjon</h4>
                   <p className="text-xs sm:text-sm text-neutral-700 mt-1">
                     Med Premium får du full rapport om hvordan AI-modeller ser og anbefaler bedriften din.
                   </p>
@@ -397,20 +397,20 @@ export function AiVisibilityTab({
                     <div
                       className={`w-32 h-32 mx-auto rounded-full flex items-center justify-center mb-4 ${
                         visData.level === 'high'
-                          ? 'bg-gradient-to-br from-[#14b8a6]/15 to-[#14b8a6]/25'
+                          ? 'bg-gradient-to-br from-green-50 to-green-100'
                           : visData.level === 'medium'
-                            ? 'bg-gradient-to-br from-[#fdba32]/25 to-[#fdba32]/40'
-                            : 'bg-gradient-to-br from-[#fd966f]/25 to-[#fd966f]/40'
+                            ? 'bg-gradient-to-br from-amber-50 to-amber-100'
+                            : 'bg-gradient-to-br from-red-50 to-red-100'
                       }`}
                     >
                       <div className="text-center">
                         <span
                           className={`text-4xl font-bold ${
                             visData.level === 'high'
-                              ? 'text-[#14b8a6]'
+                              ? 'text-green-600'
                               : visData.level === 'medium'
-                                ? 'text-[#b8860b]'
-                                : 'text-[#c45c3e]'
+                                ? 'text-amber-700'
+                                : 'text-red-600'
                           }`}
                         >
                           {visData.score}
@@ -421,10 +421,10 @@ export function AiVisibilityTab({
                     <h4
                       className={`font-semibold mb-1 ${
                         visData.level === 'high'
-                          ? 'text-[#14b8a6]'
+                          ? 'text-green-600'
                           : visData.level === 'medium'
-                            ? 'text-[#b8860b]'
-                            : 'text-[#c45c3e]'
+                            ? 'text-amber-700'
+                            : 'text-red-600'
                       }`}
                     >
                       {visData.level === 'high'
@@ -443,12 +443,12 @@ export function AiVisibilityTab({
                       <p className="text-2xl font-bold text-neutral-900">{visData.details.queriesTested}</p>
                       <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Testet</p>
                     </div>
-                    <div className="p-3 rounded-xl bg-[#14b8a6]/10 text-center">
-                      <p className="text-2xl font-bold text-[#14b8a6]">{visData.details.timesCited}</p>
+                    <div className="p-3 rounded-xl bg-green-50 text-center">
+                      <p className="text-2xl font-bold text-green-600">{visData.details.timesCited}</p>
                       <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Kjent</p>
                     </div>
-                    <div className="p-3 rounded-xl bg-[#fdba32]/15 text-center">
-                      <p className="text-2xl font-bold text-[#b8860b]">{visData.details.timesMentioned}</p>
+                    <div className="p-3 rounded-xl bg-amber-50 text-center">
+                      <p className="text-2xl font-bold text-amber-700">{visData.details.timesMentioned}</p>
                       <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Delvis</p>
                     </div>
                   </div>
@@ -456,11 +456,11 @@ export function AiVisibilityTab({
                   {visData.recommendations.length > 0 && (
                     <div className={`p-4 rounded-xl border ${
                       visData.level === 'high' 
-                        ? 'bg-[#14b8a6]/10 border-[#14b8a6]/30' 
+                        ? 'bg-green-50 border-green-200' 
                         : 'bg-[#f5f3ff] border-[#ddd6fe]'
                     }`}>
                       <h5 className={`font-medium text-sm mb-3 flex items-center gap-2 ${
-                        visData.level === 'high' ? 'text-[#14b8a6]' : 'text-[#6d28d9]'
+                        visData.level === 'high' ? 'text-green-600' : 'text-[#6d28d9]'
                       }`}>
                         <RocketIcon className="w-4 h-4" />
                         {visData.level === 'high' ? 'Tips for å holde deg på topp' : 'Forbedringer'}
@@ -468,11 +468,11 @@ export function AiVisibilityTab({
                       <ul className="space-y-2">
                         {visData.recommendations.map((rec, i) => (
                           <li key={i} className={`text-xs flex items-start gap-2 ${
-                            visData.level === 'high' ? 'text-[#14b8a6]' : 'text-[#6d28d9]'
+                            visData.level === 'high' ? 'text-green-600' : 'text-[#6d28d9]'
                           }`}>
                             <span className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-[10px] font-medium mt-0.5 ${
                               visData.level === 'high' 
-                                ? 'bg-[#14b8a6]/25 text-[#14b8a6]' 
+                                ? 'bg-green-100 text-green-600' 
                                 : 'bg-[#ddd6fe] text-[#6d28d9]'
                             }`}>
                               {i + 1}
@@ -504,7 +504,7 @@ export function AiVisibilityTab({
                         value={`q-${i}`}
                         className={`rounded-xl border overflow-hidden ${
                           q.cited
-                            ? 'bg-[#14b8a6]/10 border-[#14b8a6]/30'
+                            ? 'bg-green-50 border-green-200'
                             : q.mentioned
                               ? 'bg-[#f5f3ff] border-[#ddd6fe]'
                               : 'bg-neutral-50/50 border-neutral-200'
@@ -517,7 +517,7 @@ export function AiVisibilityTab({
                             </p>
                             <span
                               className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full font-medium ${
-                                q.cited ? 'bg-[#14b8a6]/15 text-[#14b8a6]' : q.mentioned ? 'bg-[#f5f3ff] text-[#6d28d9]' : 'bg-neutral-200 text-neutral-600'
+                                q.cited ? 'bg-green-50 text-green-600' : q.mentioned ? 'bg-[#f5f3ff] text-[#6d28d9]' : 'bg-neutral-200 text-neutral-600'
                               }`}
                             >
                               {q.cited ? 'Kjent' : q.mentioned ? 'Delvis' : 'Ukjent'}
@@ -584,30 +584,30 @@ export function AiVisibilityTab({
                         key={i}
                         className={`flex items-start gap-3 p-3.5 sm:p-4 rounded-xl border transition-colors ${
                           factor.pass
-                            ? 'bg-[#14b8a6]/10 border-[#14b8a6]/30'
+                            ? 'bg-green-50 border-green-200'
                             : 'bg-white border-neutral-100 hover:border-neutral-200'
                         }`}
                       >
                         <div
                           className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                            factor.pass ? 'bg-[#14b8a6]/15' : 'bg-neutral-100'
+                            factor.pass ? 'bg-green-50' : 'bg-neutral-100'
                           }`}
                         >
                           {factor.pass ? (
-                            <CheckCircle2 className="w-4 h-4 text-[#14b8a6]" />
+                            <CheckCircle2 className="w-4 h-4 text-green-600" />
                           ) : (
                             <X className="w-4 h-4 text-neutral-400" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className={`text-sm font-medium block ${factor.pass ? 'text-[#14b8a6]' : 'text-neutral-700'}`}>
+                          <span className={`text-sm font-medium block ${factor.pass ? 'text-green-600' : 'text-neutral-700'}`}>
                             {factor.name}
                           </span>
                           {!factor.pass && (
                             <p className="text-xs text-neutral-500 mt-1 leading-snug">{factor.tip}</p>
                           )}
                           {factor.pass && (
-                            <span className="inline-block mt-1.5 text-[10px] font-medium uppercase tracking-wide text-[#14b8a6]">
+                            <span className="inline-block mt-1.5 text-[10px] font-medium uppercase tracking-wide text-green-600">
                               OK
                             </span>
                           )}
