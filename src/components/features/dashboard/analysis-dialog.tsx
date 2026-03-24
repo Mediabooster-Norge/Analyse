@@ -9,7 +9,6 @@ import {
   Plus,
   Globe,
   Search,
-  Sparkles,
   Tag,
   X,
   Loader2,
@@ -18,6 +17,7 @@ import {
   BarChart3,
   Zap,
 } from 'lucide-react';
+import { RocketIcon } from './rocket-icon';
 import { ANALYSIS_STEPS } from './analysis-steps';
 import type { AnalysisStepConfig } from './analysis-steps';
 
@@ -176,7 +176,7 @@ export function AnalysisDialog({
 
                   {/* Timer - subtle */}
                   <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-white border border-neutral-200">
-                    <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-[#0f515a] animate-pulse" />
                     <span className="text-xs sm:text-sm font-medium text-neutral-700 tabular-nums">
                       {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
                     </span>
@@ -203,14 +203,14 @@ export function AnalysisDialog({
                         <div
                           className={`relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all duration-300 ${
                             isComplete
-                              ? 'bg-green-100'
+                              ? 'bg-[#0f515a]/15'
                               : isCurrent
                                 ? 'bg-neutral-200'
                                 : 'bg-neutral-100'
                           }`}
                         >
                           {isComplete ? (
-                            <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+                            <CheckCircle2 className="h-3.5 w-3.5 text-[#0f515a]" />
                           ) : isCurrent ? (
                             <>
                               {isStep6Current && (showPageSpeedStep || showCompetitorsStep) ? (
@@ -226,13 +226,13 @@ export function AnalysisDialog({
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className={`text-sm ${
-                            isComplete ? 'text-green-700 font-medium' : isCurrent ? 'text-neutral-900 font-medium' : 'text-neutral-400'
+                            isComplete ? 'text-[#0f515a] font-medium' : isCurrent ? 'text-neutral-900 font-medium' : 'text-neutral-400'
                           }`}>
                             {label}
                           </p>
                         </div>
                         <span className={`text-xs tabular-nums shrink-0 ${
-                          isComplete ? 'text-green-600' : isCurrent ? 'text-neutral-600' : 'text-neutral-300'
+                          isComplete ? 'text-[#0f515a]' : isCurrent ? 'text-neutral-600' : 'text-neutral-300'
                         }`}>
                           {isComplete ? '✓' : isCurrent ? 'Pågår' : step.duration}
                         </span>
@@ -242,9 +242,12 @@ export function AnalysisDialog({
                 </div>
               </div>
 
-              {/* Status message */}
+              {/* Status message + keep-window-open warning */}
               <p className="text-center text-xs text-neutral-400">
                 {showPageSpeedStep ? 'Vanligvis 1-2 minutter' : 'Vanligvis 1-2 minutter'}
+              </p>
+              <p className="text-center text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                Hold dette vinduet åpent — lukker du det kan analysen gå tapt.
               </p>
             </div>
           </>
@@ -252,7 +255,7 @@ export function AnalysisDialog({
           <>
             <div className="px-4 sm:px-5 pt-4 sm:pt-5 pb-2 sm:pb-3">
               <div className="flex items-center gap-3">
-                <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-lg bg-gradient-to-br from-neutral-900 to-neutral-700 flex items-center justify-center shrink-0">
+                <div className="w-8 sm:w-9 h-8 sm:h-9 rounded-lg bg-gradient-to-br from-[#0f515a] to-[#0c4047] flex items-center justify-center shrink-0">
                   <Search className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-white" />
                 </div>
                 <div className="flex-1 min-w-0">
@@ -286,7 +289,7 @@ export function AnalysisDialog({
                   <Label htmlFor="competitor" className="text-sm font-medium text-neutral-700">
                     {isSubpageMode ? 'Legg til konkurrenter med tilsvarende side (valgfritt)' : 'Sammenlign med konkurrenter (valgfritt)'}
                   </Label>
-                  <span className="px-1.5 py-0.5 rounded-full bg-green-100 text-neutral-900 text-[10px] font-medium">
+                  <span className="px-1.5 py-0.5 rounded-full bg-[#0f515a]/15 text-neutral-900 text-[10px] font-medium">
                     {competitorUrls.length}/{FREE_COMPETITOR_LIMIT}
                   </span>
                 </div>
@@ -324,7 +327,7 @@ export function AnalysisDialog({
                     {competitorUrls.map((competitor) => (
                       <span
                         key={competitor}
-                        className="px-2 py-1 rounded-md bg-white text-neutral-700 text-xs font-medium border border-neutral-200 cursor-pointer hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-colors group flex items-center gap-1"
+                        className="px-2 py-1 rounded-md bg-white text-neutral-700 text-xs font-medium border border-neutral-200 cursor-pointer hover:bg-[#fd966f]/15 hover:border-[#fd966f]/40 hover:text-[#c45c3e] transition-colors group flex items-center gap-1"
                         onClick={() => removeCompetitor(competitor)}
                       >
                         {(() => {
@@ -351,12 +354,12 @@ export function AnalysisDialog({
                       <button
                         type="button"
                         onClick={clearKeywords}
-                        className="text-xs text-neutral-500 hover:text-red-600 transition-colors"
+                        className="text-xs text-neutral-500 hover:text-[#c45c3e] transition-colors"
                       >
                         Fjern alle
                       </button>
                     )}
-                    <span className="px-2 py-0.5 rounded-full bg-green-100 text-neutral-900 text-xs font-medium">
+                    <span className="px-2 py-0.5 rounded-full bg-[#0f515a]/15 text-neutral-900 text-xs font-medium">
                       {keywords.length}/{FREE_KEYWORD_LIMIT}
                     </span>
                   </div>
@@ -404,7 +407,7 @@ export function AnalysisDialog({
                       </>
                     ) : (
                       <>
-                        <Sparkles className="mr-2 h-4 w-4" />
+                        <RocketIcon className="mr-2 h-4 w-4" />
                         Foreslå nøkkelord
                       </>
                     )}
@@ -434,7 +437,7 @@ export function AnalysisDialog({
                     {keywords.map((keyword) => (
                       <span
                         key={keyword}
-                        className="px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 text-xs font-medium cursor-pointer hover:bg-red-50 hover:text-red-700 transition-colors group flex items-center gap-1 shrink-0"
+                        className="px-2 py-0.5 rounded-md bg-neutral-100 text-neutral-700 text-xs font-medium cursor-pointer hover:bg-[#fd966f]/15 hover:text-[#c45c3e] transition-colors group flex items-center gap-1 shrink-0"
                         onClick={() => removeKeyword(keyword)}
                       >
                         {keyword}
@@ -446,7 +449,7 @@ export function AnalysisDialog({
               </div>
               <Button
                 onClick={onRunAnalysis}
-                className="w-full h-11 rounded-lg bg-gradient-to-r from-neutral-900 to-neutral-800 hover:from-neutral-800 hover:to-neutral-700 text-white font-medium shadow-lg shadow-neutral-900/20 transition-all hover:shadow-xl hover:shadow-neutral-900/30"
+                className="w-full h-11 rounded-lg bg-gradient-to-r from-[#0f515a] to-[#0c4047] hover:from-[#0c4047] hover:to-[#0a353c] text-white font-medium shadow-lg shadow-[#0f515a]/20 transition-all hover:shadow-xl hover:shadow-[#0f515a]/30"
                 disabled={!url}
               >
                 <Search className="mr-2 h-4 w-4" />

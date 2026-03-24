@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runFullAnalysis, runCompetitorAnalysis } from '@/lib/analyzers';
 import { createClient } from '@/lib/supabase/server';
 import { getPremiumStatusServer } from '@/lib/premium-server';
-import type { AIVisibilityData } from '@/lib/services/openai';
 
 export const maxDuration = 300; // Krever Fluid Compute (Hobby eller Pro). Uten Fluid: Hobby 60s. Med Fluid: 300s på begge.
 
@@ -20,6 +19,10 @@ interface AnalyzeRequest {
 }
 
 export async function POST(request: NextRequest) {
+  const requestId = crypto.randomUUID().slice(0, 8);
+  const log = (msg: string, extra?: Record<string, unknown>) =>
+    console.log(JSON.stringify({ requestId, msg, ...extra }));
+
   try {
     const body = (await request.json()) as AnalyzeRequest;
     const { rerunFromAnalysisId, includeAI = true, usePremiumAI = false, industry } = body;
@@ -33,6 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = user.id;
+    log('analysis_start', { userId, rerunFromAnalysisId: rerunFromAnalysisId ?? null });
 
     let url: string;
     let competitorUrls: string[];
@@ -132,32 +136,33 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check for cached security and AI visibility results from recent analyses (within 24 hours)
-    // Both security and AI visibility are domain-level, so we can reuse them
+    // Check for cached security results from recent analyses (within 24 hours).
+    // Security is domain-level, so we can reuse it across analyses for the same domain.
     const urlDomain = new URL(normalizedUrl).hostname;
     let cachedSecurityResults = null;
-    const cachedAiVisibilityByDomain: Record<string, AIVisibilityData> = {};
-    
+
     const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     const { data: recentAnalyses } = await supabase
       .from('analyses')
-      .select('security_results, ai_visibility, website_url, competitor_results')
+      .select('security_results, website_url')
       .eq('user_id', userId)
       .gte('created_at', twentyFourHoursAgo)
       .order('created_at', { ascending: false })
-      .limit(20);
-    
-    // Build cache of security and AI visibility results by domain
+      .limit(10);
+
     if (recentAnalyses && recentAnalyses.length > 0) {
       for (const analysis of recentAnalyses) {
         try {
           const analysisDomain = new URL(analysis.website_url).hostname;
-          
-          // Cache main site's security and AI visibility
-          // Skip caching if the SSL grade is an error/unknown state – those should always re-run
           if (analysisDomain === urlDomain && !cachedSecurityResults && analysis.security_results) {
+            // Skip caching if the SSL grade is an error/unknown state – those should always re-run
             const cachedGrade: string = analysis.security_results?.ssl?.grade ?? '';
-            const isValidGrade = cachedGrade.length > 0 && !cachedGrade.startsWith('Ukjent') && !cachedGrade.startsWith('Error') && !cachedGrade.startsWith('Tilkobling') && !cachedGrade.startsWith('Timeout');
+            const isValidGrade =
+              cachedGrade.length > 0 &&
+              !cachedGrade.startsWith('Ukjent') &&
+              !cachedGrade.startsWith('Error') &&
+              !cachedGrade.startsWith('Tilkobling') &&
+              !cachedGrade.startsWith('Timeout');
             if (isValidGrade) {
               cachedSecurityResults = analysis.security_results;
               console.log(`[Security] Reusing cached security results for domain: ${urlDomain}`);
@@ -165,32 +170,12 @@ export async function POST(request: NextRequest) {
               console.log(`[Security] Skipping bad cached SSL grade "${cachedGrade}" for ${urlDomain} – will re-run`);
             }
           }
-          
-          if (analysis.ai_visibility && !cachedAiVisibilityByDomain[analysisDomain]) {
-            cachedAiVisibilityByDomain[analysisDomain] = analysis.ai_visibility as AIVisibilityData;
-          }
-          
-          // Also cache competitor AI visibility results
-          if (Array.isArray(analysis.competitor_results)) {
-            for (const comp of analysis.competitor_results as Array<{ url: string; results?: { aiVisibility?: AIVisibilityData } }>) {
-              try {
-                const compDomain = new URL(comp.url).hostname;
-                if (comp.results?.aiVisibility && !cachedAiVisibilityByDomain[compDomain]) {
-                  cachedAiVisibilityByDomain[compDomain] = comp.results.aiVisibility;
-                }
-              } catch { /* ignore invalid URLs */ }
-            }
-          }
         } catch { /* ignore invalid URLs */ }
-      }
-      
-      if (Object.keys(cachedAiVisibilityByDomain).length > 0) {
-        console.log(`[AI Visibility] Found cached results for ${Object.keys(cachedAiVisibilityByDomain).length} domains`);
       }
     }
 
-    // Run the analysis – hard cap 1s under maxDuration (119s når maxDuration=120) så respons rekkes
-    const ANALYSIS_DEADLINE_MS = (typeof maxDuration === 'number' ? maxDuration - 1 : 119) * 1000;
+    // Run the analysis – reserve 15s at the end for DB write + response (was 1s, which was too tight)
+    const ANALYSIS_DEADLINE_MS = (typeof maxDuration === 'number' ? maxDuration - 15 : 285) * 1000;
     const deadlinePromise = new Promise<never>((_, reject) => {
       setTimeout(() => reject(new Error('ANALYSIS_DEADLINE')), ANALYSIS_DEADLINE_MS);
     });
@@ -208,7 +193,6 @@ export async function POST(request: NextRequest) {
           companyName: companyName || websiteName,
           isPremium,
           cachedSecurityResults,
-          cachedAiVisibilityByDomain,
         });
         result = competitorAnalysis.mainResults;
         competitors = competitorAnalysis.competitorResults;
@@ -221,7 +205,6 @@ export async function POST(request: NextRequest) {
           companyName: companyName || websiteName,
           isPremium,
           cachedSecurityResults,
-          cachedAiVisibility: cachedAiVisibilityByDomain[urlDomain],
           skipPageSpeed: true, // Hastighet hentes i eget API-kall etterpå (holder første kall under 60s)
           quickSecurityScan: false, // Med Fluid Compute (300s) kjører vi ekte SSL-sjekk (analyzeSSLDirect)
         });
@@ -232,12 +215,15 @@ export async function POST(request: NextRequest) {
     let result;
     let competitors: Array<{ url: string; results: unknown }> = [];
 
+    const raceStart = Date.now();
     try {
       const outcome = await Promise.race([runAnalysis(), deadlinePromise]);
       result = outcome.result;
       competitors = outcome.competitors;
+      log('analysis_done', { url: normalizedUrl, durationMs: Date.now() - raceStart, overallScore: result.overallScore, competitorCount: competitors.length });
     } catch (err) {
       if (err instanceof Error && err.message === 'ANALYSIS_DEADLINE') {
+        log('analysis_deadline_exceeded', { url: normalizedUrl, durationMs: Date.now() - raceStart });
         return NextResponse.json(
           {
             error: 'Analysen tok for lang tid. Prøv igjen med færre konkurrenter eller uten nøkkelord.',
@@ -264,7 +250,6 @@ export async function POST(request: NextRequest) {
         competitor_results: competitors.length > 0 ? competitors : null,
         ai_summary: result.aiSummary,
         keyword_research: result.keywordResearch || null,
-        ai_visibility: result.aiVisibility || null,
         overall_score: result.overallScore,
         ai_model: result.aiModel,
         tokens_used: result.tokensUsed,
@@ -273,11 +258,20 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (analysisError) {
+    if (analysisError || !analysis) {
+      log('analysis_save_failed', { error: analysisError?.message });
       console.error('Failed to save analysis:', analysisError);
+      return NextResponse.json(
+        {
+          error: 'Analysen ble fullført, men kunne ikke lagres. Prøv igjen.',
+          code: 'SAVE_FAILED',
+        },
+        { status: 500 }
+      );
     }
+    log('analysis_saved', { analysisId: analysis.id });
 
-    // Update API usage
+    // Update API usage – only tracked on successful save
     const today = new Date().toISOString().split('T')[0];
     await supabase.rpc('increment_api_usage', {
       p_user_id: userId,
@@ -286,11 +280,11 @@ export async function POST(request: NextRequest) {
       p_cost: result.costUsd,
     });
 
+    // Return only the analysisId — the client fetches the full result from the DB.
+    // This avoids a very large JSON payload being sent twice (once here, once on DB load).
     return NextResponse.json({
       success: true,
-      analysisId: analysis?.id,
-      ...result,
-      competitors,
+      analysisId: analysis.id,
     });
   } catch (error) {
     console.error('Analysis error:', error);

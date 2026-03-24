@@ -155,6 +155,59 @@ const defaultSecurityResults = {
   observatory: { grade: 'Unknown', score: 0 },
 };
 
+/**
+ * Maps a raw Supabase analysis row (snake_case) to the DashboardAnalysisResult
+ * shape expected by the dashboard UI. Shared between initial load and post-analysis fetch.
+ */
+function mapAnalysisRowToResult(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  analysis: Record<string, any>
+): DashboardAnalysisResult {
+  const mergedSecurityResults = analysis.security_results
+    ? {
+        score: analysis.security_results.score ?? defaultSecurityResults.score,
+        ssl: { ...defaultSecurityResults.ssl, ...(analysis.security_results.ssl || {}) },
+        headers: { ...defaultSecurityResults.headers, ...(analysis.security_results.headers || {}) },
+        observatory: { ...defaultSecurityResults.observatory, ...(analysis.security_results.observatory || {}) },
+      }
+    : defaultSecurityResults;
+
+  const mergedSeoResults = analysis.seo_results
+    ? {
+        score: analysis.seo_results.score ?? defaultSeoResults.score,
+        meta: {
+          title: { ...defaultSeoResults.meta.title, ...(analysis.seo_results.meta?.title || {}) },
+          description: { ...defaultSeoResults.meta.description, ...(analysis.seo_results.meta?.description || {}) },
+          ogTags: { ...defaultSeoResults.meta.ogTags, ...(analysis.seo_results.meta?.ogTags || {}) },
+          canonical: analysis.seo_results.meta?.canonical ?? defaultSeoResults.meta.canonical,
+        },
+        headings: {
+          h1: { ...defaultSeoResults.headings.h1, ...(analysis.seo_results.headings?.h1 || {}) },
+          h2: { ...defaultSeoResults.headings.h2, ...(analysis.seo_results.headings?.h2 || {}) },
+          hasProperHierarchy:
+            analysis.seo_results.headings?.hasProperHierarchy ?? defaultSeoResults.headings.hasProperHierarchy,
+        },
+        images: { ...defaultSeoResults.images, ...(analysis.seo_results.images || {}) },
+        links: {
+          internal: { ...defaultSeoResults.links.internal, ...(analysis.seo_results.links?.internal || {}) },
+          external: { ...defaultSeoResults.links.external, ...(analysis.seo_results.links?.external || {}) },
+        },
+      }
+    : defaultSeoResults;
+
+  return {
+    seoResults: mergedSeoResults,
+    contentResults: analysis.content_results || { score: 0, wordCount: 0 },
+    securityResults: mergedSecurityResults,
+    pageSpeedResults: analysis.pagespeed_results || undefined,
+    overallScore: analysis.overall_score || 0,
+    competitors: analysis.competitor_results || undefined,
+    aiSummary: analysis.ai_summary || undefined,
+    keywordResearch: analysis.keyword_research || undefined,
+    aiVisibility: analysis.ai_visibility || undefined,
+  };
+}
+
 export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardOptions) {
   const { isPremium, articleGenerationsPerMonth, loading: premiumLoading } = usePremium();
   const limits = getPremiumLimits(isPremium);
@@ -317,33 +370,6 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         const { data: analysis } = await analysisQuery.maybeSingle();
 
         if (analysis) {
-          // Deep merge results with defaults
-          const mergedSecurityResults = analysis.security_results ? {
-            score: analysis.security_results.score ?? defaultSecurityResults.score,
-            ssl: { ...defaultSecurityResults.ssl, ...(analysis.security_results.ssl || {}) },
-            headers: { ...defaultSecurityResults.headers, ...(analysis.security_results.headers || {}) },
-            observatory: { ...defaultSecurityResults.observatory, ...(analysis.security_results.observatory || {}) },
-          } : defaultSecurityResults;
-
-          const mergedSeoResults = analysis.seo_results ? {
-            score: analysis.seo_results.score ?? defaultSeoResults.score,
-            meta: {
-              title: { ...defaultSeoResults.meta.title, ...(analysis.seo_results.meta?.title || {}) },
-              description: { ...defaultSeoResults.meta.description, ...(analysis.seo_results.meta?.description || {}) },
-              ogTags: { ...defaultSeoResults.meta.ogTags, ...(analysis.seo_results.meta?.ogTags || {}) },
-              canonical: analysis.seo_results.meta?.canonical ?? defaultSeoResults.meta.canonical,
-            },
-            headings: {
-              h1: { ...defaultSeoResults.headings.h1, ...(analysis.seo_results.headings?.h1 || {}) },
-              h2: { ...defaultSeoResults.headings.h2, ...(analysis.seo_results.headings?.h2 || {}) },
-              hasProperHierarchy: analysis.seo_results.headings?.hasProperHierarchy ?? defaultSeoResults.headings.hasProperHierarchy,
-            },
-            images: { ...defaultSeoResults.images, ...(analysis.seo_results.images || {}) },
-            links: {
-              internal: { ...defaultSeoResults.links.internal, ...(analysis.seo_results.links?.internal || {}) },
-              external: { ...defaultSeoResults.links.external, ...(analysis.seo_results.links?.external || {}) },
-            },
-          } : defaultSeoResults;
 
           // Pre-fill competitors and keywords from the loaded analysis
           const loadedCompetitors = (analysis.competitor_results || [])
@@ -429,17 +455,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             socialPostSuggestions: savedSocialSuggestions,
             socialPostSuggestionsSavedAt: savedSocialSuggestionsAt,
             analysisHistory,
-            result: {
-              seoResults: mergedSeoResults,
-              contentResults: analysis.content_results || { score: 0, wordCount: 0 },
-              securityResults: mergedSecurityResults,
-              pageSpeedResults: analysis.pagespeed_results || undefined,
-              overallScore: analysis.overall_score || 0,
-              competitors: analysis.competitor_results || undefined,
-              aiSummary: analysis.ai_summary || undefined,
-              keywordResearch: analysis.keyword_research || undefined,
-              aiVisibility: analysis.ai_visibility || undefined,
-            },
+            result: mapAnalysisRowToResult(analysis),
             // When opening fresh "new analysis" dialog, keep input fields empty.
             // Otherwise pre-fill from the loaded analysis.
             ...(showNewDialog
@@ -749,8 +765,23 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       const competitorUrlsToFetch = state.competitorUrls.slice();
       willFetchPageSpeed = !!analysisId;
       willFetchCompetitors = !!analysisId && competitorUrlsToFetch.length > 0;
+
+      // Fetch the full analysis from the DB (the API now returns only the ID)
+      let mappedResult: DashboardAnalysisResult | null = null;
+      if (analysisId) {
+        const supabase = createClient();
+        const { data: analysisRow } = await supabase
+          .from('analyses')
+          .select('*')
+          .eq('id', analysisId)
+          .maybeSingle();
+        if (analysisRow) {
+          mappedResult = mapAnalysisRowToResult(analysisRow);
+        }
+      }
+
       updateState({
-        result: data,
+        result: mappedResult,
         currentAnalysisId: analysisId ?? state.currentAnalysisId,
         companyUrl: normalizedUrl,
         companyName: websiteName,
@@ -765,6 +796,12 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         ...(isSubpage ? { articleSuggestions: null, articleSuggestionsSavedAt: null } : {}),
       });
       if (!willFetchPageSpeed && !willFetchCompetitors) toast.success('Analyse fullført!');
+      if (!mappedResult?.aiSummary) {
+        setTimeout(() => toast.warning('AI-analysen kunne ikke fullføres', {
+          description: 'SEO-, innholds- og sikkerhetsresultater er tilgjengelige, men AI-oppsummeringen mangler. Prøv på nytt for å få AI-analyse.',
+          duration: 8000,
+        }), 500);
+      }
 
       const DIALOG_CLOSE_ANIMATION_MS = 400;
       const toastAfterDialogClosed = (message: string) => {
@@ -815,12 +852,14 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         if (willFetchCompetitors) {
           (async () => {
             let competitors: CompetitorAnalysis[] = data.competitors ?? [];
+            const failedCompetitorUrls: string[] = [];
             for (let i = 0; i < competitorUrlsToFetch.length; i++) {
+              const competitorUrl = competitorUrlsToFetch[i];
               try {
                 const res = await fetch('/api/analyze/competitor', {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ analysisId, competitorUrl: competitorUrlsToFetch[i] }),
+                  body: JSON.stringify({ analysisId, competitorUrl }),
                 });
                 const body = res.ok ? await res.json() : null;
                 if (body?.competitor) {
@@ -830,9 +869,11 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
                     result: prev.result ? { ...prev.result, competitors } : null,
                     competitorProgress: { current: i + 1, total: competitorUrlsToFetch.length },
                   }));
+                } else {
+                  failedCompetitorUrls.push(competitorUrl);
                 }
               } catch {
-                // skip failed competitor
+                failedCompetitorUrls.push(competitorUrl);
               }
             }
             setState((prev) => ({
@@ -845,7 +886,20 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
               : willFetchPageSpeed
                 ? 'Analyse fullført med hastighetsmåling!'
                 : 'Analyse fullført!';
-            tryCloseDialog(() => toastAfterDialogClosed(msg));
+            tryCloseDialog(() => {
+              toastAfterDialogClosed(msg);
+              if (failedCompetitorUrls.length > 0) {
+                const domains = failedCompetitorUrls
+                  .map((u) => { try { return new URL(u).hostname; } catch { return u; } })
+                  .join(', ');
+                setTimeout(() => {
+                  toast.warning(`${failedCompetitorUrls.length} konkurrent${failedCompetitorUrls.length > 1 ? 'er' : ''} kunne ikke analyseres`, {
+                    description: domains,
+                    duration: 8000,
+                  });
+                }, 600);
+              }
+            });
           })();
         }
       }

@@ -19,7 +19,6 @@ import type {
 } from '@/types/dashboard';
 import {
   Share2,
-  Lightbulb,
   BarChart3,
   Copy,
   PenLine,
@@ -28,6 +27,7 @@ import {
   Download,
   RefreshCw,
 } from 'lucide-react';
+import { RocketIcon } from '../rocket-icon';
 import { toast } from 'sonner';
 
 const SUGGESTION_MESSAGES = [
@@ -221,7 +221,10 @@ export function SocialTab({
           </p>
           <div className="flex flex-wrap items-center gap-2 text-[10px] sm:text-sm">
             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
-              <strong className="text-neutral-900">{remainingArticleGenerations}/{articleGenerationsLimit}</strong> genereringer igjen (artikler + SoMe)
+              <strong className="text-neutral-900">{remainingArticleGenerations}/{articleGenerationsLimit}</strong> genereringer igjen denne måneden
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[10px]">
+              Delt kvote med artikler
             </span>
           </div>
         </div>
@@ -237,7 +240,7 @@ export function SocialTab({
                   onClick={() => setSelectedSocialPlatform(opt.value)}
                   className={`rounded-lg text-xs px-3 py-2 font-medium transition-colors ${
                     selectedSocialPlatform === opt.value
-                      ? 'bg-neutral-900 text-white'
+                      ? 'bg-[#0f515a] text-white'
                       : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
                   }`}
                 >
@@ -263,7 +266,7 @@ export function SocialTab({
                 type="button"
                 onClick={() => fetchSocialPostSuggestions(false, selectedSocialPlatform)}
                 disabled={loadingSocialPostSuggestions}
-                className="rounded-lg text-xs bg-neutral-900 hover:bg-neutral-800 w-fit"
+                className="rounded-lg text-xs bg-[#0f515a] hover:bg-[#0c4047] w-fit"
               >
                 {loadingSocialPostSuggestions ? (
                   <>
@@ -272,7 +275,7 @@ export function SocialTab({
                   </>
                 ) : (
                   <>
-                    <Lightbulb className="h-3.5 w-3.5 mr-1.5" />
+                    <RocketIcon className="h-3.5 w-3.5 mr-1.5" />
                     {socialPostSuggestions && socialPostSuggestions.length > 0 ? 'Nye forslag' : 'Generer forslag'}
                   </>
                 )}
@@ -378,7 +381,7 @@ export function SocialTab({
                           {s.priority && (
                             <span
                               className={`mt-1.5 inline-block text-[10px] px-2 py-0.5 rounded font-medium ${
-                                s.priority === 'high' ? 'bg-amber-100 text-amber-700' :
+                                s.priority === 'high' ? 'bg-[#fdba32]/25 text-[#b8860b]' :
                                 s.priority === 'medium' ? 'bg-neutral-200 text-neutral-700' :
                                 'bg-neutral-100 text-neutral-600'
                               }`}

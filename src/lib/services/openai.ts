@@ -1,5 +1,5 @@
 import OpenAI from 'openai';
-import type { SEOResults, ContentResults, SecurityResults, CompetitorResults, AISummary, Priority, RecommendationCategory, PageSpeedResults } from '@/types';
+import type { SEOResults, ContentResults, SecurityResults, CompetitorResults, AISummary, Priority, RecommendationCategory, PageSpeedResults, AIVisibilityData } from '@/types';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -433,23 +433,7 @@ Returner data i dette formatet:
 // AI Visibility Check
 // ============================================================================
 
-export interface AIVisibilityData {
-  score: number;
-  level: 'high' | 'medium' | 'low' | 'none';
-  description: string;
-  details: {
-    queriesTested: number;
-    timesCited: number;
-    timesMentioned: number;
-    queries: Array<{
-      query: string;
-      cited: boolean;
-      mentioned: boolean;
-      aiResponse?: string;
-    }>;
-  };
-  recommendations: string[];
-}
+export type { AIVisibilityData };
 
 export async function checkAIVisibility(
   domain: string,

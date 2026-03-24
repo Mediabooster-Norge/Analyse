@@ -14,8 +14,8 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
-  Sparkles,
 } from 'lucide-react';
+import { RocketIcon } from '../rocket-icon';
 
 export interface KeywordsTabProps {
   result: DashboardAnalysisResult;
@@ -72,7 +72,7 @@ export function KeywordsTab({
                 Rediger nøkkelord
               </h3>
               {!isPremium && (
-                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">
+                <span className="px-2 py-0.5 rounded-full bg-[#fdba32]/25 text-neutral-900 text-xs font-medium">
                   {remainingKeywordUpdates} oppdatering{remainingKeywordUpdates !== 1 ? 'er' : ''} igjen
                 </span>
               )}
@@ -119,7 +119,7 @@ export function KeywordsTab({
                 type="button"
                 onClick={addEditKeyword}
                 disabled={editKeywords.length >= FREE_KEYWORD_LIMIT || !editKeywordInput.trim()}
-                className="h-11 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white"
+                className="h-11 px-4 rounded-xl bg-[#0f515a] hover:bg-[#0c4047] text-white"
               >
                 <Plus className="h-4 w-4 mr-1.5" />
                 Legg til
@@ -135,7 +135,7 @@ export function KeywordsTab({
                   {editKeywords.map((keyword) => (
                     <span
                       key={keyword}
-                      className="px-3 py-1.5 rounded-full bg-white text-neutral-700 text-sm font-medium border border-neutral-200 cursor-pointer hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-colors group flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-full bg-white text-neutral-700 text-sm font-medium border border-neutral-200 cursor-pointer hover:bg-[#fd966f]/15 hover:border-[#fd966f]/40 hover:text-[#c45c3e] transition-colors group flex items-center gap-1.5"
                       onClick={() => removeEditKeyword(keyword)}
                     >
                       {keyword}
@@ -153,7 +153,7 @@ export function KeywordsTab({
             <Button
               onClick={updateKeywordAnalysis}
               disabled={updatingKeywords || (!isPremium && remainingKeywordUpdates <= 0) || editKeywords.length === 0}
-              className="w-full rounded-xl bg-neutral-900 hover:bg-neutral-800"
+              className="w-full rounded-xl bg-[#0f515a] hover:bg-[#0c4047]"
             >
               {updatingKeywords ? (
                 <>
@@ -181,6 +181,9 @@ export function KeywordsTab({
                   Nøkkelordanalyse
                 </h3>
                 <p className="text-xs sm:text-sm text-neutral-600">Estimert søkedata for norsk marked</p>
+                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-2.5 py-1.5 mt-2 inline-block">
+                  ⚠ Søkevolum, CPC og konkurranse er AI-estimater — ikke data fra Google Ads eller andre offisielle kilder. Bruk tallene som veiledende, ikke som beslutningsgrunnlag alene.
+                </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
                 {!editingKeywords && (
@@ -200,7 +203,7 @@ export function KeywordsTab({
                     )}
                   </Button>
                 )}
-                <span className="px-2.5 py-1 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">
+                <span className="px-2.5 py-1 rounded-full bg-[#fdba32]/25 text-neutral-900 text-xs font-medium">
                   AI-estimater
                 </span>
               </div>
@@ -217,7 +220,7 @@ export function KeywordsTab({
               </div>
               <div className="p-3 sm:p-4 rounded-xl bg-neutral-50">
                 <p className="text-[10px] sm:text-xs text-neutral-500 uppercase tracking-wide font-medium">Est. gj.snitt CPC</p>
-                <p className="text-base sm:text-xl font-bold text-green-600 mt-1">
+                <p className="text-base sm:text-xl font-bold text-[#14b8a6] mt-1">
                   ~{(result.keywordResearch.reduce((sum, kw) => sum + kw.cpc, 0) / result.keywordResearch.length).toFixed(2)} kr
                 </p>
               </div>
@@ -242,20 +245,20 @@ export function KeywordsTab({
                 onClick={() => document.getElementById('keyword-ai-analysis')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
                 className="mb-4 sm:mb-6 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-neutral-200 text-xs text-neutral-700 hover:bg-neutral-50 transition-colors cursor-pointer"
               >
-                <Sparkles className="h-3.5 w-3.5 text-neutral-400" />
+                <RocketIcon className="h-3.5 w-3.5 text-neutral-400" />
                 Trykk her for AI-vurdering av nøkkelord
                 <ChevronDown className="h-3.5 w-3.5 text-neutral-400" />
               </button>
             )}
 
             <div className="mb-4 flex flex-col sm:flex-row gap-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-100 text-[10px] sm:text-xs text-amber-700">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#f5f3ff] border border-[#ddd6fe] text-[10px] sm:text-xs text-[#6d28d9]">
                 <span className="font-medium">Om dataene:</span>
-                <span className="text-amber-600">AI-estimater for norsk marked</span>
+                <span className="text-[#7c3aed]">AI-estimater for norsk marked</span>
               </div>
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-50 border border-blue-100 text-[10px] sm:text-xs text-blue-700">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#f5f3ff] border border-[#ddd6fe] text-[10px] sm:text-xs text-[#6d28d9]">
                 <span className="font-medium">Tips:</span>
-                <span className="text-blue-600">Høyt volum + lav konkurranse = best ROI</span>
+                <span className="text-[#7c3aed]">Høyt volum + lav konkurranse = best ROI</span>
               </div>
             </div>
 
@@ -446,12 +449,12 @@ export function KeywordsTab({
                           <span className="text-xs text-neutral-400 ml-1">/mnd</span>
                         </td>
                         <td className="py-4 px-4 text-right">
-                          <span className="font-semibold text-green-600">{kw.cpc.toFixed(2)} kr</span>
+                          <span className="font-semibold text-[#14b8a6]">{kw.cpc.toFixed(2)} kr</span>
                         </td>
                         <td className="py-4 px-4 text-center">
                           <span
                             className={`px-2.5 py-1 rounded-full text-xs font-medium text-neutral-900 ${
-                              kw.competition === 'lav' ? 'bg-green-100' : kw.competition === 'medium' ? 'bg-amber-100' : 'bg-red-100'
+                              kw.competition === 'lav' ? 'bg-[#14b8a6]/15' : kw.competition === 'medium' ? 'bg-[#fdba32]/25' : 'bg-[#fd966f]/25'
                             }`}
                           >
                             {kw.competition}
@@ -462,7 +465,7 @@ export function KeywordsTab({
                             <div className="w-16 h-2 bg-neutral-100 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full ${
-                                  kw.difficulty <= 30 ? 'bg-green-500' : kw.difficulty <= 60 ? 'bg-amber-500' : 'bg-red-500'
+                                  kw.difficulty <= 30 ? 'bg-[#14b8a6]' : kw.difficulty <= 60 ? 'bg-[#fdba32]' : 'bg-[#fd966f]'
                                 }`}
                                 style={{ width: `${kw.difficulty}%` }}
                               />
@@ -474,11 +477,11 @@ export function KeywordsTab({
                           <span
                             className={`px-2.5 py-1 rounded-full text-xs font-medium text-neutral-900 ${
                               kw.intent === 'transactional'
-                                ? 'bg-green-100'
+                                ? 'bg-[#14b8a6]/15'
                                 : kw.intent === 'commercial'
-                                  ? 'bg-blue-100'
+                                  ? 'bg-[#0f515a]/15'
                                   : kw.intent === 'informational'
-                                    ? 'bg-cyan-100'
+                                    ? 'bg-[#f5f3ff]'
                                     : 'bg-neutral-100'
                             }`}
                           >
@@ -494,7 +497,7 @@ export function KeywordsTab({
                         <td className="py-4 px-4 text-center">
                           <span
                             className={`flex items-center justify-center gap-1 text-xs font-medium ${
-                              kw.trend === 'stigende' ? 'text-green-600' : kw.trend === 'synkende' ? 'text-red-600' : 'text-neutral-500'
+                              kw.trend === 'stigende' ? 'text-[#14b8a6]' : kw.trend === 'synkende' ? 'text-[#c45c3e]' : 'text-neutral-500'
                             }`}
                           >
                             {kw.trend === 'stigende' && <TrendingUp className="h-3.5 w-3.5" />}
@@ -514,8 +517,8 @@ export function KeywordsTab({
             {result.aiSummary?.keywordAnalysis && (
               <div id="keyword-ai-analysis" className="mt-4 sm:mt-6 space-y-3 sm:space-y-4 scroll-mt-4">
                 <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
-                  <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-blue-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-                    <Sparkles className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-blue-600" />
+                  <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#f5f3ff] text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                    <RocketIcon className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-[#7c3aed]" />
                     AI-vurdering av nøkkelord
                   </h5>
                   <p className="text-xs sm:text-sm text-neutral-700">{result.aiSummary.keywordAnalysis.summary}</p>
@@ -531,13 +534,13 @@ export function KeywordsTab({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                     {result.aiSummary.keywordAnalysis.missingKeywords?.length > 0 && (
                       <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
-                        <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-amber-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-                          <Tag className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-amber-600" />
+                        <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#fdba32]/25 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                          <Tag className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-[#b8860b]" />
                           Manglende nøkkelord
                         </h5>
                         <div className="flex flex-wrap gap-1.5">
                           {result.aiSummary.keywordAnalysis.missingKeywords.map((kw, i) => (
-                            <span key={i} className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium border border-amber-200">
+                            <span key={i} className="px-2.5 py-1 rounded-full bg-[#fdba32]/15 text-[#b8860b] text-xs font-medium border border-[#fdba32]/40">
                               + {kw}
                             </span>
                           ))}
@@ -546,8 +549,8 @@ export function KeywordsTab({
                     )}
                     {result.aiSummary.keywordAnalysis.recommendations && (
                       <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
-                        <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-green-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-                          <TrendingUp className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-green-600" />
+                        <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#14b8a6]/15 text-[#14b8a6] text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                          <TrendingUp className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-[#14b8a6]" />
                           Anbefalinger
                         </h5>
                         <p className="text-xs sm:text-sm text-neutral-700">{result.aiSummary.keywordAnalysis.recommendations}</p>
@@ -618,7 +621,7 @@ export function KeywordsTab({
                       {aiKeywordsAsTable.map((kw, i) => (
                         <tr key={i} className="border-b border-neutral-100 last:border-b-0">
                           <td className="py-4 px-4">
-                            <span className={`font-medium ${kw.keyword.startsWith('+ ') ? 'text-amber-700' : 'text-neutral-900'}`}>
+                            <span className={`font-medium ${kw.keyword.startsWith('+ ') ? 'text-[#b8860b]' : 'text-neutral-900'}`}>
                               {kw.keyword}
                             </span>
                           </td>
@@ -633,8 +636,8 @@ export function KeywordsTab({
                 </div>
                 {result.aiSummary?.keywordAnalysis?.recommendations && (
                   <div className="mt-6 p-5 rounded-xl bg-neutral-50 border border-neutral-100">
-                    <h5 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-100 text-neutral-900 text-sm font-medium mb-3">
-                      <Sparkles className="h-4 w-4 text-blue-600" />
+                    <h5 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#f5f3ff] text-neutral-900 text-sm font-medium mb-3">
+                      <RocketIcon className="h-4 w-4 text-[#7c3aed]" />
                       Anbefalinger
                     </h5>
                     <p className="text-sm text-neutral-700">{result.aiSummary.keywordAnalysis.recommendations}</p>
@@ -671,7 +674,7 @@ export function KeywordsTab({
                   </>
                 ) : (
                   <>
-                    <Sparkles className="mr-2 h-4 w-4" />
+                    <RocketIcon className="mr-2 h-4 w-4" />
                     Foreslå nøkkelord
                   </>
                 )}

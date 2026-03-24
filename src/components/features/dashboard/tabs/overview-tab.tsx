@@ -14,7 +14,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { ScoreRing, SummaryCard, MetricCard, ScoreTrendChart, SocialPreview } from '@/components/features/dashboard';
+import { ScoreRing, SummaryCard, MetricCard, ScoreTrendChart, SocialPreview, RocketIcon } from '@/components/features/dashboard';
 import type { DashboardAnalysisResult, ArticleSuggestion, GeneratedArticleResult } from '@/types/dashboard';
 import {
   Search,
@@ -224,7 +224,7 @@ export function OverviewTab({
                       <Loader2 className="w-5 h-5 max-[400px]:w-4 max-[400px]:h-4 min-[401px]:w-5 sm:w-6 sm:h-6 text-neutral-400 animate-spin" />
                     </div>
                     <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Hastighet</p>
-                    <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium">
+                    <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-[#f5f3ff] text-[#6d28d9] font-medium">
                       Måler…
                     </span>
                   </>
@@ -237,14 +237,14 @@ export function OverviewTab({
                     {retryPageSpeed ? (
                       <button
                         onClick={retryPageSpeed}
-                        className="inline-flex items-center gap-1 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-[#fdba32]/15 text-[#b8860b] font-medium hover:bg-[#fdba32]/25 transition-colors cursor-pointer"
                         title="Kjør hastighetstest på nytt"
                       >
                         <RefreshCw className="w-2.5 h-2.5" />
                         Mål på nytt
                       </button>
                     ) : (
-                      <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium" title="Hastighet ble ikke målt denne gangen (tidsbegrensning eller feil). Resten av analysen er fullført.">
+                      <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-[#fdba32]/15 text-[#b8860b] font-medium" title="Hastighet ble ikke målt denne gangen (tidsbegrensning eller feil). Resten av analysen er fullført.">
                         Ikke målt
                       </span>
                     )}
@@ -274,7 +274,7 @@ export function OverviewTab({
                         <button
                           type="button"
                           onClick={() => setActiveTab('ai-visibility')}
-                          className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-violet-50 text-violet-700 font-medium hover:bg-violet-100 transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-[#f5f3ff] text-[#6d28d9] font-medium hover:bg-[#ede9fe] transition-colors cursor-pointer"
                           title="Gå til AI-synlighet og kjør sjekk"
                         >
                           Ikke sjekket
@@ -361,7 +361,7 @@ export function OverviewTab({
             <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-5 flex flex-col h-full min-w-0">
               <div className="flex items-center justify-between mb-2 max-[400px]:mb-2">
                 <h3 className="font-semibold text-neutral-900 flex items-center gap-1.5 max-[400px]:gap-1.5 text-xs max-[400px]:text-xs min-[401px]:text-sm">
-                  <TrendingUp className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-amber-500" />
+                  <TrendingUp className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-[#b8860b]" />
                   Forbedringer
                 </h3>
                 <span className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-400">{issues.length} funn</span>
@@ -380,7 +380,7 @@ export function OverviewTab({
                     }}
                     className="inline-flex items-center gap-1 max-[400px]:gap-1 min-[401px]:gap-1.5 p-1.5 max-[400px]:p-1.5 min-[401px]:p-2 rounded-lg bg-neutral-50 hover:bg-neutral-100 transition-colors cursor-pointer text-left group min-w-0 max-w-full shrink"
                   >
-                    <div className={`w-1.5 h-1.5 max-[400px]:w-1 max-[400px]:h-1 min-[401px]:w-1.5 min-[401px]:h-1.5 rounded-full shrink-0 ${issue.priority === 'high' ? 'bg-red-500' : issue.priority === 'medium' ? 'bg-amber-500' : 'bg-blue-500'}`} />
+                    <div className={`w-1.5 h-1.5 max-[400px]:w-1 max-[400px]:h-1 min-[401px]:w-1.5 min-[401px]:h-1.5 rounded-full shrink-0 ${issue.priority === 'high' ? 'bg-[#fd966f]' : issue.priority === 'medium' ? 'bg-[#fdba32]' : 'bg-[#14b8a6]'}`} />
                     <span className="font-medium text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-900 shrink-0">{issue.label}</span>
                     <span className="text-neutral-400 text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs shrink-0">·</span>
                     <span className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 min-w-0 truncate">{issue.desc}</span>
@@ -391,12 +391,12 @@ export function OverviewTab({
               </div>
             </div>
           ) : (
-            <div className="rounded-2xl max-[400px]:rounded-xl border border-green-200 bg-green-50 p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-5 h-full min-w-0">
-              <h3 className="font-semibold text-green-800 mb-1 max-[400px]:mb-1 flex items-center gap-1.5 text-xs max-[400px]:text-xs min-[401px]:text-sm">
-                <CheckCircle2 className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-green-600" />
+            <div className="rounded-2xl max-[400px]:rounded-xl border border-[#14b8a6]/30 bg-[#14b8a6]/10 p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-5 h-full min-w-0">
+              <h3 className="font-semibold text-[#14b8a6] mb-1 max-[400px]:mb-1 flex items-center gap-1.5 text-xs max-[400px]:text-xs min-[401px]:text-sm">
+                <CheckCircle2 className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-[#14b8a6]" />
                 Alt ser bra ut!
               </h3>
-              <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-green-700">Ingen kritiske forbedringer funnet.</p>
+              <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-[#14b8a6]">Ingen kritiske forbedringer funnet.</p>
             </div>
           );
         })()}
@@ -465,8 +465,8 @@ export function OverviewTab({
 
           {/* AI hint – rett over metrikkortene */}
           <div className="flex items-center gap-2 px-1">
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-blue-50 border border-blue-200/60 text-xs text-blue-700">
-              <Lightbulb className="w-3 h-3 text-blue-500 shrink-0" />
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#f5f3ff] border border-[#ddd6fe] text-xs text-[#6d28d9]">
+              <RocketIcon className="w-3 h-3 text-[#7c3aed] shrink-0" />
               <span>Trykk på et kort for AI-drevne forbedringsforslag</span>
             </div>
           </div>
@@ -846,7 +846,7 @@ export function OverviewTab({
 
       {/* Upgrade CTA - only for non-premium users */}
       {!isPremium && (
-        <div className="rounded-2xl bg-neutral-900 p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="rounded-2xl bg-[#0f515a] p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
               <Sparkles className="w-5 h-5 text-white" />

@@ -12,7 +12,6 @@ import type { ArticleSuggestion, GeneratedArticleResult } from '@/types/dashboar
 import {
   FileText,
   Clock,
-  Lightbulb,
   BarChart3,
   Copy,
   PenLine,
@@ -20,6 +19,7 @@ import {
   Download,
   RefreshCw,
 } from 'lucide-react';
+import { RocketIcon } from '../rocket-icon';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 
@@ -221,7 +221,10 @@ export function ArticlesTab({
           </p>
           <div className="flex flex-wrap items-center gap-2 text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs sm:text-sm">
             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
-              <strong className="text-neutral-900">{remainingArticleGenerations}/{articleGenerationsLimit}</strong> artikler igjen denne måneden
+              <strong className="text-neutral-900">{remainingArticleGenerations}/{articleGenerationsLimit}</strong> genereringer igjen denne måneden
+            </span>
+            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-[10px]">
+              Delt kvote med innlegg
             </span>
             <a href="/dashboard/articles" className="text-neutral-500 hover:text-neutral-900 underline">
               Se mine artikler →
@@ -253,7 +256,7 @@ export function ArticlesTab({
                   </>
                 ) : (
                   <>
-                    <Lightbulb className="h-3.5 w-3.5 mr-1.5" />
+                    <RocketIcon className="h-3.5 w-3.5 mr-1.5" />
                     {articleSuggestions && articleSuggestions.length > 0 ? 'Nye forslag' : 'Generer forslag'}
                   </>
                 )}
@@ -369,7 +372,7 @@ export function ArticlesTab({
                           {s.priority && (
                             <span
                               className={`mt-1.5 inline-block text-[10px] px-2 py-0.5 rounded font-medium ${
-                                s.priority === 'high' ? 'bg-amber-100 text-amber-700' :
+                                s.priority === 'high' ? 'bg-[#fdba32]/25 text-[#b8860b]' :
                                 s.priority === 'medium' ? 'bg-neutral-200 text-neutral-700' :
                                 'bg-neutral-100 text-neutral-600'
                               }`}
@@ -469,7 +472,7 @@ export function ArticlesTab({
             </p>
             <div className="flex items-center gap-2 mt-2">
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-neutral-100">
-                <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                <div className="w-1.5 h-1.5 rounded-full bg-[#0f515a] animate-pulse" />
                 <span className="text-xs font-medium text-neutral-700 tabular-nums">
                   {Math.floor(articleGenElapsed / 60)}:{(articleGenElapsed % 60).toString().padStart(2, '0')}
                 </span>

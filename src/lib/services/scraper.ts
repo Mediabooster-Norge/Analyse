@@ -6,15 +6,65 @@ import type { ScrapedData } from '@/types';
 const DEFAULT_TIMEOUT_MS = 30_000;
 const MAX_RETRIES = 2;
 const RETRY_DELAY_MS = 2_000;
+const MAX_REDIRECT_DEPTH = 5;
+const MAX_RESPONSE_BYTES = 10 * 1024 * 1024; // 10 MB cap
+
+// ============================================================================
+// SSRF Protection
+// Blocks requests to private/loopback/link-local addresses.
+// Covers the most dangerous cases (cloud metadata, RFC-1918, loopback).
+// ============================================================================
+const BLOCKED_HOSTNAMES = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0', 'metadata.google.internal']);
+
+const PRIVATE_IP_PATTERNS: RegExp[] = [
+  /^127\./,                          // 127.x.x.x – loopback
+  /^10\./,                           // 10.x.x.x – RFC 1918
+  /^192\.168\./,                     // 192.168.x.x – RFC 1918
+  /^172\.(1[6-9]|2\d|3[01])\./,     // 172.16–31.x.x – RFC 1918
+  /^169\.254\./,                     // 169.254.x.x – link-local / AWS metadata
+  /^100\.64\./,                      // 100.64.x.x – Shared Address Space
+  /^fc00:/i,                         // IPv6 unique local
+  /^fd[0-9a-f]{2}:/i,               // IPv6 unique local
+  /^fe80:/i,                         // IPv6 link-local
+];
+
+function assertSafeUrl(urlString: string): void {
+  let parsed: URL;
+  try {
+    parsed = new URL(urlString);
+  } catch {
+    throw new Error('Ugyldig URL-format');
+  }
+
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+    throw new Error(`Protokollen "${parsed.protocol}" er ikke tillatt. Kun http og https støttes.`);
+  }
+
+  const hostname = parsed.hostname.toLowerCase();
+
+  if (BLOCKED_HOSTNAMES.has(hostname)) {
+    throw new Error('Tilgang til denne adressen er ikke tillatt (intern nettverksadresse).');
+  }
+
+  for (const pattern of PRIVATE_IP_PATTERNS) {
+    if (pattern.test(hostname)) {
+      throw new Error('Tilgang til private nettverksadresser er ikke tillatt.');
+    }
+  }
+}
 
 /**
  * Fetch a URL using Node.js native http/https modules.
  * Bypasses Next.js fetch patching which can cause connection issues in dev.
+ * Enforces SSRF protection and a maximum redirect depth.
  */
 function nativeFetch(
   url: string,
-  options: { timeoutMs: number; userAgent: string }
+  options: { timeoutMs: number; userAgent: string },
+  redirectDepth = 0
 ): Promise<{ statusCode: number; headers: Record<string, string>; body: string }> {
+  assertSafeUrl(url);
+
   return new Promise((resolve, reject) => {
     const parsedUrl = new URL(url);
     const transport = parsedUrl.protocol === 'https:' ? https : http;
@@ -30,16 +80,33 @@ function nativeFetch(
         timeout: options.timeoutMs,
       },
       (res) => {
-        // Follow redirects (301, 302, 307, 308)
+        // Follow redirects (301, 302, 307, 308) up to MAX_REDIRECT_DEPTH
         if (res.statusCode && [301, 302, 307, 308].includes(res.statusCode) && res.headers.location) {
-          const redirectUrl = new URL(res.headers.location, url).toString();
-          nativeFetch(redirectUrl, options).then(resolve).catch(reject);
-          res.resume(); // Drain the response
+          res.resume();
+          if (redirectDepth >= MAX_REDIRECT_DEPTH) {
+            reject(new Error(`For mange omdirigeringer (maks ${MAX_REDIRECT_DEPTH}) for ${parsedUrl.hostname}.`));
+            return;
+          }
+          try {
+            const redirectUrl = new URL(res.headers.location, url).toString();
+            nativeFetch(redirectUrl, options, redirectDepth + 1).then(resolve).catch(reject);
+          } catch {
+            reject(new Error(`Ugyldig omdirigerings-URL fra ${parsedUrl.hostname}.`));
+          }
           return;
         }
 
         const chunks: Buffer[] = [];
-        res.on('data', (chunk: Buffer) => chunks.push(chunk));
+        let totalBytes = 0;
+        res.on('data', (chunk: Buffer) => {
+          totalBytes += chunk.length;
+          if (totalBytes > MAX_RESPONSE_BYTES) {
+            req.destroy();
+            reject(new Error(`Svaret fra ${parsedUrl.hostname} er for stort (maks 10 MB).`));
+            return;
+          }
+          chunks.push(chunk);
+        });
         res.on('end', () => {
           const body = Buffer.concat(chunks).toString('utf-8');
           const headers: Record<string, string> = {};
@@ -74,6 +141,9 @@ export async function scrapeUrl(url: string, options?: { timeoutMs?: number }): 
 
   // Ensure URL has protocol
   const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
+
+  // Validate before any network call (fast-fail with a clear error)
+  assertSafeUrl(normalizedUrl);
 
   const userAgents = [
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',

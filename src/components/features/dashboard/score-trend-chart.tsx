@@ -80,13 +80,13 @@ export function ScoreTrendChart({ history, currentScore }: ScoreTrendChartProps)
       {/* Trend summary */}
       <div className="flex items-center gap-3">
         <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-          trend.direction === 'up' ? 'bg-green-100' : 
-          trend.direction === 'down' ? 'bg-red-100' : 'bg-neutral-100'
+          trend.direction === 'up' ? 'bg-[#14b8a6]/15' : 
+          trend.direction === 'down' ? 'bg-[#fd966f]/25' : 'bg-neutral-100'
         }`}>
           {trend.direction === 'up' ? (
-            <TrendingUp className="w-5 h-5 text-green-600" />
+            <TrendingUp className="w-5 h-5 text-[#14b8a6]" />
           ) : trend.direction === 'down' ? (
-            <TrendingDown className="w-5 h-5 text-red-600" />
+            <TrendingDown className="w-5 h-5 text-[#c45c3e]" />
           ) : (
             <Minus className="w-5 h-5 text-neutral-500" />
           )}
@@ -169,9 +169,9 @@ export function ScoreTrendChart({ history, currentScore }: ScoreTrendChartProps)
             <Line 
               type="monotone" 
               dataKey="Sikkerhet" 
-              stroke="#22c55e" 
+              stroke="#14b8a6" 
               strokeWidth={1.5}
-              dot={{ r: 2, fill: '#22c55e' }}
+              dot={{ r: 2, fill: '#14b8a6' }}
               strokeDasharray="5 5"
             />
             {chartData.some(d => d.Hastighet !== undefined) && (

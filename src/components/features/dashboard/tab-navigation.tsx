@@ -1,6 +1,7 @@
 'use client';
 
-import { BarChart3, TrendingUp, Tag, Sparkles, Eye, FileText, Share2, ChevronDown } from 'lucide-react';
+import { BarChart3, TrendingUp, Tag, Eye, FileText, Share2, ChevronDown } from 'lucide-react';
+import { RocketIcon } from './rocket-icon';
 import type { DashboardTab } from '@/types/dashboard';
 import {
   DropdownMenu,
@@ -25,7 +26,7 @@ const allTabs = [
   { id: 'ai-visibility' as const, label: 'AI-synlighet', shortLabel: 'AI-syn', icon: Eye },
   { id: 'articles' as const, label: 'Artikkel generator', shortLabel: 'Artikkel', icon: FileText },
   { id: 'social' as const, label: 'SoMe-post generator', shortLabel: 'SoMe', icon: Share2 },
-  { id: 'ai' as const, label: 'AI anbefalinger', shortLabel: 'AI', icon: Sparkles },
+  { id: 'ai' as const, label: 'AI anbefalinger', shortLabel: 'AI', icon: RocketIcon },
 ];
 
 function getTabCount(tabId: string, competitorCount?: number, keywordCount?: number): number | undefined {

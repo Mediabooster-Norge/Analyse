@@ -17,22 +17,22 @@ interface MetricCardProps {
 
 const statusColors = {
   good: {
-    bg: 'bg-green-50',
-    border: 'border-green-200',
-    icon: 'text-green-600',
-    badge: 'bg-green-100 text-green-700',
+    bg: 'bg-[#14b8a6]/10',
+    border: 'border-[#14b8a6]/30',
+    icon: 'text-[#14b8a6]',
+    badge: 'bg-[#14b8a6]/15 text-[#14b8a6]',
   },
   warning: {
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
-    icon: 'text-amber-600',
-    badge: 'bg-amber-100 text-amber-700',
+    bg: 'bg-[#fdba32]/15',
+    border: 'border-[#fdba32]/40',
+    icon: 'text-[#b8860b]',
+    badge: 'bg-[#fdba32]/25 text-[#b8860b]',
   },
   bad: {
-    bg: 'bg-red-50',
-    border: 'border-red-200',
-    icon: 'text-red-600',
-    badge: 'bg-red-100 text-red-700',
+    bg: 'bg-[#fd966f]/15',
+    border: 'border-[#fd966f]/40',
+    icon: 'text-[#c45c3e]',
+    badge: 'bg-[#fd966f]/25 text-[#c45c3e]',
   },
 };
 

@@ -23,22 +23,22 @@ interface Tab {
 
 const colorClasses = {
   red: {
-    active: 'bg-red-500 text-white shadow-sm',
-    container: 'bg-red-50 border-red-200',
-    text: 'text-red-900',
-    badge: 'bg-red-200 text-red-700',
+    active: 'bg-[#fd966f] text-white shadow-sm',
+    container: 'bg-[#fd966f]/15 border-[#fd966f]/40',
+    text: 'text-[#c45c3e]',
+    badge: 'bg-[#fd966f]/25 text-[#c45c3e]',
   },
   amber: {
-    active: 'bg-amber-500 text-white shadow-sm',
-    container: 'bg-amber-50 border-amber-200',
-    text: 'text-amber-900',
-    badge: 'bg-amber-200 text-amber-700',
+    active: 'bg-[#fdba32] text-white shadow-sm',
+    container: 'bg-[#fdba32]/15 border-[#fdba32]/40',
+    text: 'text-[#b8860b]',
+    badge: 'bg-[#fdba32]/25 text-[#b8860b]',
   },
   green: {
-    active: 'bg-green-500 text-white shadow-sm',
-    container: 'bg-green-50 border-green-200',
-    text: 'text-green-900',
-    badge: 'bg-green-200 text-green-700',
+    active: 'bg-[#14b8a6] text-white shadow-sm',
+    container: 'bg-[#14b8a6]/10 border-[#14b8a6]/30',
+    text: 'text-[#14b8a6]',
+    badge: 'bg-[#14b8a6]/25 text-[#14b8a6]',
   },
 };
 

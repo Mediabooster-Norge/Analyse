@@ -1,6 +1,7 @@
 'use client';
 
-import { Sparkles, CheckCircle2, AlertCircle, Lightbulb, TrendingUp } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Lightbulb, TrendingUp } from 'lucide-react';
+import { RocketIcon } from '../rocket-icon';
 import { Button } from '@/components/ui/button';
 import { ActionPlanTabs } from '@/components/features/dashboard';
 import type { DashboardAnalysisResult } from '@/types/dashboard';
@@ -24,7 +25,7 @@ export function AiTab({ result, fetchAISuggestion }: AiTabProps) {
           <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6 border-b border-neutral-100">
             <div className="min-w-0">
               <h3 className="inline-flex items-center gap-1.5 max-[400px]:gap-1.5 px-2 max-[400px]:px-2 min-[401px]:px-3 py-1 max-[400px]:py-1 min-[401px]:py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-[11px] max-[400px]:text-[10px] min-[401px]:text-xs sm:text-sm font-medium mb-1 max-[400px]:mb-1 min-[401px]:mb-2 sm:mb-3">
-                <Sparkles className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-neutral-600" />
+                <RocketIcon className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-neutral-600" />
                 AI-analyse
               </h3>
               <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs sm:text-sm text-neutral-600">AI-innsikter og anbefalinger</p>
@@ -61,9 +62,9 @@ export function AiTab({ result, fetchAISuggestion }: AiTabProps) {
                       <div
                         key={i}
                         className={`flex items-center gap-2 p-2 rounded-lg text-sm ${
-                          type === 'positive' ? 'bg-green-50 text-green-700' :
-                          type === 'negative' ? 'bg-amber-50 text-amber-700' :
-                          'bg-blue-50 text-blue-700'
+                          type === 'positive' ? 'bg-[#14b8a6]/10 text-[#14b8a6]' :
+                          type === 'negative' ? 'bg-[#fdba32]/15 text-[#b8860b]' :
+                          'bg-[#f5f3ff] text-[#6d28d9]'
                         }`}
                       >
                         {type === 'positive' ? (
@@ -85,7 +86,7 @@ export function AiTab({ result, fetchAISuggestion }: AiTabProps) {
                 <div className="flex items-center justify-between mb-3">
                   <h5 className="text-xs sm:text-sm font-medium text-neutral-700">Anbefalinger</h5>
                   <span className="text-[10px] sm:text-xs text-neutral-400 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />
+                    <RocketIcon className="w-3 h-3" />
                     Klikk for AI-forslag
                   </span>
                 </div>
@@ -107,20 +108,20 @@ export function AiTab({ result, fetchAISuggestion }: AiTabProps) {
                         <div className="flex items-center gap-2">
                           <span
                             className={`text-xs px-2 py-0.5 rounded font-medium ${
-                              rec.priority === 'high' ? 'bg-red-100 text-red-700' :
-                              rec.priority === 'medium' ? 'bg-amber-100 text-amber-700' :
-                              'bg-green-100 text-green-700'
+                              rec.priority === 'high' ? 'bg-[#fd966f]/25 text-[#c45c3e]' :
+                              rec.priority === 'medium' ? 'bg-[#fdba32]/25 text-[#b8860b]' :
+                              'bg-[#14b8a6]/15 text-[#14b8a6]'
                             }`}
                           >
                             {rec.priority === 'high' ? 'høy' : rec.priority === 'medium' ? 'medium' : 'lav'}
                           </span>
                           <span className="text-sm font-medium text-neutral-800">{rec.title}</span>
                         </div>
-                        <Sparkles className="w-4 h-4 text-neutral-300 group-hover:text-amber-500 transition-colors" />
+                        <RocketIcon className="w-4 h-4 text-neutral-300 group-hover:text-[#7c3aed] transition-colors" />
                       </div>
                       <p className="text-xs text-neutral-500">{rec.description}</p>
                       {rec.expectedImpact && (
-                        <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                        <p className="text-xs text-[#14b8a6] mt-1 flex items-center gap-1">
                           <TrendingUp className="w-3 h-3" />
                           {rec.expectedImpact}
                         </p>
@@ -140,7 +141,7 @@ export function AiTab({ result, fetchAISuggestion }: AiTabProps) {
       ) : (
         <div className="text-center py-12">
           <div className="w-16 h-16 bg-neutral-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <Sparkles className="h-8 w-8 text-neutral-400" />
+            <RocketIcon className="h-8 w-8 text-neutral-400" />
           </div>
           <h3 className="font-semibold text-neutral-900 mb-2">Ingen AI-analyse</h3>
           <p className="text-sm text-neutral-500 max-w-md mx-auto">

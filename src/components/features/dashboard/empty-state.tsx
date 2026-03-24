@@ -25,7 +25,7 @@ export function DashboardEmptyState({ isPremium, monthlyLimit, onStartAnalysis }
         <Button
           onClick={onStartAnalysis}
           size="lg"
-          className="bg-neutral-900 hover:bg-neutral-800 text-white shadow-sm hover:shadow transition-shadow w-full sm:w-auto min-w-[200px] h-11 sm:h-12 text-sm font-medium rounded-xl px-6"
+          className="bg-[#0f515a] hover:bg-[#0c4047] text-white shadow-sm hover:shadow transition-shadow w-full sm:w-auto min-w-[200px] h-11 sm:h-12 text-sm font-medium rounded-xl px-6"
         >
           <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
           {isPremium ? 'Start analyse' : 'Start din første analyse'}
@@ -35,15 +35,15 @@ export function DashboardEmptyState({ isPremium, monthlyLimit, onStartAnalysis }
         </p>
         <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-8 max-[400px]:mt-6 sm:mt-10 pt-8 sm:pt-10 border-t border-neutral-100">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-50 text-neutral-600 text-xs font-medium">
-            <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-[#14b8a6] shrink-0" />
             {isPremium ? 'Ubegrenset' : `${monthlyLimit} gratis/mnd`}
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-50 text-neutral-600 text-xs font-medium">
-            <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-[#14b8a6] shrink-0" />
             AI-analyse
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-50 text-neutral-600 text-xs font-medium">
-            <CheckCircle2 className="h-3.5 w-3.5 text-green-500 shrink-0" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-[#14b8a6] shrink-0" />
             Konkurrentsjekk
           </span>
         </div>

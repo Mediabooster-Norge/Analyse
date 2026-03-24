@@ -129,7 +129,7 @@ export async function analyzeSecurityHeadersSimple(
 }
 
 export function getObservatoryGradeColor(grade: string): string {
-  if (grade.startsWith('A')) return 'text-green-600';
+  if (grade.startsWith('A')) return 'text-[#14b8a6]';
   if (grade.startsWith('B')) return 'text-yellow-600';
   if (grade.startsWith('C')) return 'text-orange-600';
   return 'text-red-600';

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { runSeoTipsWorkflow } from '@/lib/agents/seo-tips-workflow';
+import { createClient } from '@/lib/supabase/server';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -23,6 +24,13 @@ interface SuggestionRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body: SuggestionRequest = await request.json();
     const { element, currentValue, status, issue, context } = body;
 

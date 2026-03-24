@@ -4,12 +4,54 @@ import { analyzeContent } from './content-analyzer';
 import { analyzeSecurity, analyzeSecurityQuick } from './security-analyzer';
 import { analyzePageSpeed } from '@/lib/services/pagespeed';
 import { estimatePerformanceFromScrape } from '@/lib/analyzers/quick-performance';
-import { generateAIAnalysis, generateKeywordResearch, KeywordData, checkAIVisibility, AIVisibilityData } from '@/lib/services/openai';
+import { generateAIAnalysis, generateKeywordResearch, KeywordData } from '@/lib/services/openai';
 import type { SEOResults, ContentResults, SecurityResults, AISummary, PageSpeedResults } from '@/types';
 
-// Feature flag: Disable AI visibility to reduce analysis time
-// Set to true when ready to enable AI visibility feature
-const AI_VISIBILITY_ENABLED = false;
+// AI visibility runs exclusively through the standalone /api/analyze/ai-visibility endpoint.
+// It is NOT part of the main analysis pipeline (runFullAnalysis / runCompetitorAnalysis).
+
+/**
+ * Calculates the weighted overall score from individual analyzer scores.
+ *
+ * With PageSpeed:    SEO 35% · Content 25% · Security 25% · Performance 15%
+ * Without PageSpeed: SEO 40% · Content 30% · Security 30%
+ */
+export function calculateOverallScore(
+  seoScore: number,
+  contentScore: number,
+  securityScore: number,
+  performanceScore?: number
+): number {
+  if (performanceScore !== undefined && performanceScore > 0) {
+    return Math.round(
+      seoScore * 0.35 +
+      contentScore * 0.25 +
+      securityScore * 0.25 +
+      performanceScore * 0.15
+    );
+  }
+  return Math.round(seoScore * 0.4 + contentScore * 0.3 + securityScore * 0.3);
+}
+
+/** Maximum number of competitor scrapes / analyses that run in parallel. */
+const MAX_COMPETITOR_CONCURRENCY = 3;
+
+/**
+ * Runs an array of async tasks with a maximum concurrency limit.
+ * Processes in sequential batches of `limit` rather than all at once.
+ */
+async function runWithConcurrencyLimit<T>(
+  tasks: Array<() => Promise<T>>,
+  limit: number
+): Promise<T[]> {
+  const results: T[] = [];
+  for (let i = 0; i < tasks.length; i += limit) {
+    const batch = tasks.slice(i, i + limit).map((t) => t());
+    const batchResults = await Promise.all(batch);
+    results.push(...batchResults);
+  }
+  return results;
+}
 
 export interface FullAnalysisResult {
   seoResults: SEOResults;
@@ -18,7 +60,6 @@ export interface FullAnalysisResult {
   pageSpeedResults?: PageSpeedResults;
   aiSummary: AISummary | null;
   keywordResearch?: KeywordData[];
-  aiVisibility?: AIVisibilityData;
   overallScore: number;
   tokensUsed: number;
   aiModel: string;
@@ -34,12 +75,9 @@ export async function runFullAnalysis(
     industry?: string;
     targetKeywords?: string[];
     companyName?: string;
-    checkAiVisibility?: boolean;
     isPremium?: boolean;
     /** Reuse existing security results (same domain = same security) */
     cachedSecurityResults?: SecurityResults;
-    /** Reuse existing AI visibility results (same domain = same visibility) */
-    cachedAiVisibility?: AIVisibilityData;
     /** Skip PageSpeed – brukes for første kall; hastighet hentes i eget API-kall etterpå */
     skipPageSpeed?: boolean;
   } = {}
@@ -52,10 +90,8 @@ export async function runFullAnalysis(
     industry,
     targetKeywords = [],
     companyName,
-    checkAiVisibility: shouldCheckVisibility = true,
     isPremium = false,
     cachedSecurityResults,
-    cachedAiVisibility,
   } = options;
 
   // Step 1: Scrape the URL
@@ -88,46 +124,24 @@ export async function runFullAnalysis(
   }
 
   // Step 3: Calculate overall score (now includes performance if available)
-  // Weight distribution: SEO 35%, Content 25%, Security 25%, Performance 15%
-  const performanceScore = pageSpeedResults?.performance ?? 0;
   const hasPageSpeed = pageSpeedResults && pageSpeedResults.performance > 0;
-  
-  const overallScore = hasPageSpeed
-    ? Math.round(
-        seoResults.score * 0.35 + 
-        contentResults.score * 0.25 + 
-        securityResults.score * 0.25 + 
-        performanceScore * 0.15
-      )
-    : Math.round(
-        seoResults.score * 0.4 + 
-        contentResults.score * 0.3 + 
-        securityResults.score * 0.3
-      );
+  const overallScore = calculateOverallScore(
+    seoResults.score,
+    contentResults.score,
+    securityResults.score,
+    hasPageSpeed ? pageSpeedResults.performance : undefined
+  );
 
-  // Step 4: Generate AI analysis, keyword research, and AI visibility check (if enabled)
+  // Step 4: Generate AI analysis and keyword research in parallel
   let aiSummary: AISummary | null = null;
   let keywordResearch: KeywordData[] | undefined;
-  let aiVisibility: AIVisibilityData | undefined;
   let tokensUsed = 0;
   let aiModel = 'none';
   let costUsd = 0;
 
-  // Extract domain for AI visibility check
-  const domain = new URL(url).hostname.replace('www.', '');
-
   if (includeAI) {
     console.log('Generating AI analysis...');
-    
-    // Use cached AI visibility if available (same domain = same visibility)
-    // AI_VISIBILITY_ENABLED flag controls whether this feature is active
-    const shouldRunVisibilityCheck = AI_VISIBILITY_ENABLED && shouldCheckVisibility && isPremium && !cachedAiVisibility;
-    if (cachedAiVisibility && AI_VISIBILITY_ENABLED) {
-      console.log(`[AI Visibility] Using cached results for domain: ${domain}`);
-    }
-    
-    // Run AI analysis, keyword research, and visibility check in parallel
-    const [aiResult, keywordResult, visibilityResult] = await Promise.all([
+    const [aiResult, keywordResult] = await Promise.all([
       generateAIAnalysis(
         {
           url,
@@ -143,15 +157,10 @@ export async function runFullAnalysis(
         console.error('AI analysis failed:', error);
         return null;
       }),
-      targetKeywords.length > 0 
+      // Keyword research only runs when the user explicitly supplied keywords.
+      targetKeywords.length > 0
         ? generateKeywordResearch(targetKeywords, industry).catch(error => {
             console.error('Keyword research failed:', error);
-            return null;
-          })
-        : Promise.resolve(null),
-      shouldRunVisibilityCheck
-        ? checkAIVisibility(domain, companyName, targetKeywords).catch(error => {
-            console.error('AI visibility check failed:', error);
             return null;
           })
         : Promise.resolve(null),
@@ -169,34 +178,6 @@ export async function runFullAnalysis(
       tokensUsed += keywordResult.tokensUsed;
       costUsd += keywordResult.costUsd;
     }
-    
-    // Use cached AI visibility or new result
-    if (cachedAiVisibility) {
-      aiVisibility = cachedAiVisibility;
-    } else if (visibilityResult) {
-      aiVisibility = visibilityResult.visibility;
-      tokensUsed += visibilityResult.tokensUsed;
-      costUsd += visibilityResult.costUsd;
-    }
-
-    // Premium: hvis bruker ikke oppga nøkkelord, hent CPC/søkevolum for AI-forslåtte nøkkelord
-    if (isPremium && !keywordResearch && aiSummary?.keywordAnalysis) {
-      const primary = aiSummary.keywordAnalysis.primaryKeywords || [];
-      const missing = aiSummary.keywordAnalysis.missingKeywords || [];
-      const aiKeywords = [...primary, ...missing].slice(0, 20);
-      if (aiKeywords.length > 0) {
-        try {
-          const fallbackKeywordResult = await generateKeywordResearch(aiKeywords, industry);
-          if (fallbackKeywordResult?.keywords?.length) {
-            keywordResearch = fallbackKeywordResult.keywords;
-            tokensUsed += fallbackKeywordResult.tokensUsed;
-            costUsd += fallbackKeywordResult.costUsd;
-          }
-        } catch (err) {
-          console.error('Premium fallback keyword research failed:', err);
-        }
-      }
-    }
   }
 
   return {
@@ -206,7 +187,6 @@ export async function runFullAnalysis(
     pageSpeedResults: pageSpeedResults ?? undefined,
     aiSummary,
     keywordResearch,
-    aiVisibility,
     overallScore,
     tokensUsed,
     aiModel,
@@ -226,14 +206,12 @@ export async function runCompetitorAnalysis(
     isPremium?: boolean;
     /** Reuse existing security results for main URL (same domain = same security) */
     cachedSecurityResults?: SecurityResults;
-    /** Reuse existing AI visibility results by domain */
-    cachedAiVisibilityByDomain?: Record<string, AIVisibilityData>;
   } = {}
 ): Promise<{
   mainResults: FullAnalysisResult;
   competitorResults: Array<{ url: string; results: FullAnalysisResult }>;
 }> {
-  const { includeAI = true, usePremiumAI = false, industry, targetKeywords = [], companyName, isPremium = false, cachedSecurityResults, cachedAiVisibilityByDomain = {} } = options;
+  const { includeAI = true, usePremiumAI = false, industry, targetKeywords = [], companyName, isPremium = false, cachedSecurityResults } = options;
   const hasCompetitors = competitorUrls.length > 0;
 
   // Step 1: Scrape main URL
@@ -266,34 +244,24 @@ export async function runCompetitorAnalysis(
   }
 
   // Calculate overall score (includes performance if available)
-  const mainPerformanceScore = mainPageSpeedResults?.performance ?? 0;
   const hasMainPageSpeed = mainPageSpeedResults && mainPageSpeedResults.performance > 0;
-  
-  const mainOverallScore = hasMainPageSpeed
-    ? Math.round(
-        mainSeoResults.score * 0.35 + 
-        mainContentResults.score * 0.25 + 
-        mainSecurityResults.score * 0.25 + 
-        mainPerformanceScore * 0.15
-      )
-    : Math.round(
-        mainSeoResults.score * 0.4 + 
-        mainContentResults.score * 0.3 + 
-        mainSecurityResults.score * 0.3
-      );
+  const mainOverallScore = calculateOverallScore(
+    mainSeoResults.score,
+    mainContentResults.score,
+    mainSecurityResults.score,
+    hasMainPageSpeed ? mainPageSpeedResults.performance : undefined
+  );
 
   // Step 3: Analyze competitors with full security scan for accurate comparison
   const competitorResults: Array<{ url: string; results: FullAnalysisResult }> = [];
   
   if (competitorUrls.length > 0) {
-    // Process all competitors in parallel for better performance
-    const competitorPromises = competitorUrls.map(async (competitorUrl) => {
+    // Process competitors with a concurrency cap to avoid overwhelming the server
+    const tasks = competitorUrls.map((competitorUrl) => async () => {
       console.log(`Analyzing competitor ${competitorUrl}...`);
-      
       try {
         const compScrapedData = await scrapeUrl(competitorUrl);
         const comp$ = parseHtml(compScrapedData.html);
-        
         // Use quick security + quick performance estimate for competitors (no PageSpeed API; fits 60s limit)
         const compPageSpeedResults = estimatePerformanceFromScrape({
           html: compScrapedData.html,
@@ -305,14 +273,12 @@ export async function runCompetitorAnalysis(
           Promise.resolve(analyzeContent(comp$)),
           analyzeSecurityQuick(competitorUrl, compScrapedData.headers),
         ]);
-
-        const compOverallScore = Math.round(
-          compSeoResults.score * 0.35 +
-          compContentResults.score * 0.25 +
-          compSecurityResults.score * 0.25 +
-          compPageSpeedResults.performance * 0.15
+        const compOverallScore = calculateOverallScore(
+          compSeoResults.score,
+          compContentResults.score,
+          compSecurityResults.score,
+          compPageSpeedResults.performance
         );
-
         return {
           url: competitorUrl,
           results: {
@@ -326,54 +292,26 @@ export async function runCompetitorAnalysis(
             aiModel: 'none',
             costUsd: 0,
           },
-        };
+        } as { url: string; results: FullAnalysisResult };
       } catch (error) {
         console.error(`Failed to analyze competitor ${competitorUrl}:`, error);
         return null;
       }
     });
-
-    const results = await Promise.all(competitorPromises);
+    const results = await runWithConcurrencyLimit(tasks, MAX_COMPETITOR_CONCURRENCY);
     competitorResults.push(...results.filter((r): r is NonNullable<typeof r> => r !== null));
   }
 
-  // Step 4: Generate AI analysis and keyword research with competitor comparison (optional; skip to stay under 60s)
+  // Step 4: Generate AI analysis and keyword research with competitor comparison
   let aiSummary: AISummary | null = null;
   let keywordResearch: KeywordData[] | undefined;
   let tokensUsed = 0;
   let aiModel = 'none';
   let costUsd = 0;
-  let aiVisibility: AIVisibilityData | undefined;
-  let competitorResultsWithVisibility = competitorResults.map((c) => ({ ...c, results: { ...c.results, aiVisibility: undefined as AIVisibilityData | undefined } }));
 
   if (includeAI) {
     console.log('Generating AI analysis with competitor comparison...');
-    const domain = new URL(mainUrl).hostname.replace('www.', '');
-    const mainCachedVisibility = AI_VISIBILITY_ENABLED
-      ? (cachedAiVisibilityByDomain[domain] || cachedAiVisibilityByDomain[domain.replace('www.', '')])
-      : undefined;
-    const shouldCheckMainVisibility = AI_VISIBILITY_ENABLED && isPremium && !mainCachedVisibility;
-
-    if (mainCachedVisibility && AI_VISIBILITY_ENABLED) {
-      console.log(`[AI Visibility] Using cached results for main domain: ${domain}`);
-    }
-
-    const competitorVisibilityPromises = (AI_VISIBILITY_ENABLED && isPremium)
-      ? competitorResults.map((c) => {
-          const compDomain = new URL(c.url).hostname.replace('www.', '');
-          const cachedVisibility = cachedAiVisibilityByDomain[compDomain] || cachedAiVisibilityByDomain[`www.${compDomain}`];
-          if (cachedVisibility) {
-            console.log(`[AI Visibility] Using cached results for competitor: ${compDomain}`);
-            return Promise.resolve({ visibility: cachedVisibility, tokensUsed: 0, costUsd: 0, cached: true });
-          }
-          return checkAIVisibility(compDomain, undefined, []).catch((err) => {
-            console.error(`AI visibility check failed for ${c.url}:`, err);
-            return null;
-          });
-        })
-      : [];
-
-    const allPromiseResults = await Promise.all([
+    const [aiResult, keywordResult] = await Promise.all([
       generateAIAnalysis(
         {
           url: mainUrl,
@@ -391,19 +329,11 @@ export async function runCompetitorAnalysis(
         },
         usePremiumAI
       ).catch(error => { console.error('AI analysis failed:', error); return null; }),
+      // Keyword research only runs when the user explicitly supplied keywords.
       targetKeywords.length > 0
         ? generateKeywordResearch(targetKeywords, industry).catch(error => { console.error('Keyword research failed:', error); return null; })
         : Promise.resolve(null),
-      shouldCheckMainVisibility
-        ? checkAIVisibility(domain, companyName, targetKeywords).catch(error => { console.error('AI visibility check failed:', error); return null; })
-        : Promise.resolve(null),
-      ...competitorVisibilityPromises,
     ]);
-
-    const aiResult = allPromiseResults[0];
-    const keywordResult = allPromiseResults[1];
-    const visibilityResult = allPromiseResults[2];
-    const competitorVisibilityResults = allPromiseResults.slice(3) as Array<{ visibility: AIVisibilityData; tokensUsed: number; costUsd: number; cached?: boolean } | null>;
 
     if (aiResult) {
       aiSummary = aiResult.summary;
@@ -416,40 +346,6 @@ export async function runCompetitorAnalysis(
       tokensUsed += keywordResult.tokensUsed;
       costUsd += keywordResult.costUsd;
     }
-    if (mainCachedVisibility) {
-      aiVisibility = mainCachedVisibility;
-    } else if (visibilityResult) {
-      aiVisibility = visibilityResult.visibility;
-      tokensUsed += visibilityResult.tokensUsed;
-      costUsd += visibilityResult.costUsd;
-    }
-
-    competitorResultsWithVisibility = competitorResults.map((c, i) => {
-      const vis = competitorVisibilityResults[i];
-      if (vis) {
-        tokensUsed += vis.tokensUsed;
-        costUsd += vis.costUsd;
-      }
-      return { ...c, results: { ...c.results, aiVisibility: vis?.visibility } };
-    });
-
-    if (isPremium && !keywordResearch && aiSummary?.keywordAnalysis) {
-      const primary = aiSummary.keywordAnalysis.primaryKeywords || [];
-      const missing = aiSummary.keywordAnalysis.missingKeywords || [];
-      const aiKeywords = [...primary, ...missing].slice(0, 20);
-      if (aiKeywords.length > 0) {
-        try {
-          const fallbackKeywordResult = await generateKeywordResearch(aiKeywords, industry);
-          if (fallbackKeywordResult?.keywords?.length) {
-            keywordResearch = fallbackKeywordResult.keywords;
-            tokensUsed += fallbackKeywordResult.tokensUsed;
-            costUsd += fallbackKeywordResult.costUsd;
-          }
-        } catch (err) {
-          console.error('Premium fallback keyword research failed:', err);
-        }
-      }
-    }
   }
 
   return {
@@ -460,13 +356,12 @@ export async function runCompetitorAnalysis(
       pageSpeedResults: mainPageSpeedResults ?? undefined,
       aiSummary,
       keywordResearch,
-      aiVisibility,
       overallScore: mainOverallScore,
       tokensUsed,
       aiModel,
       costUsd,
     },
-    competitorResults: competitorResultsWithVisibility,
+    competitorResults,
   };
 }
 
@@ -477,14 +372,11 @@ export async function analyzeCompetitorsOnly(
   const competitorResults: Array<{ url: string; results: FullAnalysisResult }> = [];
   
   if (competitorUrls.length > 0) {
-    // Process all competitors in parallel for better performance
-    const competitorPromises = competitorUrls.map(async (competitorUrl) => {
+    const tasks = competitorUrls.map((competitorUrl) => async () => {
       console.log(`Analyzing competitor ${competitorUrl}...`);
-      
       try {
         const compScrapedData = await scrapeUrl(competitorUrl);
         const comp$ = parseHtml(compScrapedData.html);
-        
         const compPageSpeedResults = estimatePerformanceFromScrape({
           html: compScrapedData.html,
           loadTimeMs: compScrapedData.loadTime,
@@ -495,14 +387,12 @@ export async function analyzeCompetitorsOnly(
           Promise.resolve(analyzeContent(comp$)),
           analyzeSecurityQuick(competitorUrl, compScrapedData.headers),
         ]);
-
-        const compOverallScore = Math.round(
-          compSeoResults.score * 0.35 +
-          compContentResults.score * 0.25 +
-          compSecurityResults.score * 0.25 +
-          compPageSpeedResults.performance * 0.15
+        const compOverallScore = calculateOverallScore(
+          compSeoResults.score,
+          compContentResults.score,
+          compSecurityResults.score,
+          compPageSpeedResults.performance
         );
-
         return {
           url: competitorUrl,
           results: {
@@ -516,14 +406,13 @@ export async function analyzeCompetitorsOnly(
             aiModel: 'none',
             costUsd: 0,
           },
-        };
+        } as { url: string; results: FullAnalysisResult };
       } catch (error) {
         console.error(`Failed to analyze competitor ${competitorUrl}:`, error);
         return null;
       }
     });
-
-    const results = await Promise.all(competitorPromises);
+    const results = await runWithConcurrencyLimit(tasks, MAX_COMPETITOR_CONCURRENCY);
     competitorResults.push(...results.filter((r): r is NonNullable<typeof r> => r !== null));
   }
 

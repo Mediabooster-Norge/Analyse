@@ -16,10 +16,10 @@ import {
   ExternalLink,
   CheckCircle2,
   AlertCircle,
-  Sparkles,
   TrendingUp,
   Zap,
 } from 'lucide-react';
+import { RocketIcon } from '../rocket-icon';
 
 // Feature flag: Set to true when AI visibility is ready
 export interface CompetitorsTabProps {
@@ -79,7 +79,7 @@ export function CompetitorsTab({
                 Rediger konkurrenter
               </h3>
               {!isPremium && (
-                <span className="px-2 py-0.5 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">
+                <span className="px-2 py-0.5 rounded-full bg-[#fdba32]/25 text-[#b8860b] text-xs font-medium">
                   {remainingCompetitorUpdates} oppdatering{remainingCompetitorUpdates !== 1 ? 'er' : ''} igjen
                 </span>
               )}
@@ -126,7 +126,7 @@ export function CompetitorsTab({
                 type="button"
                 onClick={addEditCompetitor}
                 disabled={editCompetitorUrls.length >= FREE_COMPETITOR_LIMIT || !editCompetitorInput.trim()}
-                className="h-11 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white"
+                className="h-11 px-4 rounded-xl bg-[#0f515a] hover:bg-[#0c4047] text-white"
               >
                 <Plus className="h-4 w-4 mr-1.5" />
                 Legg til
@@ -142,7 +142,7 @@ export function CompetitorsTab({
                   {editCompetitorUrls.map((competitor) => (
                     <span
                       key={competitor}
-                      className="px-3 py-1.5 rounded-full bg-white text-neutral-700 text-sm font-medium border border-neutral-200 cursor-pointer hover:bg-red-50 hover:border-red-200 hover:text-red-700 transition-colors group flex items-center gap-1.5"
+                      className="px-3 py-1.5 rounded-full bg-white text-neutral-700 text-sm font-medium border border-neutral-200 cursor-pointer hover:bg-[#fd966f]/15 hover:border-[#fd966f]/40 hover:text-[#c45c3e] transition-colors group flex items-center gap-1.5"
                       onClick={() => removeEditCompetitor(competitor)}
                     >
                       {new URL(competitor).hostname}
@@ -160,7 +160,7 @@ export function CompetitorsTab({
             <Button
               onClick={updateCompetitorAnalysis}
               disabled={updatingCompetitors || (!isPremium && remainingCompetitorUpdates <= 0)}
-              className="w-full rounded-xl bg-neutral-900 hover:bg-neutral-800"
+              className="w-full rounded-xl bg-[#0f515a] hover:bg-[#0c4047]"
             >
               {updatingCompetitors ? (
                 <>
@@ -218,18 +218,18 @@ export function CompetitorsTab({
               const isTied = diff === 0;
               
               return (
-                <div className={`flex items-center gap-3 p-4 rounded-xl ${isAhead ? 'bg-green-50 border border-green-200' : isTied ? 'bg-neutral-50 border border-neutral-200' : 'bg-amber-50 border border-amber-200'}`}>
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isAhead ? 'bg-green-100' : isTied ? 'bg-neutral-100' : 'bg-amber-100'}`}>
+                <div className={`flex items-center gap-3 p-4 rounded-xl ${isAhead ? 'bg-[#14b8a6]/10 border border-[#14b8a6]/30' : isTied ? 'bg-neutral-50 border border-neutral-200' : 'bg-[#fdba32]/15 border border-[#fdba32]/40'}`}>
+                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${isAhead ? 'bg-[#14b8a6]/15' : isTied ? 'bg-neutral-100' : 'bg-[#fdba32]/25'}`}>
                     {isAhead ? (
-                      <TrendingUp className={`w-5 h-5 text-green-600`} />
+                      <TrendingUp className={`w-5 h-5 text-[#14b8a6]`} />
                     ) : isTied ? (
                       <BarChart3 className={`w-5 h-5 text-neutral-600`} />
                     ) : (
-                      <TrendingUp className={`w-5 h-5 text-amber-600 rotate-180`} />
+                      <TrendingUp className={`w-5 h-5 text-[#b8860b] rotate-180`} />
                     )}
                   </div>
                   <div>
-                    <p className={`text-sm font-medium ${isAhead ? 'text-green-900' : isTied ? 'text-neutral-900' : 'text-amber-900'}`}>
+                    <p className={`text-sm font-medium ${isAhead ? 'text-[#14b8a6]' : isTied ? 'text-neutral-900' : 'text-[#b8860b]'}`}>
                       {isAhead 
                         ? `Du ligger ${diff} poeng over gjennomsnittet` 
                         : isTied 
@@ -237,7 +237,7 @@ export function CompetitorsTab({
                           : `Du ligger ${Math.abs(diff)} poeng under gjennomsnittet`
                       }
                     </p>
-                    <p className={`text-xs ${isAhead ? 'text-green-700' : isTied ? 'text-neutral-600' : 'text-amber-700'}`}>
+                    <p className={`text-xs ${isAhead ? 'text-[#14b8a6]' : isTied ? 'text-neutral-600' : 'text-[#b8860b]'}`}>
                       Din score: {result.overallScore} · Konkurrentsnitt: {avgTotal}
                     </p>
                   </div>
@@ -352,57 +352,57 @@ export function CompetitorsTab({
                     return allEntries.map((entry) => {
                       if (entry.type === 'user') {
                         return (
-                          <tr key="user" className="border-b border-neutral-100 bg-green-50/50 hover:bg-green-50 transition-colors group">
+                          <tr key="user" className="border-b border-neutral-100 bg-[#14b8a6]/10 hover:bg-[#14b8a6]/15 transition-colors group">
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-2">
-                                <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0">
-                                  <Globe className="h-4 w-4 text-green-600" />
+                                <div className="w-8 h-8 rounded-lg bg-[#14b8a6]/15 flex items-center justify-center shrink-0">
+                                  <Globe className="h-4 w-4 text-[#14b8a6]" />
                                 </div>
                                 <div className="min-w-0">
                                   <p className="font-medium text-neutral-900 truncate">{entry.name}</p>
-                                  <a href={entry.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:text-blue-600 hover:underline flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <a href={entry.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#14b8a6] hover:text-[#0d9488] hover:underline flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     Besøk <ExternalLink className="w-3 h-3" />
                                   </a>
                                 </div>
                               </div>
                             </td>
                             <td className="text-center py-3 px-3">
-                              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-green-100 text-green-700 font-bold text-sm">{entry.total}</span>
+                              <span className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[#14b8a6]/15 text-[#14b8a6] font-bold text-sm">{entry.total}</span>
                             </td>
                             <td className="text-center py-3 px-3">
                               <div className="flex flex-col items-center gap-1">
-                                <span className={`font-semibold ${entry.seo >= avgSeo ? 'text-green-600' : 'text-red-600'}`}>{entry.seo}</span>
+                                <span className={`font-semibold ${entry.seo >= avgSeo ? 'text-[#14b8a6]' : 'text-[#c45c3e]'}`}>{entry.seo}</span>
                                 <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
-                                  <div className={`h-full rounded-full ${entry.seo >= avgSeo ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${entry.seo}%` }} />
+                                  <div className={`h-full rounded-full ${entry.seo >= avgSeo ? 'bg-[#14b8a6]' : 'bg-[#fd966f]'}`} style={{ width: `${entry.seo}%` }} />
                                 </div>
                               </div>
                             </td>
                             <td className="text-center py-3 px-3">
                               <div className="flex flex-col items-center gap-1">
-                                <span className={`font-semibold ${entry.content >= avgContent ? 'text-green-600' : 'text-red-600'}`}>{entry.content}</span>
+                                <span className={`font-semibold ${entry.content >= avgContent ? 'text-[#14b8a6]' : 'text-[#c45c3e]'}`}>{entry.content}</span>
                                 {result.contentResults?.wordCount != null && <span className="text-[10px] text-neutral-500">{result.contentResults.wordCount.toLocaleString('nb-NO')} ord</span>}
                                 <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
-                                  <div className={`h-full rounded-full ${entry.content >= avgContent ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${entry.content}%` }} />
+                                  <div className={`h-full rounded-full ${entry.content >= avgContent ? 'bg-[#14b8a6]' : 'bg-[#fd966f]'}`} style={{ width: `${entry.content}%` }} />
                                 </div>
                               </div>
                             </td>
                             <td className="text-center py-3 px-3">
                               <div className="flex flex-col items-center gap-1">
-                                <span className={`font-semibold ${entry.security >= avgSecurity ? 'text-green-600' : 'text-red-600'}`}>{entry.security}</span>
+                                <span className={`font-semibold ${entry.security >= avgSecurity ? 'text-[#14b8a6]' : 'text-[#c45c3e]'}`}>{entry.security}</span>
                                 <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
-                                  <div className={`h-full rounded-full ${entry.security >= avgSecurity ? 'bg-green-500' : 'bg-red-500'}`} style={{ width: `${entry.security}%` }} />
+                                  <div className={`h-full rounded-full ${entry.security >= avgSecurity ? 'bg-[#14b8a6]' : 'bg-[#fd966f]'}`} style={{ width: `${entry.security}%` }} />
                                 </div>
                               </div>
                             </td>
                             <td className="text-center py-3 px-3">
                               {entry.speed != null ? (
                                 <div className="flex flex-col items-center gap-1">
-                                  <span className={`font-semibold ${entry.speed >= 50 ? 'text-green-600' : 'text-red-600'}`}>{entry.speed}</span>
+                                  <span className={`font-semibold ${entry.speed >= 50 ? 'text-[#14b8a6]' : 'text-[#c45c3e]'}`}>{entry.speed}</span>
                                   <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
-                                    <div className={`h-full rounded-full ${entry.speed >= 90 ? 'bg-green-500' : entry.speed >= 50 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${entry.speed}%` }} />
+                                    <div className={`h-full rounded-full ${entry.speed >= 90 ? 'bg-[#14b8a6]' : entry.speed >= 50 ? 'bg-[#fdba32]' : 'bg-[#fd966f]'}`} style={{ width: `${entry.speed}%` }} />
                                   </div>
                                   {!result.pageSpeedResults?.isEstimate && (
-                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-green-100 text-green-700 font-medium">PageSpeed</span>
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-[#14b8a6]/15 text-[#14b8a6] font-medium">PageSpeed</span>
                                   )}
                                 </div>
                               ) : (
@@ -425,20 +425,20 @@ export function CompetitorsTab({
                               </div>
                               <div className="min-w-0">
                                 <p className="font-medium text-neutral-700 truncate group-hover:text-neutral-900 transition-colors">{new URL(competitor.url).hostname}</p>
-                                <a href={competitor.url} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-500 hover:text-blue-600 hover:underline flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <a href={competitor.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#0f515a] hover:text-[#0c4047] hover:underline flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                   Besøk <ExternalLink className="w-3 h-3" />
                                 </a>
                               </div>
                             </div>
                           </td>
                           <td className="text-center py-3 px-3">
-                            <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm ${isWinning ? 'bg-red-100 text-red-700' : 'bg-neutral-100 text-neutral-600'}`}>
+                            <span className={`inline-flex items-center justify-center w-10 h-10 rounded-full font-bold text-sm ${isWinning ? 'bg-[#fd966f]/25 text-[#c45c3e]' : 'bg-neutral-100 text-neutral-600'}`}>
                               {competitor.results.overallScore}
                             </span>
                           </td>
                           <td className="text-center py-3 px-3">
                             <div className="flex flex-col items-center gap-1">
-                              <span className={`font-semibold ${competitor.results.seoResults.score > result.seoResults.score ? 'text-red-600' : 'text-neutral-600'}`}>{competitor.results.seoResults.score}</span>
+                              <span className={`font-semibold ${competitor.results.seoResults.score > result.seoResults.score ? 'text-[#c45c3e]' : 'text-neutral-600'}`}>{competitor.results.seoResults.score}</span>
                               <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
                                 <div className="h-full rounded-full bg-neutral-400" style={{ width: `${competitor.results.seoResults.score}%` }} />
                               </div>
@@ -446,7 +446,7 @@ export function CompetitorsTab({
                           </td>
                           <td className="text-center py-3 px-3">
                             <div className="flex flex-col items-center gap-1">
-                              <span className={`font-semibold ${competitor.results.contentResults.score > result.contentResults.score ? 'text-red-600' : 'text-neutral-600'}`}>{competitor.results.contentResults.score}</span>
+                              <span className={`font-semibold ${competitor.results.contentResults.score > result.contentResults.score ? 'text-[#c45c3e]' : 'text-neutral-600'}`}>{competitor.results.contentResults.score}</span>
                               {competitor.results.contentResults?.wordCount != null && <span className="text-[10px] text-neutral-500">{competitor.results.contentResults.wordCount.toLocaleString('nb-NO')} ord</span>}
                               <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
                                 <div className="h-full rounded-full bg-neutral-400" style={{ width: `${competitor.results.contentResults.score}%` }} />
@@ -455,7 +455,7 @@ export function CompetitorsTab({
                           </td>
                           <td className="text-center py-3 px-3">
                             <div className="flex flex-col items-center gap-1">
-                              <span className={`font-semibold ${competitor.results.securityResults.score > result.securityResults.score ? 'text-red-600' : 'text-neutral-600'}`}>{competitor.results.securityResults.score}</span>
+                              <span className={`font-semibold ${competitor.results.securityResults.score > result.securityResults.score ? 'text-[#c45c3e]' : 'text-neutral-600'}`}>{competitor.results.securityResults.score}</span>
                               <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
                                 <div className="h-full rounded-full bg-neutral-400" style={{ width: `${competitor.results.securityResults.score}%` }} />
                               </div>
@@ -464,7 +464,7 @@ export function CompetitorsTab({
                           <td className="text-center py-3 px-3">
                             {competitor.results.pageSpeedResults?.performance != null ? (
                               <div className="flex flex-col items-center gap-1">
-                                <span className={`font-semibold ${(competitor.results.pageSpeedResults?.performance ?? 0) > (result.pageSpeedResults?.performance ?? 0) ? 'text-red-600' : 'text-neutral-600'}`}>
+                                <span className={`font-semibold ${(competitor.results.pageSpeedResults?.performance ?? 0) > (result.pageSpeedResults?.performance ?? 0) ? 'text-[#c45c3e]' : 'text-neutral-600'}`}>
                                   {competitor.results.pageSpeedResults.performance}
                                 </span>
                                 <div className="w-full max-w-[60px] h-1.5 rounded-full bg-neutral-200 overflow-hidden">
@@ -491,8 +491,8 @@ export function CompetitorsTab({
             {result.aiSummary?.competitorComparison && (
               <>
                 <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
-                  <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-blue-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-                    <Sparkles className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-blue-600" />
+                  <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#f5f3ff] text-[#6d28d9] text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                    <RocketIcon className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-[#7c3aed]" />
                     AI-vurdering
                   </h5>
                   <p className="text-xs sm:text-sm text-neutral-700">{result.aiSummary.competitorComparison.summary}</p>
@@ -504,8 +504,8 @@ export function CompetitorsTab({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   {result.aiSummary.competitorComparison.yourStrengths.length > 0 && (
                     <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
-                      <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-green-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-                        <CheckCircle2 className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-green-600" />
+                      <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#14b8a6]/15 text-[#14b8a6] text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                        <CheckCircle2 className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-[#14b8a6]" />
                         Dine styrker
                       </h5>
                       <ul className="space-y-2">
@@ -517,8 +517,8 @@ export function CompetitorsTab({
                   )}
                   {result.aiSummary.competitorComparison.competitorStrengths.length > 0 && (
                     <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
-                      <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-red-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-                        <AlertCircle className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-red-600" />
+                      <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#fd966f]/20 text-[#c45c3e] text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                        <AlertCircle className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-[#c45c3e]" />
                         Konkurrentens styrker
                       </h5>
                       <ul className="space-y-2">
@@ -533,8 +533,8 @@ export function CompetitorsTab({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
                   {result.aiSummary.competitorComparison.opportunities.length > 0 && (
                     <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
-                      <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-amber-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-                        <TrendingUp className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-amber-600" />
+                      <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#fdba32]/25 text-[#b8860b] text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                        <TrendingUp className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-[#b8860b]" />
                         Muligheter
                       </h5>
                       <ul className="space-y-2">
@@ -546,8 +546,8 @@ export function CompetitorsTab({
                   )}
                   {result.aiSummary.competitorComparison.quickWins && result.aiSummary.competitorComparison.quickWins.length > 0 && (
                     <div className="p-4 sm:p-5 rounded-xl bg-white border border-neutral-200">
-                      <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-purple-100 text-neutral-900 text-xs sm:text-sm font-medium mb-3 sm:mb-4">
-                        <Zap className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-purple-600" />
+                      <h5 className="inline-flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full bg-[#f5f3ff] text-[#6d28d9] text-xs sm:text-sm font-medium mb-3 sm:mb-4">
+                      <Zap className="h-3.5 sm:h-4 w-3.5 sm:w-4 text-[#7c3aed]" />
                         Raske forbedringer
                       </h5>
                       <ul className="space-y-2">

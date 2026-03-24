@@ -19,12 +19,13 @@ const sizes = {
   xl: { ring: 120, stroke: 7, text: 'text-3xl', label: 'text-sm' },
 };
 
+/* 90+ tydelig grønn (best), 70+ teal, 50+ gul #fdba32, <50 #fd966f */
 function getScoreColor(score: number, neutral: boolean): string {
   if (neutral) return 'text-neutral-400';
-  if (score >= 90) return 'text-green-500';
-  if (score >= 70) return 'text-emerald-500';
-  if (score >= 50) return 'text-amber-500';
-  return 'text-red-500';
+  if (score >= 90) return 'text-[#14b8a6]';
+  if (score >= 70) return 'text-[#1a6b75]';
+  if (score >= 50) return 'text-[#fdba32]';
+  return 'text-[#fd966f]';
 }
 
 function getStatusLabel(score: number): string {
@@ -64,7 +65,7 @@ export function ScoreRing({
             fill="none"
             stroke="currentColor"
             strokeWidth={s.stroke}
-            className="text-neutral-100"
+            className="text-neutral-200"
           />
           {/* Progress circle */}
           <circle
@@ -81,7 +82,7 @@ export function ScoreRing({
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center">
-          <span className={`${s.text} font-semibold text-neutral-900`}>
+          <span className={`${s.text} font-semibold ${neutral ? 'text-neutral-900' : scoreColor}`}>
             {score}
           </span>
         </div>

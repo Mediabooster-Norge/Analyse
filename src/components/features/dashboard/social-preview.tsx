@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Facebook, Twitter, Linkedin, Globe, ImageOff, Sparkles, Info } from 'lucide-react';
+import { Facebook, Twitter, Linkedin, Globe, ImageOff, Info } from 'lucide-react';
+import { RocketIcon } from './rocket-icon';
 
 interface OGTags {
   title: string | null;
@@ -118,16 +119,16 @@ export function SocialPreview({ url, pageTitle, pageDescription, ogTags, onGetTi
     <div className="space-y-3">
       {/* Én linje: status + AI-tips */}
       <div className="flex items-center justify-between gap-2">
-        <span className={`text-xs ${allOgTagsSet ? 'text-green-700' : 'text-amber-700'}`}>
+        <span className={`text-xs ${allOgTagsSet ? 'text-[#14b8a6]' : 'text-[#b8860b]'}`}>
           {allOgTagsSet ? 'Tittel, beskrivelse og bilde er satt for deling' : `${missingTags.join(', ')} mangler for deling`}
         </span>
         {onGetTips && (
           <button
             onClick={onGetTips}
             type="button"
-            className="inline-flex items-center gap-1 px-2 py-1 max-[400px]:px-1.5 max-[400px]:py-1 min-[401px]:px-2.5 min-[401px]:py-1.5 rounded-md bg-amber-50 border border-amber-100 text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-amber-700 hover:bg-amber-100 cursor-pointer w-fit"
+            className="inline-flex items-center gap-1 px-2 py-1 max-[400px]:px-1.5 max-[400px]:py-1 min-[401px]:px-2.5 min-[401px]:py-1.5 rounded-md bg-[#f5f3ff] border border-[#ddd6fe] text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-[#6d28d9] hover:bg-[#ede9fe] cursor-pointer w-fit"
           >
-            <Sparkles className="w-3 h-3" />
+            <RocketIcon className="w-3 h-3" />
             Trykk her for AI-forslag til deling
           </button>
         )}
@@ -175,7 +176,7 @@ export function SocialPreview({ url, pageTitle, pageDescription, ogTags, onGetTi
         )}
       </div>
       {showInfo && missingTags.length > 0 && (
-        <p className="text-[11px] text-amber-700">
+        <p className="text-[11px] text-[#b8860b]">
           Mangler: {missingTags.join(', ')}. Legg dem i HTML-head for bedre deling.
         </p>
       )}

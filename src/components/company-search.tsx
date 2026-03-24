@@ -134,23 +134,23 @@ export function CompanySearch({ onSelect, onManualInput, initialValue = '', disa
 
       {/* Selected company badge */}
       {selectedCompany && (
-        <div className="mt-2 p-3 bg-green-50 border border-green-200 rounded-lg">
+        <div className="mt-2 p-3 bg-[#0f515a]/10 border border-[#0f515a]/30 rounded-lg">
           <div className="flex items-start justify-between">
             <div className="flex items-start gap-3">
-              <Building2 className="w-5 h-5 text-green-600 mt-0.5" />
+              <Building2 className="w-5 h-5 text-[#0f515a] mt-0.5" />
               <div>
-                <div className="font-medium text-green-900">{selectedCompany.name}</div>
-                <div className="text-sm text-green-700">
+                <div className="font-medium text-[#0f515a]">{selectedCompany.name}</div>
+                <div className="text-sm text-[#0f515a]">
                   Org.nr: {formatOrgNumber(selectedCompany.orgNumber)}
                 </div>
                 {selectedCompany.address && (
-                  <div className="text-sm text-green-600">
+                  <div className="text-sm text-[#0f515a]">
                     {selectedCompany.address}, {selectedCompany.postalCode} {selectedCompany.city}
                   </div>
                 )}
               </div>
             </div>
-            <Badge variant="secondary" className="bg-green-100 text-green-700">
+            <Badge variant="secondary" className="bg-[#0f515a]/15 text-[#0f515a]">
               Verifisert
             </Badge>
           </div>

@@ -65,9 +65,9 @@ function LoginPageContent() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {message && (
-            <Alert className="border-green-200 bg-green-50">
-              <CheckCircle2 className="h-4 w-4 text-green-600" />
-              <AlertDescription className="text-green-800">{message}</AlertDescription>
+            <Alert className="border-[#0f515a]/30 bg-[#0f515a]/10">
+              <CheckCircle2 className="h-4 w-4 text-[#0f515a]" />
+              <AlertDescription className="text-[#0f515a]">{message}</AlertDescription>
             </Alert>
           )}
           

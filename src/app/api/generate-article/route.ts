@@ -245,7 +245,7 @@ Returner JSON med article, metaTitle, metaDescription, featuredImageSuggestion o
 
     const { error: insertError } = await supabase
       .from('article_generations')
-      .insert({ user_id: user.id });
+      .insert({ user_id: user.id, type: 'article' });
 
     if (insertError) {
       console.error('article_generations insert error:', insertError);

@@ -42,6 +42,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
+import { getScoreBadge, getScoreColor as getScoreColorUtil } from '@/lib/utils/score-utils';
 import {
   ScoreRing,
   ActionPlanTabs,
@@ -168,27 +169,15 @@ function DashboardPageContent() {
 
   const analysisSteps = ANALYSIS_STEPS;
 
-  const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-neutral-900';
-    if (score >= 70) return 'text-neutral-800';
-    if (score >= 50) return 'text-neutral-700';
-    return 'text-neutral-500';
-  };
-
-  const getScoreBadge = (score: number) => {
-    if (score >= 90) return 'bg-green-50 text-green-700 border-green-200';
-    if (score >= 70) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    if (score >= 50) return 'bg-amber-50 text-amber-700 border-amber-200';
-    return 'bg-red-50 text-red-700 border-red-200';
-  };
+  const getScoreColor = getScoreColorUtil;
 
   const getTrendIcon = (score: number) => {
-    if (score >= 90) return <TrendingUp className="w-4 h-4 text-green-600" />;
-    if (score >= 70) return <TrendingUp className="w-4 h-4 text-emerald-600" />;
-    if (score >= 50) return <Minus className="w-4 h-4 text-amber-600" />;
-    return <TrendingDown className="w-4 h-4 text-red-600" />;
+    if (score >= 90) return <TrendingUp className="w-4 h-4 text-[#14b8a6]" />;
+    if (score >= 70) return <TrendingUp className="w-4 h-4 text-[#1a6b75]" />;
+    if (score >= 50) return <Minus className="w-4 h-4 text-[#fdba32]" />;
+    return <TrendingDown className="w-4 h-4 text-[#fd966f]" />;
   };
-  
+
   const getScoreLabel = (score: number) => {
     if (score >= 90) return 'Veldig bra';
     if (score >= 70) return 'Bra';
@@ -234,7 +223,7 @@ function DashboardPageContent() {
               {userName ? `Hei, ${userName}` : 'Dashboard'}
             </h1>
             {isPremium && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 text-[10px] sm:text-xs font-medium border border-amber-200/60">
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-[#fdba32]/25 text-[#b8860b] text-[10px] sm:text-xs font-medium border border-[#fdba32]/50">
                 <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 Premium
               </span>
@@ -250,7 +239,7 @@ function DashboardPageContent() {
             onOpenChange={setDialogOpen}
             trigger={
               <Button
-                className="bg-neutral-900 hover:bg-neutral-800 text-white w-full sm:w-auto text-sm max-[400px]:text-xs max-[400px]:h-9"
+                className="bg-[#0f515a] hover:bg-[#0c4047] text-white w-full sm:w-auto text-sm max-[400px]:text-xs max-[400px]:h-9"
                 disabled={!isPremium && remainingAnalyses === 0}
               >
                 <Plus className="mr-1.5 max-[400px]:mr-1 h-4 w-4 max-[400px]:h-3.5 max-[400px]:w-3.5" />
@@ -329,8 +318,8 @@ function DashboardPageContent() {
             </div>
             <div className="w-full max-w-xs mt-4">
               <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-neutral-900 rounded-full transition-all duration-500"
+                <div
+                  className="h-full bg-[#0f515a] rounded-full transition-all duration-500"
                   style={{ width: `${((analysisStep + 1) / analysisSteps.length) * 100}%` }}
                 />
               </div>
@@ -341,11 +330,11 @@ function DashboardPageContent() {
 
       {/* Monthly Usage – kun for gratis-brukere */}
       {!isPremium && remainingAnalyses === 0 ? (
-        <div className="rounded-2xl bg-gradient-to-r from-red-50 to-orange-50 border border-red-100 p-4 sm:p-5">
+        <div className="rounded-2xl bg-gradient-to-r from-[#fd966f]/20 to-[#fdba32]/15 border border-[#fd966f]/40 p-4 sm:p-5">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
-              <div className="w-10 sm:w-12 h-10 sm:h-12 bg-red-100 rounded-xl flex items-center justify-center shrink-0">
-                <AlertCircle className="w-5 sm:w-6 h-5 sm:h-6 text-red-600" />
+              <div className="w-10 sm:w-12 h-10 sm:h-12 bg-[#fd966f]/30 rounded-xl flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 sm:w-6 h-5 sm:h-6 text-[#c45c3e]" />
               </div>
               <div>
                 <h3 className="font-semibold text-neutral-900 text-sm sm:text-base">Analyser brukt opp</h3>
@@ -355,18 +344,18 @@ function DashboardPageContent() {
                 <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3 mt-2">
                   <span className="text-[10px] sm:text-xs text-neutral-500">Premium gir:</span>
                   <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600">
-                    <CheckCircle2 className="h-3 w-3 text-green-500" />Ubegrenset
+                    <CheckCircle2 className="h-3 w-3 text-[#0f515a]" />Ubegrenset
                   </span>
                   <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600">
-                    <CheckCircle2 className="h-3 w-3 text-green-500" />Flere konkurrenter
+                    <CheckCircle2 className="h-3 w-3 text-[#0f515a]" />Flere konkurrenter
                   </span>
                   <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600 hidden sm:inline-flex">
-                    <Clock className="h-3 w-3 text-violet-500" />AI-synlighet (snart)
+                    <Clock className="h-3 w-3 text-[#0f515a]" />AI-synlighet (snart)
                   </span>
                 </div>
               </div>
             </div>
-            <Button asChild className="bg-neutral-900 hover:bg-neutral-800 text-white w-full sm:w-auto">
+            <Button asChild className="bg-[#0f515a] hover:bg-[#0c4047] text-white w-full sm:w-auto">
               <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
                 Oppgrader til Premium
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -379,7 +368,7 @@ function DashboardPageContent() {
           <span className="text-xs font-medium text-neutral-700">{remainingAnalyses} av {FREE_MONTHLY_LIMIT} igjen</span>
           <div className="flex-1 min-w-[80px] max-w-[120px] h-1.5 bg-neutral-200 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${remainingAnalyses <= 1 ? 'bg-amber-500' : 'bg-neutral-700'}`}
+              className={`h-full rounded-full transition-all ${remainingAnalyses <= 1 ? 'bg-[#fdba32]' : 'bg-[#0f515a]'}`}
               style={{ width: `${(remainingAnalyses / FREE_MONTHLY_LIMIT) * 100}%` }}
             />
           </div>

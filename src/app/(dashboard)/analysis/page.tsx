@@ -27,6 +27,7 @@ import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import { usePremium } from '@/hooks/usePremium';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { getScoreBadge } from '@/lib/utils/score-utils';
 import { AnalysisDialog } from '@/components/features/dashboard';
 import { ANALYSIS_STEPS } from '@/components/features/dashboard/analysis-steps';
 
@@ -162,6 +163,10 @@ export default function AnalysisPage() {
   }, []);
 
   const handleRerunAnalysis = async (analysis: Analysis) => {
+    toast.info('Kjører analyse på nytt', {
+      description: 'Dette bruker én månedlig analyse fra kvoten din.',
+      duration: 4000,
+    });
     setRerunningAnalysis({ id: analysis.id, url: analysis.url });
     try {
       const res = await fetch('/api/analyze', {
@@ -295,17 +300,10 @@ export default function AnalysisPage() {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 90) return 'text-neutral-900';
-    if (score >= 70) return 'text-neutral-800';
-    if (score >= 50) return 'text-neutral-700';
-    return 'text-neutral-500';
-  };
-
-  const getScoreBadge = (score: number) => {
-    if (score >= 90) return 'bg-green-50 text-green-700 border-green-200';
-    if (score >= 70) return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-    if (score >= 50) return 'bg-amber-50 text-amber-700 border-amber-200';
-    return 'bg-red-50 text-red-700 border-red-200';
+    if (score >= 90) return 'text-[#14b8a6]';
+    if (score >= 70) return 'text-[#1a6b75]';
+    if (score >= 50) return 'text-[#b8860b]';
+    return 'text-[#c45c3e]';
   };
 
   const formatDate = (dateString: string) => {
@@ -387,15 +385,15 @@ export default function AnalysisPage() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+              <div className="w-10 h-10 rounded-xl bg-[#fd966f]/25 flex items-center justify-center">
+                <AlertTriangle className="h-5 w-5 text-[#c45c3e]" />
               </div>
               <DialogTitle>Slett analyse</DialogTitle>
             </div>
             <DialogDescription className="text-left">
               Er du sikker på at du vil slette analysen for <strong>{deleteConfirm?.url}</strong>?
               {!isPremium && (
-                <span className="block mt-2 text-amber-600 font-medium">
+                <span className="block mt-2 text-[#b8860b] font-medium">
                   Merk: Du får ikke tilbake analysen din selv om du sletter.
                 </span>
               )}
@@ -412,7 +410,7 @@ export default function AnalysisPage() {
             </Button>
             <Button
               variant="destructive"
-              className="flex-1 rounded-xl bg-red-600 hover:bg-red-700"
+              className="flex-1 rounded-xl bg-[#fd966f] hover:bg-[#c45c3e]"
               onClick={() => deleteConfirm && handleDeleteAnalysis(deleteConfirm.id)}
               disabled={deleting}
             >
@@ -438,7 +436,7 @@ export default function AnalysisPage() {
           <h1 className="text-2xl font-semibold text-neutral-900">Analysehistorikk</h1>
           <p className="text-neutral-500">Oversikt over alle dine tidligere analyser</p>
         </div>
-        <Button asChild className="h-11 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white">
+        <Button asChild className="h-11 rounded-xl bg-[#0f515a] hover:bg-[#0c4047] text-white">
           <Link href="/dashboard?new=true">
             <Plus className="mr-2 h-4 w-4" />
             Ny analyse
@@ -457,7 +455,7 @@ export default function AnalysisPage() {
             <p className="text-neutral-500 text-center max-w-md mb-8">
               Start din første analyse for å se historikken din her.
             </p>
-            <Button asChild size="lg" className="rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white">
+            <Button asChild size="lg" className="rounded-xl bg-[#0f515a] hover:bg-[#0c4047] text-white">
               <Link href="/dashboard?new=true">
                 <Plus className="mr-2 h-5 w-5" />
                 Start din første analyse
@@ -475,14 +473,14 @@ export default function AnalysisPage() {
                 <div className="flex items-start sm:items-center gap-3 sm:gap-4 min-w-0">
                   {/* Score Circle */}
                   <div className={`w-12 h-12 sm:w-14 sm:h-14 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 ${
-                    analysis.overall_score >= 90 ? 'bg-green-50' :
-                    analysis.overall_score >= 70 ? 'bg-emerald-50' :
-                    analysis.overall_score >= 50 ? 'bg-amber-50' : 'bg-red-50'
+                    analysis.overall_score >= 90 ? 'bg-[#14b8a6]/25' :
+                    analysis.overall_score >= 70 ? 'bg-[#1a6b75]/30' :
+                    analysis.overall_score >= 50 ? 'bg-[#fdba32]/25' : 'bg-[#fd966f]/25'
                   }`}>
                     <span className={`text-lg sm:text-xl font-bold ${
-                      analysis.overall_score >= 90 ? 'text-green-600' :
-                      analysis.overall_score >= 70 ? 'text-emerald-600' :
-                      analysis.overall_score >= 50 ? 'text-amber-600' : 'text-red-600'
+                      analysis.overall_score >= 90 ? 'text-[#14b8a6]' :
+                      analysis.overall_score >= 70 ? 'text-[#1a6b75]' :
+                      analysis.overall_score >= 50 ? 'text-[#b8860b]' : 'text-[#c45c3e]'
                     }`}>
                       {analysis.overall_score}
                     </span>
@@ -530,6 +528,7 @@ export default function AnalysisPage() {
                     <Button
                       variant="outline"
                       size="sm"
+                      title="Bruker én månedlig analyse fra kvoten din"
                       className="h-9 sm:h-10 rounded-xl border-neutral-200 hover:bg-neutral-50 text-neutral-700 text-xs sm:text-sm"
                       disabled={rerunningAnalysis?.id === analysis.id}
                       onClick={() => handleRerunAnalysis(analysis)}
@@ -552,7 +551,7 @@ export default function AnalysisPage() {
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-9 sm:h-10 w-9 sm:w-10 p-0 rounded-xl border-neutral-200 hover:bg-red-50 hover:border-red-200 hover:text-red-600 text-neutral-400"
+                      className="h-9 sm:h-10 w-9 sm:w-10 p-0 rounded-xl border-neutral-200 hover:bg-[#fd966f]/15 hover:border-[#fd966f]/40 hover:text-[#c45c3e] text-neutral-400"
                       onClick={() => setDeleteConfirm({ id: analysis.id, url: analysis.url })}
                     >
                       <Trash2 className="h-3.5 sm:h-4 w-3.5 sm:w-4" />
@@ -601,7 +600,7 @@ export default function AnalysisPage() {
 
       {/* CTA: Premium-oppgradering for gratis, Kontakt Mediabooster for premium */}
       {analyses.length > 0 && (
-        <div className="rounded-2xl bg-neutral-900 p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="rounded-2xl bg-[#0f515a] p-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-white" />

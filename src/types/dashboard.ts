@@ -2,6 +2,10 @@
 // Dashboard-specific Types
 // ============================================================================
 
+// Import + re-export shared types so dashboard components can import from one place
+import type { AIVisibilityData, PageSpeedResults } from '@/types';
+export type { AIVisibilityData, PageSpeedResults };
+
 /**
  * AI Suggestion for individual SEO elements
  */
@@ -40,47 +44,6 @@ export interface KeywordResearchData {
   intent: 'informational' | 'commercial' | 'transactional' | 'navigational';
   difficulty: number;
   trend: 'stigende' | 'stabil' | 'synkende';
-}
-
-/**
- * AI Visibility result data
- */
-export interface AIVisibilityData {
-  score: number;
-  level: 'high' | 'medium' | 'low' | 'none';
-  description: string;
-  details: {
-    queriesTested: number;
-    timesCited: number;
-    timesMentioned: number;
-    queries: Array<{
-      query: string;
-      cited: boolean;
-      mentioned: boolean;
-      aiResponse?: string;
-    }>;
-  };
-  recommendations: string[];
-  /** ISO-dato for når sjekken ble kjørt (brukes for 24t-throttle i UI) */
-  checked_at?: string;
-}
-
-/**
- * PageSpeed/Performance results
- * When isEstimate is true, only performance and coreWebVitals.lcp (as TTFB) are meaningful; from quick estimate for competitors.
- */
-export interface PageSpeedResults {
-  performance: number;
-  accessibility: number;
-  bestPractices: number;
-  seo: number;
-  coreWebVitals: {
-    lcp: number; // Largest Contentful Paint (ms), or TTFB for estimates
-    fid: number; // First Input Delay / TBT (ms)
-    cls: number; // Cumulative Layout Shift
-  };
-  /** True when result is from quick estimate (competitors), not full PageSpeed API */
-  isEstimate?: boolean;
 }
 
 /**

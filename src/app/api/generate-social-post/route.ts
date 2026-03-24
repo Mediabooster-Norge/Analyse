@@ -284,7 +284,7 @@ Skriv ett ferdig innlegg for ${platformNorm} (lengde: ${length}, tone: ${tone}, 
 
     const { error: insertError } = await supabase
       .from('article_generations')
-      .insert({ user_id: user.id });
+      .insert({ user_id: user.id, type: 'social_post' });
 
     if (insertError) {
       console.error('generate-social-post: article_generations insert error', insertError);

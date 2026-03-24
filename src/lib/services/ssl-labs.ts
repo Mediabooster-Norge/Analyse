@@ -35,9 +35,10 @@ export async function analyzeSSL(url: string): Promise<SSLAnalysis> {
     
     console.log(`[SSL] Initial status: ${data.status}`);
 
-    // Poll until complete (max 120 seconds = 24 attempts * 5 seconds)
+    // Poll until complete (max 50 seconds = 10 attempts × 5 seconds)
+    // If still not ready, fall back to analyzeSSLDirect which is fast (<1s)
     let attempts = 0;
-    const maxAttempts = 24;
+    const maxAttempts = 10;
     
     while (data.status !== 'READY' && data.status !== 'ERROR' && attempts < maxAttempts) {
       console.log(`[SSL] Polling attempt ${attempts + 1}/${maxAttempts}, status: ${data.status}`);
@@ -53,6 +54,12 @@ export async function analyzeSSL(url: string): Promise<SSLAnalysis> {
     if (data.status === 'ERROR') {
       console.error('[SSL] API returned ERROR status');
       return getDefaultSSLResults('Error');
+    }
+
+    // If polling timed out without a READY result, fall back to the fast direct check
+    if (data.status !== 'READY') {
+      console.warn(`[SSL] Polling timed out after ${maxAttempts} attempts for ${hostname}. Falling back to direct SSL check.`);
+      return analyzeSSLDirect(url);
     }
     
     if (!data.endpoints || data.endpoints.length === 0) {
@@ -216,7 +223,7 @@ function buildSSLResult(
 }
 
 export function getSSLGradeColor(grade: string): string {
-  if (grade.startsWith('A')) return 'text-green-600';
+  if (grade.startsWith('A')) return 'text-[#14b8a6]';
   if (grade.startsWith('B')) return 'text-yellow-600';
   if (grade.startsWith('C')) return 'text-orange-600';
   return 'text-red-600';

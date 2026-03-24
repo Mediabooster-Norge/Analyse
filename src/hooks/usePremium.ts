@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { User } from '@supabase/supabase-js';
+import { PREMIUM_EMAILS, UNLIMITED_ARTICLE_EMAILS, FREE_MONTHLY_ANALYSIS_LIMIT } from '@/lib/constants/premium';
 
 interface PremiumStatus {
   isPremium: boolean;
@@ -12,16 +13,36 @@ interface PremiumStatus {
   loading: boolean;
 }
 
-// Premium emails for testing (before database is set up)
-const PREMIUM_EMAILS = ['web@mediabooster.no'];
+// Premium feature limits — defined before the hook so they can be referenced in initial state
+export const PREMIUM_LIMITS = {
+  free: {
+    monthlyAnalyses: FREE_MONTHLY_ANALYSIS_LIMIT,
+    competitors: 2,
+    keywords: 10,
+    keywordUpdates: 5,
+    competitorUpdates: 5,
+    aiVisibilityChecks: 1,
+    articleGenerationsPerMonth: 5,
+  },
+  premium: {
+    monthlyAnalyses: 999,
+    competitors: 5,
+    keywords: 50,
+    keywordUpdates: 999,
+    competitorUpdates: 999,
+    aiVisibilityChecks: 999,
+    articleGenerationsPerMonth: 30,
+  },
+};
 
-// Emails with unlimited article generations
-const UNLIMITED_ARTICLE_EMAILS = ['web@mediabooster.no'];
+export function getPremiumLimits(isPremium: boolean) {
+  return isPremium ? PREMIUM_LIMITS.premium : PREMIUM_LIMITS.free;
+}
 
 export function usePremium(): PremiumStatus {
   const [status, setStatus] = useState<PremiumStatus>({
     isPremium: false,
-    monthlyAnalysisLimit: 5,
+    monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT,
     articleGenerationsPerMonth: PREMIUM_LIMITS.free.articleGenerationsPerMonth,
     premiumExpiresAt: null,
     loading: true,
@@ -30,15 +51,14 @@ export function usePremium(): PremiumStatus {
   useEffect(() => {
     async function checkPremiumStatus() {
       const supabase = createClient();
-      
+
       try {
-        // Get current user
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           setStatus({
             isPremium: false,
-            monthlyAnalysisLimit: 5,
+            monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT,
             articleGenerationsPerMonth: PREMIUM_LIMITS.free.articleGenerationsPerMonth,
             premiumExpiresAt: null,
             loading: false,
@@ -46,7 +66,6 @@ export function usePremium(): PremiumStatus {
           return;
         }
 
-        // First check hardcoded premium emails (for testing)
         if (user.email && PREMIUM_EMAILS.includes(user.email)) {
           const hasUnlimitedArticles = UNLIMITED_ARTICLE_EMAILS.includes(user.email);
           setStatus({
@@ -59,15 +78,13 @@ export function usePremium(): PremiumStatus {
           return;
         }
 
-        // Try to get premium status from database
         const { data, error } = await supabase.rpc('get_user_premium_status');
-        
+
         if (error) {
-          // If function doesn't exist yet, fall back to email check
           console.warn('Premium status check failed, using fallback:', error.message);
           setStatus({
             isPremium: false,
-            monthlyAnalysisLimit: 5,
+            monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT,
             articleGenerationsPerMonth: PREMIUM_LIMITS.free.articleGenerationsPerMonth,
             premiumExpiresAt: null,
             loading: false,
@@ -80,15 +97,17 @@ export function usePremium(): PremiumStatus {
           const isPremium = profile.is_premium ?? false;
           setStatus({
             isPremium,
-            monthlyAnalysisLimit: profile.monthly_analysis_limit ?? 3,
-            articleGenerationsPerMonth: isPremium ? PREMIUM_LIMITS.premium.articleGenerationsPerMonth : PREMIUM_LIMITS.free.articleGenerationsPerMonth,
+            monthlyAnalysisLimit: profile.monthly_analysis_limit ?? FREE_MONTHLY_ANALYSIS_LIMIT,
+            articleGenerationsPerMonth: isPremium
+              ? PREMIUM_LIMITS.premium.articleGenerationsPerMonth
+              : PREMIUM_LIMITS.free.articleGenerationsPerMonth,
             premiumExpiresAt: profile.premium_expires_at ? new Date(profile.premium_expires_at) : null,
             loading: false,
           });
         } else {
           setStatus({
             isPremium: false,
-            monthlyAnalysisLimit: 5,
+            monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT,
             articleGenerationsPerMonth: PREMIUM_LIMITS.free.articleGenerationsPerMonth,
             premiumExpiresAt: null,
             loading: false,
@@ -98,7 +117,7 @@ export function usePremium(): PremiumStatus {
         console.error('Error checking premium status:', error);
         setStatus({
           isPremium: false,
-          monthlyAnalysisLimit: 5,
+          monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT,
           articleGenerationsPerMonth: PREMIUM_LIMITS.free.articleGenerationsPerMonth,
           premiumExpiresAt: null,
           loading: false,
@@ -112,61 +131,34 @@ export function usePremium(): PremiumStatus {
   return status;
 }
 
-// Helper function to check premium status without hook (for server-side or one-time checks)
-export async function checkPremiumStatus(user: User | null): Promise<{
+// Helper for one-time client-side premium checks (e.g. in event handlers).
+// NOTE: client-side only — does NOT bypass RLS. Use getPremiumStatusServer() for server routes.
+export async function checkPremiumStatusClient(user: User | null): Promise<{
   isPremium: boolean;
   monthlyAnalysisLimit: number;
 }> {
   if (!user) {
-    return { isPremium: false, monthlyAnalysisLimit: 3 };
+    return { isPremium: false, monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT };
   }
 
-  // Check hardcoded premium emails first
   if (user.email && PREMIUM_EMAILS.includes(user.email)) {
     return { isPremium: true, monthlyAnalysisLimit: 999 };
   }
 
-  // Try database check
   const supabase = createClient();
-  
+
   try {
     const { data, error } = await supabase.rpc('get_user_premium_status');
-    
+
     if (error || !data || data.length === 0) {
-      return { isPremium: false, monthlyAnalysisLimit: 3 };
+      return { isPremium: false, monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT };
     }
 
     return {
       isPremium: data[0].is_premium ?? false,
-      monthlyAnalysisLimit: data[0].monthly_analysis_limit ?? 3,
+      monthlyAnalysisLimit: data[0].monthly_analysis_limit ?? FREE_MONTHLY_ANALYSIS_LIMIT,
     };
   } catch {
-    return { isPremium: false, monthlyAnalysisLimit: 3 };
+    return { isPremium: false, monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT };
   }
-}
-
-// Premium feature limits
-export const PREMIUM_LIMITS = {
-  free: {
-    monthlyAnalyses: 5,
-    competitors: 2,
-    keywords: 10, // Max nøkkelord per analyse
-    keywordUpdates: 5,
-    competitorUpdates: 5,
-    aiVisibilityChecks: 1,
-    articleGenerationsPerMonth: 5, // Full artikkelgenerering per måned (free)
-  },
-  premium: {
-    monthlyAnalyses: 999, // Unlimited
-    competitors: 5, // Quick performance estimate for competitors (no PageSpeed API) keeps within 60s
-    keywords: 50, // Max nøkkelord per analyse
-    keywordUpdates: 999, // Unlimited
-    competitorUpdates: 999, // Unlimited
-    aiVisibilityChecks: 999, // Premium: ubegrenset per måned
-    articleGenerationsPerMonth: 30, // Full artikkelgenerering per måned (premium)
-  },
-};
-
-export function getPremiumLimits(isPremium: boolean) {
-  return isPremium ? PREMIUM_LIMITS.premium : PREMIUM_LIMITS.free;
 }

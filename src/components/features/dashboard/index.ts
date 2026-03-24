@@ -11,3 +11,4 @@ export { AnalysisDialog, ANALYSIS_STEPS } from './analysis-dialog';
 export type { AnalysisStepConfig } from './analysis-dialog';
 export { ScoreTrendChart } from './score-trend-chart';
 export { SocialPreview } from './social-preview';
+export { RocketIcon } from './rocket-icon';

@@ -14,10 +14,10 @@ import type { DashboardAnalysisResult } from '@/types/dashboard';
 const colors = {
   // Score colors
   green: {
-    bg: '#f0fdf4',
-    border: '#86efac',
-    text: '#15803d',
-    light: '#dcfce7',
+    bg: '#e6f5f6',
+    border: '#0f515a',
+    text: '#0f515a',
+    light: '#ccebeb',
   },
   amber: {
     bg: '#fffbeb',

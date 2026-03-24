@@ -21,25 +21,8 @@ export interface UserProfile {
   updated_at: string;
 }
 
-export interface Company {
-  id: string;
-  user_id: string;
-  name: string;
-  website_url: string;
-  org_number: string | null;
-  phone: string | null;
-  industry: string | null;
-  employee_count: string | null;
-  contact_person: string | null;
-  address: string | null;
-  postal_code: string | null;
-  city: string | null;
-  created_at: string;
-}
-
 export interface Analysis {
   id: string;
-  company_id: string;
   status: AnalysisStatus;
   seo_results: SEOResults | null;
   content_results: ContentResults | null;
@@ -246,17 +229,21 @@ export interface ObservatoryAnalysis {
   }[];
 }
 
+/**
+ * PageSpeed/Performance results.
+ * When isEstimate is true, only `performance` and `coreWebVitals.lcp` (as TTFB) are meaningful.
+ */
 export interface PageSpeedResults {
   performance: number;
   accessibility: number;
   bestPractices: number;
   seo: number;
   coreWebVitals: {
-    lcp: number;
-    fid: number;
-    cls: number;
+    lcp: number; // Largest Contentful Paint (ms), or TTFB for estimates
+    fid: number; // First Input Delay / TBT (ms)
+    cls: number; // Cumulative Layout Shift
   };
-  /** True when from quick estimate (competitors), not full PageSpeed API */
+  /** True when result is from quick estimate (competitors), not full PageSpeed API */
   isEstimate?: boolean;
 }
 
@@ -315,7 +302,7 @@ export interface AISummary {
   };
 }
 
-export interface AIVisibilityResult {
+export interface AIVisibilityData {
   score: number;
   level: 'high' | 'medium' | 'low' | 'none';
   description: string;
@@ -331,6 +318,8 @@ export interface AIVisibilityResult {
     }>;
   };
   recommendations: string[];
+  /** ISO timestamp for when the check was run (used for 24h throttle in the UI) */
+  checked_at?: string;
 }
 
 // ============================================================================

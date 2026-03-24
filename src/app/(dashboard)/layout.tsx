@@ -51,10 +51,10 @@ export default function DashboardLayout({
   };
 
   const SidebarContent = () => (
-    <div className="flex h-full flex-col bg-white">
+    <div className="flex h-full flex-col bg-[#0c1d32]">
       {/* Logo */}
-      <Link href="/" className="flex items-center h-20 px-5 border-b border-neutral-100 hover:bg-neutral-50 transition-colors">
-        <img src="/logo.svg" alt="Booster" className="h-9 w-auto object-contain brightness-0" />
+      <Link href="/" className="flex items-center h-20 px-5 border-b border-white/10 hover:bg-white/5 transition-colors">
+        <img src="/logo.svg" alt="Booster" className="h-9 w-auto object-contain invert" />
       </Link>
 
       {/* Navigation */}
@@ -68,11 +68,11 @@ export default function DashboardLayout({
               className={cn(
                 'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all',
                 isActive
-                  ? 'bg-neutral-100 text-neutral-900'
-                  : 'text-neutral-500 hover:bg-neutral-50 hover:text-neutral-900'
+                  ? 'bg-white text-[#0c1d32]'
+                  : 'text-white/90 hover:bg-white/10 hover:text-white'
               )}
             >
-              <item.icon className="h-5 w-5" />
+              <item.icon className="h-5 w-5 shrink-0" />
               {item.name}
             </Link>
           );
@@ -80,18 +80,18 @@ export default function DashboardLayout({
       </nav>
 
       {/* User section */}
-      <div className="border-t border-neutral-100 p-4">
+      <div className="border-t border-white/10 p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-full justify-start gap-3 px-3 py-3 h-auto rounded-xl hover:bg-neutral-50">
+            <Button variant="ghost" className="w-full justify-start gap-3 px-3 py-3 h-auto rounded-xl text-white/90 hover:bg-white/10 hover:text-white">
               <Avatar className="h-9 w-9">
-                <AvatarFallback className="bg-neutral-100 text-neutral-700 text-sm font-semibold">
+                <AvatarFallback className="bg-white/20 text-white text-sm font-semibold">
                   U
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 text-left">
-                <p className="text-sm font-medium text-neutral-900">Min konto</p>
-                <p className="text-xs text-neutral-400">Administrer profil</p>
+                <p className="text-sm font-medium text-white">Min konto</p>
+                <p className="text-xs text-white/60">Administrer profil</p>
               </div>
             </Button>
           </DropdownMenuTrigger>
@@ -137,7 +137,7 @@ export default function DashboardLayout({
 
       <div className="flex">
         {/* Desktop sidebar */}
-        <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 border-r border-neutral-100 bg-white">
+        <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 border-r border-white/10 bg-[#0c1d32]">
           <SidebarContent />
         </aside>
 

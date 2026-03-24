@@ -20,14 +20,13 @@ import {
   Lock,
   ArrowRight,
   CheckCircle2,
-  Lightbulb,
   Search,
   X,
   Loader2,
-  Sparkles,
   Clock,
   Bell,
 } from 'lucide-react';
+import { RocketIcon } from '../rocket-icon';
 
 function getHostname(url: string): string {
   try {
@@ -121,7 +120,7 @@ function AiResponseText({ text, className }: { text: string; className?: string 
             href={seg.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-700 hover:underline break-all"
+            className="text-[#0f515a] hover:text-[#0c4047] hover:underline break-all"
           >
             {seg.content}
           </a>
@@ -190,8 +189,8 @@ export function AiVisibilityTab({
         </div>
         <div className="p-4 max-[400px]:p-3 min-[401px]:p-5 sm:p-8">
           <div className="max-w-lg mx-auto text-center space-y-4 max-[400px]:space-y-4 min-[401px]:space-y-5 sm:space-y-6">
-            <div className="w-12 h-12 max-[400px]:w-10 max-[400px]:h-10 min-[401px]:w-12 min-[401px]:h-12 sm:w-14 sm:h-14 mx-auto rounded-xl bg-gradient-to-br from-violet-100 to-blue-100 flex items-center justify-center">
-              <Sparkles className="w-6 h-6 max-[400px]:w-5 max-[400px]:h-5 min-[401px]:w-6 sm:w-7 sm:h-7 text-violet-600" />
+            <div className="w-12 h-12 max-[400px]:w-10 max-[400px]:h-10 min-[401px]:w-12 min-[401px]:h-12 sm:w-14 sm:h-14 mx-auto rounded-xl bg-gradient-to-br from-[#f5f3ff] to-[#ddd6fe] flex items-center justify-center">
+              <RocketIcon className="w-6 h-6 max-[400px]:w-5 max-[400px]:h-5 min-[401px]:w-6 sm:w-7 sm:h-7 text-[#7c3aed]" />
             </div>
             
             <div className="space-y-1.5 max-[400px]:space-y-1.5">
@@ -203,22 +202,22 @@ export function AiVisibilityTab({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-[400px]:gap-2 min-[401px]:gap-4 pt-3 sm:pt-4">
               <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
-                <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-green-100 flex items-center justify-center">
-                  <Search className="w-5 h-5 text-green-600" />
+                <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-[#0f515a]/15 flex items-center justify-center">
+                  <Search className="w-5 h-5 text-[#0f515a]" />
                 </div>
                 <p className="text-sm font-medium text-neutral-900">AI-spørringer</p>
                 <p className="text-xs text-neutral-500 mt-1">Test om AI kjenner deg</p>
               </div>
               <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
-                <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-amber-100 flex items-center justify-center">
-                  <Lightbulb className="w-5 h-5 text-amber-600" />
+                <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-[#fdba32]/25 flex items-center justify-center">
+                  <RocketIcon className="w-5 h-5 text-[#b8860b]" />
                 </div>
                 <p className="text-sm font-medium text-neutral-900">Anbefalinger</p>
                 <p className="text-xs text-neutral-500 mt-1">Tips for bedre synlighet</p>
               </div>
               <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
-                <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-blue-100 flex items-center justify-center">
-                  <CheckCircle2 className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-[#14b8a6]/15 flex items-center justify-center">
+                  <CheckCircle2 className="w-5 h-5 text-[#14b8a6]" />
                 </div>
                 <p className="text-sm font-medium text-neutral-900">Score</p>
                 <p className="text-xs text-neutral-500 mt-1">Din AI-synlighet</p>
@@ -226,7 +225,7 @@ export function AiVisibilityTab({
             </div>
 
             <div className="pt-4">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-violet-50 border border-violet-100 text-violet-700 text-sm">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#f5f3ff] border border-[#ddd6fe] text-[#6d28d9] text-sm">
                 <Clock className="w-4 h-4" />
                 Forventet lansering: Snart
               </div>
@@ -282,7 +281,7 @@ export function AiVisibilityTab({
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg bg-white border border-neutral-200">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#0f515a] animate-pulse" />
                   <span className="text-xs sm:text-sm font-medium text-neutral-700 tabular-nums">
                     {Math.floor(aiVisibilityElapsedTime / 60)}:{(aiVisibilityElapsedTime % 60).toString().padStart(2, '0')}
                   </span>
@@ -322,7 +321,7 @@ export function AiVisibilityTab({
               <Button
                 onClick={onCheckAiVisibility}
                 disabled={checkingAiVisibility || throttled}
-                className="w-full sm:w-auto rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white disabled:opacity-70"
+                className="w-full sm:w-auto rounded-lg bg-[#0f515a] hover:bg-[#0c4047] text-white disabled:opacity-70"
               >
                 {checkingAiVisibility ? (
                   <>
@@ -355,14 +354,14 @@ export function AiVisibilityTab({
       <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 space-y-4 min-[401px]:space-y-6">
         {isPremium && checkingAiVisibility ? null : !isPremium ? (
           <div className="space-y-4 min-[401px]:space-y-6">
-            <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3 min-[401px]:p-4">
+            <div className="rounded-xl border border-[#fdba32]/40 bg-[#fdba32]/10 p-3 min-[401px]:p-4">
               <div className="flex items-start gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
-                  <Lock className="h-5 w-5 text-amber-600" />
+                <div className="w-10 h-10 rounded-xl bg-[#fdba32]/25 flex items-center justify-center shrink-0">
+                  <Lock className="h-5 w-5 text-[#b8860b]" />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-sm sm:text-base font-semibold text-amber-900">AI-synlighet er en Premium-funksjon</h4>
-                  <p className="text-xs sm:text-sm text-amber-800 mt-1">
+                  <h4 className="text-sm sm:text-base font-semibold text-[#b8860b]">AI-synlighet er en Premium-funksjon</h4>
+                  <p className="text-xs sm:text-sm text-neutral-700 mt-1">
                     Med Premium får du full rapport om hvordan AI-modeller ser og anbefaler bedriften din.
                   </p>
                 </div>
@@ -379,7 +378,7 @@ export function AiVisibilityTab({
             </div>
 
             <div className="pt-2">
-              <Button asChild className="w-full sm:w-auto rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white">
+              <Button asChild className="w-full sm:w-auto rounded-lg bg-[#0f515a] hover:bg-[#0c4047] text-white">
                 <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
                   Få Premium – AI-synlighet inkludert
                   <ArrowRight className="ml-2 h-4 w-4 inline" />
@@ -398,20 +397,20 @@ export function AiVisibilityTab({
                     <div
                       className={`w-32 h-32 mx-auto rounded-full flex items-center justify-center mb-4 ${
                         visData.level === 'high'
-                          ? 'bg-gradient-to-br from-green-100 to-green-200'
+                          ? 'bg-gradient-to-br from-[#14b8a6]/15 to-[#14b8a6]/25'
                           : visData.level === 'medium'
-                            ? 'bg-gradient-to-br from-amber-100 to-amber-200'
-                            : 'bg-gradient-to-br from-red-100 to-red-200'
+                            ? 'bg-gradient-to-br from-[#fdba32]/25 to-[#fdba32]/40'
+                            : 'bg-gradient-to-br from-[#fd966f]/25 to-[#fd966f]/40'
                       }`}
                     >
                       <div className="text-center">
                         <span
                           className={`text-4xl font-bold ${
                             visData.level === 'high'
-                              ? 'text-green-600'
+                              ? 'text-[#14b8a6]'
                               : visData.level === 'medium'
-                                ? 'text-amber-600'
-                                : 'text-red-600'
+                                ? 'text-[#b8860b]'
+                                : 'text-[#c45c3e]'
                           }`}
                         >
                           {visData.score}
@@ -422,10 +421,10 @@ export function AiVisibilityTab({
                     <h4
                       className={`font-semibold mb-1 ${
                         visData.level === 'high'
-                          ? 'text-green-700'
+                          ? 'text-[#14b8a6]'
                           : visData.level === 'medium'
-                            ? 'text-amber-700'
-                            : 'text-red-700'
+                            ? 'text-[#b8860b]'
+                            : 'text-[#c45c3e]'
                       }`}
                     >
                       {visData.level === 'high'
@@ -444,12 +443,12 @@ export function AiVisibilityTab({
                       <p className="text-2xl font-bold text-neutral-900">{visData.details.queriesTested}</p>
                       <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Testet</p>
                     </div>
-                    <div className="p-3 rounded-xl bg-green-50 text-center">
-                      <p className="text-2xl font-bold text-green-600">{visData.details.timesCited}</p>
+                    <div className="p-3 rounded-xl bg-[#14b8a6]/10 text-center">
+                      <p className="text-2xl font-bold text-[#14b8a6]">{visData.details.timesCited}</p>
                       <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Kjent</p>
                     </div>
-                    <div className="p-3 rounded-xl bg-amber-50 text-center">
-                      <p className="text-2xl font-bold text-amber-600">{visData.details.timesMentioned}</p>
+                    <div className="p-3 rounded-xl bg-[#fdba32]/15 text-center">
+                      <p className="text-2xl font-bold text-[#b8860b]">{visData.details.timesMentioned}</p>
                       <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Delvis</p>
                     </div>
                   </div>
@@ -457,24 +456,24 @@ export function AiVisibilityTab({
                   {visData.recommendations.length > 0 && (
                     <div className={`p-4 rounded-xl border ${
                       visData.level === 'high' 
-                        ? 'bg-green-50 border-green-100' 
-                        : 'bg-amber-50 border-amber-100'
+                        ? 'bg-[#14b8a6]/10 border-[#14b8a6]/30' 
+                        : 'bg-[#f5f3ff] border-[#ddd6fe]'
                     }`}>
                       <h5 className={`font-medium text-sm mb-3 flex items-center gap-2 ${
-                        visData.level === 'high' ? 'text-green-800' : 'text-amber-800'
+                        visData.level === 'high' ? 'text-[#14b8a6]' : 'text-[#6d28d9]'
                       }`}>
-                        <Lightbulb className="w-4 h-4" />
+                        <RocketIcon className="w-4 h-4" />
                         {visData.level === 'high' ? 'Tips for å holde deg på topp' : 'Forbedringer'}
                       </h5>
                       <ul className="space-y-2">
                         {visData.recommendations.map((rec, i) => (
                           <li key={i} className={`text-xs flex items-start gap-2 ${
-                            visData.level === 'high' ? 'text-green-700' : 'text-amber-700'
+                            visData.level === 'high' ? 'text-[#14b8a6]' : 'text-[#6d28d9]'
                           }`}>
                             <span className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-[10px] font-medium mt-0.5 ${
                               visData.level === 'high' 
-                                ? 'bg-green-200 text-green-800' 
-                                : 'bg-amber-200 text-amber-800'
+                                ? 'bg-[#14b8a6]/25 text-[#14b8a6]' 
+                                : 'bg-[#ddd6fe] text-[#6d28d9]'
                             }`}>
                               {i + 1}
                             </span>
@@ -505,9 +504,9 @@ export function AiVisibilityTab({
                         value={`q-${i}`}
                         className={`rounded-xl border overflow-hidden ${
                           q.cited
-                            ? 'bg-green-50/30 border-green-200'
+                            ? 'bg-[#14b8a6]/10 border-[#14b8a6]/30'
                             : q.mentioned
-                              ? 'bg-blue-50/30 border-blue-200'
+                              ? 'bg-[#f5f3ff] border-[#ddd6fe]'
                               : 'bg-neutral-50/50 border-neutral-200'
                         }`}
                       >
@@ -518,7 +517,7 @@ export function AiVisibilityTab({
                             </p>
                             <span
                               className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full font-medium ${
-                                q.cited ? 'bg-green-100 text-green-700' : q.mentioned ? 'bg-blue-100 text-blue-700' : 'bg-neutral-200 text-neutral-600'
+                                q.cited ? 'bg-[#14b8a6]/15 text-[#14b8a6]' : q.mentioned ? 'bg-[#f5f3ff] text-[#6d28d9]' : 'bg-neutral-200 text-neutral-600'
                               }`}
                             >
                               {q.cited ? 'Kjent' : q.mentioned ? 'Delvis' : 'Ukjent'}
@@ -567,8 +566,8 @@ export function AiVisibilityTab({
               <div className="rounded-2xl border border-neutral-200 bg-gradient-to-b from-neutral-50/90 to-white overflow-hidden shadow-sm">
                 <div className="p-4 min-[401px]:p-5 sm:p-6">
                   <div className="flex items-start gap-3 mb-5">
-                    <div className="w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
-                      <Eye className="w-5 h-5 text-violet-600" />
+                    <div className="w-10 h-10 rounded-xl bg-[#f5f3ff] flex items-center justify-center shrink-0">
+                      <Eye className="w-5 h-5 text-[#7c3aed]" />
                     </div>
                     <div>
                       <h4 className="text-sm font-semibold text-neutral-900">
@@ -585,30 +584,30 @@ export function AiVisibilityTab({
                         key={i}
                         className={`flex items-start gap-3 p-3.5 sm:p-4 rounded-xl border transition-colors ${
                           factor.pass
-                            ? 'bg-green-50/90 border-green-100'
+                            ? 'bg-[#14b8a6]/10 border-[#14b8a6]/30'
                             : 'bg-white border-neutral-100 hover:border-neutral-200'
                         }`}
                       >
                         <div
                           className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${
-                            factor.pass ? 'bg-green-100' : 'bg-neutral-100'
+                            factor.pass ? 'bg-[#14b8a6]/15' : 'bg-neutral-100'
                           }`}
                         >
                           {factor.pass ? (
-                            <CheckCircle2 className="w-4 h-4 text-green-600" />
+                            <CheckCircle2 className="w-4 h-4 text-[#14b8a6]" />
                           ) : (
                             <X className="w-4 h-4 text-neutral-400" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <span className={`text-sm font-medium block ${factor.pass ? 'text-green-800' : 'text-neutral-700'}`}>
+                          <span className={`text-sm font-medium block ${factor.pass ? 'text-[#14b8a6]' : 'text-neutral-700'}`}>
                             {factor.name}
                           </span>
                           {!factor.pass && (
                             <p className="text-xs text-neutral-500 mt-1 leading-snug">{factor.tip}</p>
                           )}
                           {factor.pass && (
-                            <span className="inline-block mt-1.5 text-[10px] font-medium uppercase tracking-wide text-green-600">
+                            <span className="inline-block mt-1.5 text-[10px] font-medium uppercase tracking-wide text-[#14b8a6]">
                               OK
                             </span>
                           )}

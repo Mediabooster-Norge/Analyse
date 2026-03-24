@@ -222,7 +222,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <Button onClick={handleSave} disabled={saving} className="bg-neutral-900 hover:bg-neutral-800 text-white">
+            <Button onClick={handleSave} disabled={saving} className="bg-[#0f515a] hover:bg-[#0c4047] text-white">
               {saving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -244,7 +244,7 @@ export default function SettingsPage() {
         <div className={`p-6 border-b ${isPremium ? 'border-neutral-100' : 'border-neutral-100'}`}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isPremium ? 'bg-neutral-900 text-white' : 'bg-neutral-100'}`}>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${isPremium ? 'bg-[#0f515a] text-white' : 'bg-neutral-100'}`}>
                 <Crown className={`h-6 w-6 ${isPremium ? 'text-white' : 'text-neutral-700'}`} />
               </div>
               <div>
@@ -301,27 +301,27 @@ export default function SettingsPage() {
                 <h4 className="text-sm font-semibold text-neutral-700 mb-3">Dine Premium-fordeler</h4>
                 <div className="grid md:grid-cols-2 gap-2">
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
-                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-[#0f515a] shrink-0" />
                     <span className="text-sm text-neutral-700">Ubegrenset analyser</span>
                   </div>
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
-                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-[#0f515a] shrink-0" />
                     <span className="text-sm text-neutral-700">Opptil 5 konkurrenter</span>
                   </div>
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
-                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-[#0f515a] shrink-0" />
                     <span className="text-sm text-neutral-700">Opptil 50 nøkkelord</span>
                   </div>
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
-                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-[#0f515a] shrink-0" />
                     <span className="text-sm text-neutral-700">Ubegrenset oppdateringer</span>
                   </div>
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
-                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-[#0f515a] shrink-0" />
                     <span className="text-sm text-neutral-700">Analyser flere nettsider</span>
                   </div>
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
-                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 text-[#0f515a] shrink-0" />
                     <span className="text-sm text-neutral-700">Prioritert support</span>
                   </div>
                 </div>
@@ -360,7 +360,7 @@ export default function SettingsPage() {
                 </div>
                 <div className="w-full bg-neutral-200 rounded-full h-2">
                   <div 
-                    className={`h-2 rounded-full ${analysisCount >= limits.monthlyAnalyses ? 'bg-red-500' : 'bg-neutral-900'}`}
+                    className={`h-2 rounded-full ${analysisCount >= limits.monthlyAnalyses ? 'bg-[#fd966f]' : 'bg-[#0f515a]'}`}
                     style={{ width: `${Math.min((analysisCount / limits.monthlyAnalyses) * 100, 100)}%` }}
                   />
                 </div>
@@ -392,7 +392,7 @@ export default function SettingsPage() {
               </div>
 
               {/* Upgrade CTA */}
-              <div className="p-4 rounded-xl bg-gradient-to-r from-neutral-900 to-neutral-800 text-white">
+              <div className="p-4 rounded-xl bg-gradient-to-r from-[#0f515a] to-[#0c4047] text-white">
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-semibold mb-1">Oppgrader til Premium</h4>
@@ -474,7 +474,7 @@ export default function SettingsPage() {
             </div>
 
             {/* CTA */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-neutral-900 rounded-lg text-white">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-[#0f515a] rounded-lg text-white">
               <div>
                 <h3 className="font-semibold">Interessert i Premium?</h3>
                 <p className="text-sm text-neutral-300">

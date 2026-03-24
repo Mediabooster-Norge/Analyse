@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { getPremiumStatusServer } from '@/lib/premium-server';
 
 export const maxDuration = 60; // Kun eget domene (10 spørsmål)
@@ -342,11 +343,12 @@ async function getCachedPayload(
 }
 
 async function setCachedPayload(
-  supabase: Awaited<ReturnType<typeof createClient>>,
   domain: string,
   payload: AIVisibilityPayload
 ): Promise<void> {
-  await supabase.from('ai_visibility_cache').upsert(
+  // Uses service-role client so writes succeed even though RLS blocks authenticated users.
+  const adminClient = createAdminClient();
+  await adminClient.from('ai_visibility_cache').upsert(
     { domain, payload, checked_at: new Date().toISOString() },
     { onConflict: 'domain' }
   );
@@ -453,7 +455,7 @@ export async function POST(request: NextRequest) {
     let mainPayload = await getCachedPayload(supabase, mainDomain);
     if (!mainPayload) {
       mainPayload = await runOneVisibilityCheck(url, companyName, keywords);
-      await setCachedPayload(supabase, mainDomain, mainPayload);
+      await setCachedPayload(mainDomain, mainPayload);
     }
 
     if (mainPayload.details.queriesTested === 0) {

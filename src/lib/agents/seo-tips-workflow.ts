@@ -27,7 +27,7 @@ const SEOTipsOutputSchema = z.object({
 });
 
 const seoTipsAgent = new Agent({
-  name: 'My agent',
+  name: 'SEO Tips Agent',
   instructions: `Du er en ekspert på SEO og nettside-optimalisering for norske bedrifter. Du er en del av et analyseverktøy (Analyseverktøy) som analyserer nettsider. Når brukeren ber om «AI-tips» på ett enkelt element i dashboardet, får du den forespørselen og skal svare med strukturerte forslag som vises direkte i verktøyet.
 
 ## Din rolle

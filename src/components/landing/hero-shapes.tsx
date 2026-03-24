@@ -20,6 +20,15 @@ const BENTO_COLORS = {
   blue: 'rgb(191 219 254)',   // blue-200
 };
 
+/* Frankli-inspirert pastellpalett for hero på mørk teal bakgrunn */
+const HERO_DARK_PASTELS = {
+  purple: '#c4a7e7',
+  orange: '#f7b282',
+  green: '#a7e7c4',
+  rose: '#e7a7c4',
+  aqua: '#82f7e7',
+};
+
 /**
  * Dekorative abstrakte former i hero. Bruker samme fargepalett som Bento Grid, litt svakere.
  */
@@ -45,6 +54,53 @@ export function HeroShapes() {
       <div className="absolute top-[45%] left-[62%] -translate-x-1/2 -translate-y-1/2 w-48 h-48 sm:w-56 sm:h-56 md:w-64 md:h-64 sm:left-[65%] md:left-[68%]">
         <svg viewBox="0 0 100 100" className="w-full h-full" fill={BENTO_COLORS.violet}>
           <rect x="30" y="30" width="40" height="40" rx="5" transform="rotate(45 50 50)" opacity="0.9" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * Hero-former for mørk teal bakgrunn – Frankli-inspirert pastellpalett (buer, sirkler, blobs).
+ */
+export function HeroShapesDark() {
+  return (
+    <div className="decorative-shape absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
+      {/* Stor bue – lilla */}
+      <div className="absolute -top-10 left-[10%] w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96">
+        <svg viewBox="0 0 200 200" className="w-full h-full" fill={HERO_DARK_PASTELS.purple}>
+          <path d="M20 100 A90 90 0 0 1 180 100" opacity="0.85" />
+          <path d="M30 100 A80 80 0 0 1 170 100" opacity="0.6" />
+        </svg>
+      </div>
+      {/* Bue – myk oransje */}
+      <div className="absolute top-12 right-[5%] w-40 h-40 sm:w-52 sm:h-52 md:w-60 md:h-60">
+        <svg viewBox="0 0 200 200" className="w-full h-full" fill={HERO_DARK_PASTELS.orange}>
+          <path d="M10 120 A100 100 0 0 1 190 100" opacity="0.9" />
+        </svg>
+      </div>
+      {/* Rektangel avrundet – lys grønn */}
+      <div className="absolute top-[35%] left-[3%] w-24 h-24 sm:w-32 sm:h-32 md:w-40 md:h-40">
+        <svg viewBox="0 0 100 100" className="w-full h-full" fill={HERO_DARK_PASTELS.green}>
+          <rect x="10" y="10" width="80" height="80" rx="16" opacity="0.9" />
+        </svg>
+      </div>
+      {/* Sirkel – aqua/teal */}
+      <div className="absolute top-[20%] right-[18%] w-20 h-20 sm:w-28 sm:h-28 md:w-36 md:h-36">
+        <svg viewBox="0 0 100 100" className="w-full h-full" fill={HERO_DARK_PASTELS.aqua}>
+          <circle cx="50" cy="50" r="45" opacity="0.85" />
+        </svg>
+      </div>
+      {/* Blob – dusty rose */}
+      <div className="absolute bottom-[25%] right-[8%] w-36 h-36 sm:w-44 sm:h-44 md:w-52 md:h-52">
+        <svg viewBox="0 0 120 120" className="w-full h-full" fill={HERO_DARK_PASTELS.rose}>
+          <path d="M60 15 C90 20 105 45 100 70 C95 95 70 108 50 105 C25 100 10 75 15 50 C20 25 45 10 60 15 Z" opacity="0.85" />
+        </svg>
+      </div>
+      {/* Ekstra bue – grønn, nederst venstre */}
+      <div className="absolute bottom-[5%] left-[15%] w-32 h-32 sm:w-40 sm:h-40 opacity-80">
+        <svg viewBox="0 0 200 200" className="w-full h-full" fill={HERO_DARK_PASTELS.green}>
+          <path d="M20 180 A100 100 0 0 0 180 160" opacity="0.8" />
         </svg>
       </div>
     </div>
