@@ -846,7 +846,7 @@ export function OverviewTab({
 
       {/* Upgrade CTA - only for non-premium users */}
       {!isPremium && (
-        <div className="rounded-2xl bg-[#0f515a] p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="rounded-2xl bg-neutral-900 p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
               <Sparkles className="w-5 h-5 text-white" />

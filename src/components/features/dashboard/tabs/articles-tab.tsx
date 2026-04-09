@@ -472,7 +472,7 @@ export function ArticlesTab({
             </p>
             <div className="flex items-center gap-2 mt-2">
               <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-neutral-100">
-                <div className="w-1.5 h-1.5 rounded-full bg-[#0f515a] animate-pulse" />
+                <div className="w-1.5 h-1.5 rounded-full bg-neutral-900 animate-pulse" />
                 <span className="text-xs font-medium text-neutral-700 tabular-nums">
                   {Math.floor(articleGenElapsed / 60)}:{(articleGenElapsed % 60).toString().padStart(2, '0')}
                 </span>

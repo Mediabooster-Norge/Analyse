@@ -25,7 +25,7 @@ export function DashboardEmptyState({ isPremium, monthlyLimit, onStartAnalysis }
         <Button
           onClick={onStartAnalysis}
           size="lg"
-          className="bg-[#0f515a] hover:bg-[#0c4047] text-white shadow-sm hover:shadow transition-shadow w-full sm:w-auto min-w-[200px] h-11 sm:h-12 text-sm font-medium rounded-xl px-6"
+          className="bg-neutral-900 hover:bg-neutral-800 text-white shadow-sm hover:shadow transition-shadow w-full sm:w-auto min-w-[200px] h-11 sm:h-12 text-sm font-medium rounded-xl px-6"
         >
           <Plus className="mr-2 h-4 w-4 sm:h-5 sm:w-5" />
           {isPremium ? 'Start analyse' : 'Start din første analyse'}

@@ -436,7 +436,7 @@ export default function AnalysisPage() {
           <h1 className="text-2xl font-semibold text-neutral-900">Analysehistorikk</h1>
           <p className="text-neutral-500">Oversikt over alle dine tidligere analyser</p>
         </div>
-        <Button asChild className="h-11 rounded-xl bg-[#0f515a] hover:bg-[#0c4047] text-white">
+        <Button asChild className="h-11 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white">
           <Link href="/dashboard?new=true">
             <Plus className="mr-2 h-4 w-4" />
             Ny analyse
@@ -455,7 +455,7 @@ export default function AnalysisPage() {
             <p className="text-neutral-500 text-center max-w-md mb-8">
               Start din første analyse for å se historikken din her.
             </p>
-            <Button asChild size="lg" className="rounded-xl bg-[#0f515a] hover:bg-[#0c4047] text-white">
+            <Button asChild size="lg" className="rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white">
               <Link href="/dashboard?new=true">
                 <Plus className="mr-2 h-5 w-5" />
                 Start din første analyse
@@ -600,7 +600,7 @@ export default function AnalysisPage() {
 
       {/* CTA: Premium-oppgradering for gratis, Kontakt Mediabooster for premium */}
       {analyses.length > 0 && (
-        <div className="rounded-2xl bg-[#0f515a] p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+        <div className="rounded-2xl bg-neutral-900 p-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
               <BarChart3 className="w-5 h-5 text-white" />

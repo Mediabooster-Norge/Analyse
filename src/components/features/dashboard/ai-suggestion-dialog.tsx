@@ -309,7 +309,7 @@ export function AISuggestionDialog({
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 p-1.5 rounded text-xs text-[#0f515a] hover:text-[#0c4047] hover:bg-[#0f515a]/10 transition-colors truncate"
+                        className="flex items-center gap-1.5 p-1.5 rounded text-xs text-neutral-900 hover:text-neutral-800 hover:bg-neutral-900/10 transition-colors truncate"
                       >
                         <ExternalLink className="h-3 w-3 shrink-0" />
                         <span className="truncate">{url}</span>

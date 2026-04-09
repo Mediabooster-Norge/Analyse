@@ -15,8 +15,8 @@ const colors = {
   // Score colors
   green: {
     bg: '#e6f5f6',
-    border: '#0f515a',
-    text: '#0f515a',
+    border: '#171717',
+    text: '#171717',
     light: '#ccebeb',
   },
   amber: {

@@ -22,7 +22,6 @@ import {
   Settings,
   LogOut,
   Menu,
-  ChevronRight,
   FileText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -51,14 +50,14 @@ export default function DashboardLayout({
   };
 
   const SidebarContent = () => (
-    <div className="flex h-full flex-col bg-[#0c1d32]">
+    <div className="flex h-full flex-col bg-white">
       {/* Logo */}
-      <Link href="/" className="flex items-center h-20 px-5 border-b border-white/10 hover:bg-white/5 transition-colors">
-        <img src="/logo.svg" alt="Booster" className="h-9 w-auto object-contain invert" />
+      <Link href="/" className="flex items-center h-20 px-5 border-b border-neutral-200 hover:bg-neutral-50 transition-colors">
+        <img src="/logo.svg" alt="Booster" className="h-9 w-auto object-contain brightness-0" />
       </Link>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 space-y-1">
+      <nav className="flex-1 px-3 space-y-1 pt-2">
         {navigation.map((item) => {
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
@@ -66,13 +65,18 @@ export default function DashboardLayout({
               key={item.name}
               href={item.href}
               className={cn(
-                'flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all',
+                'group flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all',
                 isActive
-                  ? 'bg-white text-[#0c1d32]'
-                  : 'text-white/90 hover:bg-white/10 hover:text-white'
+                  ? 'bg-neutral-900 text-white shadow-sm'
+                  : 'text-neutral-700 hover:bg-neutral-100 hover:text-neutral-900'
               )}
             >
-              <item.icon className="h-5 w-5 shrink-0" />
+              <item.icon
+                className={cn(
+                  'h-5 w-5 shrink-0',
+                  isActive ? 'text-white' : 'text-neutral-500 group-hover:text-neutral-800'
+                )}
+              />
               {item.name}
             </Link>
           );
@@ -80,18 +84,21 @@ export default function DashboardLayout({
       </nav>
 
       {/* User section */}
-      <div className="border-t border-white/10 p-4">
+      <div className="border-t border-neutral-200 p-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="w-full justify-start gap-3 px-3 py-3 h-auto rounded-xl text-white/90 hover:bg-white/10 hover:text-white">
+            <Button
+              variant="ghost"
+              className="w-full justify-start gap-3 px-3 py-3 h-auto rounded-xl text-neutral-900 hover:bg-neutral-100 hover:text-neutral-900"
+            >
               <Avatar className="h-9 w-9">
-                <AvatarFallback className="bg-white/20 text-white text-sm font-semibold">
+                <AvatarFallback className="bg-neutral-200 text-neutral-700 text-sm font-semibold">
                   U
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 text-left">
-                <p className="text-sm font-medium text-white">Min konto</p>
-                <p className="text-xs text-white/60">Administrer profil</p>
+                <p className="text-sm font-medium text-neutral-900">Min konto</p>
+                <p className="text-xs text-neutral-500">Administrer profil</p>
               </div>
             </Button>
           </DropdownMenuTrigger>
@@ -137,7 +144,7 @@ export default function DashboardLayout({
 
       <div className="flex">
         {/* Desktop sidebar */}
-        <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 border-r border-white/10 bg-[#0c1d32]">
+        <aside className="hidden lg:flex lg:w-64 lg:flex-col lg:fixed lg:inset-y-0 border-r border-neutral-200 bg-white">
           <SidebarContent />
         </aside>
 

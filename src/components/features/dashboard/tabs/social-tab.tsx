@@ -240,7 +240,7 @@ export function SocialTab({
                   onClick={() => setSelectedSocialPlatform(opt.value)}
                   className={`rounded-lg text-xs px-3 py-2 font-medium transition-colors ${
                     selectedSocialPlatform === opt.value
-                      ? 'bg-[#0f515a] text-white'
+                      ? 'bg-neutral-900 text-white'
                       : 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
                   }`}
                 >
@@ -266,7 +266,7 @@ export function SocialTab({
                 type="button"
                 onClick={() => fetchSocialPostSuggestions(false, selectedSocialPlatform)}
                 disabled={loadingSocialPostSuggestions}
-                className="rounded-lg text-xs bg-[#0f515a] hover:bg-[#0c4047] w-fit"
+                className="rounded-lg text-xs bg-neutral-900 hover:bg-neutral-800 w-fit"
               >
                 {loadingSocialPostSuggestions ? (
                   <>

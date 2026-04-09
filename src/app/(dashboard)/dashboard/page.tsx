@@ -239,7 +239,7 @@ function DashboardPageContent() {
             onOpenChange={setDialogOpen}
             trigger={
               <Button
-                className="bg-[#0f515a] hover:bg-[#0c4047] text-white w-full sm:w-auto text-sm max-[400px]:text-xs max-[400px]:h-9"
+                className="bg-neutral-900 hover:bg-neutral-800 text-white w-full sm:w-auto text-sm max-[400px]:text-xs max-[400px]:h-9"
                 disabled={!isPremium && remainingAnalyses === 0}
               >
                 <Plus className="mr-1.5 max-[400px]:mr-1 h-4 w-4 max-[400px]:h-3.5 max-[400px]:w-3.5" />
@@ -319,7 +319,7 @@ function DashboardPageContent() {
             <div className="w-full max-w-xs mt-4">
               <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-[#0f515a] rounded-full transition-all duration-500"
+                  className="h-full bg-neutral-900 rounded-full transition-all duration-500"
                   style={{ width: `${((analysisStep + 1) / analysisSteps.length) * 100}%` }}
                 />
               </div>
@@ -344,18 +344,18 @@ function DashboardPageContent() {
                 <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3 mt-2">
                   <span className="text-[10px] sm:text-xs text-neutral-500">Premium gir:</span>
                   <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600">
-                    <CheckCircle2 className="h-3 w-3 text-[#0f515a]" />Ubegrenset
+                    <CheckCircle2 className="h-3 w-3 text-neutral-900" />Ubegrenset
                   </span>
                   <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600">
-                    <CheckCircle2 className="h-3 w-3 text-[#0f515a]" />Flere konkurrenter
+                    <CheckCircle2 className="h-3 w-3 text-neutral-900" />Flere konkurrenter
                   </span>
                   <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600 hidden sm:inline-flex">
-                    <Clock className="h-3 w-3 text-[#0f515a]" />AI-synlighet (snart)
+                    <Clock className="h-3 w-3 text-neutral-900" />AI-synlighet (snart)
                   </span>
                 </div>
               </div>
             </div>
-            <Button asChild className="bg-[#0f515a] hover:bg-[#0c4047] text-white w-full sm:w-auto">
+            <Button asChild className="bg-neutral-900 hover:bg-neutral-800 text-white w-full sm:w-auto">
               <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
                 Oppgrader til Premium
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -368,7 +368,7 @@ function DashboardPageContent() {
           <span className="text-xs font-medium text-neutral-700">{remainingAnalyses} av {FREE_MONTHLY_LIMIT} igjen</span>
           <div className="flex-1 min-w-[80px] max-w-[120px] h-1.5 bg-neutral-200 rounded-full overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${remainingAnalyses <= 1 ? 'bg-amber-400' : 'bg-[#0f515a]'}`}
+              className={`h-full rounded-full transition-all ${remainingAnalyses <= 1 ? 'bg-amber-400' : 'bg-neutral-900'}`}
               style={{ width: `${(remainingAnalyses / FREE_MONTHLY_LIMIT) * 100}%` }}
             />
           </div>

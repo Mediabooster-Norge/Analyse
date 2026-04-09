@@ -119,7 +119,7 @@ export function KeywordsTab({
                 type="button"
                 onClick={addEditKeyword}
                 disabled={editKeywords.length >= FREE_KEYWORD_LIMIT || !editKeywordInput.trim()}
-                className="h-11 px-4 rounded-xl bg-[#0f515a] hover:bg-[#0c4047] text-white"
+                className="h-11 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white"
               >
                 <Plus className="h-4 w-4 mr-1.5" />
                 Legg til
@@ -153,7 +153,7 @@ export function KeywordsTab({
             <Button
               onClick={updateKeywordAnalysis}
               disabled={updatingKeywords || (!isPremium && remainingKeywordUpdates <= 0) || editKeywords.length === 0}
-              className="w-full rounded-xl bg-[#0f515a] hover:bg-[#0c4047]"
+              className="w-full rounded-xl bg-neutral-900 hover:bg-neutral-800"
             >
               {updatingKeywords ? (
                 <>
@@ -479,7 +479,7 @@ export function KeywordsTab({
                               kw.intent === 'transactional'
                                 ? 'bg-green-50'
                                 : kw.intent === 'commercial'
-                                  ? 'bg-[#0f515a]/15'
+                                  ? 'bg-neutral-900/10'
                                   : kw.intent === 'informational'
                                     ? 'bg-[#f5f3ff]'
                                     : 'bg-neutral-100'

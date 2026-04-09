@@ -126,7 +126,7 @@ export function CompetitorsTab({
                 type="button"
                 onClick={addEditCompetitor}
                 disabled={editCompetitorUrls.length >= FREE_COMPETITOR_LIMIT || !editCompetitorInput.trim()}
-                className="h-11 px-4 rounded-xl bg-[#0f515a] hover:bg-[#0c4047] text-white"
+                className="h-11 px-4 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white"
               >
                 <Plus className="h-4 w-4 mr-1.5" />
                 Legg til
@@ -160,7 +160,7 @@ export function CompetitorsTab({
             <Button
               onClick={updateCompetitorAnalysis}
               disabled={updatingCompetitors || (!isPremium && remainingCompetitorUpdates <= 0)}
-              className="w-full rounded-xl bg-[#0f515a] hover:bg-[#0c4047]"
+              className="w-full rounded-xl bg-neutral-900 hover:bg-neutral-800"
             >
               {updatingCompetitors ? (
                 <>
@@ -425,7 +425,7 @@ export function CompetitorsTab({
                               </div>
                               <div className="min-w-0">
                                 <p className="font-medium text-neutral-700 truncate group-hover:text-neutral-900 transition-colors">{new URL(competitor.url).hostname}</p>
-                                <a href={competitor.url} target="_blank" rel="noopener noreferrer" className="text-xs text-[#0f515a] hover:text-[#0c4047] hover:underline flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <a href={competitor.url} target="_blank" rel="noopener noreferrer" className="text-xs text-neutral-900 hover:text-neutral-800 hover:underline flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                   Besøk <ExternalLink className="w-3 h-3" />
                                 </a>
                               </div>

@@ -120,7 +120,7 @@ function AiResponseText({ text, className }: { text: string; className?: string 
             href={seg.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[#0f515a] hover:text-[#0c4047] hover:underline break-all"
+            className="text-neutral-900 hover:text-neutral-800 hover:underline break-all"
           >
             {seg.content}
           </a>
@@ -202,8 +202,8 @@ export function AiVisibilityTab({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-[400px]:gap-2 min-[401px]:gap-4 pt-3 sm:pt-4">
               <div className="p-4 rounded-xl bg-neutral-50 border border-neutral-100">
-                <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-[#0f515a]/15 flex items-center justify-center">
-                  <Search className="w-5 h-5 text-[#0f515a]" />
+                <div className="w-10 h-10 mx-auto mb-3 rounded-lg bg-neutral-900/10 flex items-center justify-center">
+                  <Search className="w-5 h-5 text-neutral-900" />
                 </div>
                 <p className="text-sm font-medium text-neutral-900">AI-spørringer</p>
                 <p className="text-xs text-neutral-500 mt-1">Test om AI kjenner deg</p>
@@ -281,7 +281,7 @@ export function AiVisibilityTab({
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 rounded-lg bg-white border border-neutral-200">
-                  <div className="w-1.5 h-1.5 rounded-full bg-[#0f515a] animate-pulse" />
+                  <div className="w-1.5 h-1.5 rounded-full bg-neutral-900 animate-pulse" />
                   <span className="text-xs sm:text-sm font-medium text-neutral-700 tabular-nums">
                     {Math.floor(aiVisibilityElapsedTime / 60)}:{(aiVisibilityElapsedTime % 60).toString().padStart(2, '0')}
                   </span>
@@ -321,7 +321,7 @@ export function AiVisibilityTab({
               <Button
                 onClick={onCheckAiVisibility}
                 disabled={checkingAiVisibility || throttled}
-                className="w-full sm:w-auto rounded-lg bg-[#0f515a] hover:bg-[#0c4047] text-white disabled:opacity-70"
+                className="w-full sm:w-auto rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white disabled:opacity-70"
               >
                 {checkingAiVisibility ? (
                   <>
@@ -378,7 +378,7 @@ export function AiVisibilityTab({
             </div>
 
             <div className="pt-2">
-              <Button asChild className="w-full sm:w-auto rounded-lg bg-[#0f515a] hover:bg-[#0c4047] text-white">
+              <Button asChild className="w-full sm:w-auto rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white">
                 <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
                   Få Premium – AI-synlighet inkludert
                   <ArrowRight className="ml-2 h-4 w-4 inline" />
