@@ -1,40 +1,100 @@
 'use client';
 
 import { Suspense, useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
+import { TooltipProvider } from '@/components/ui/tooltip';
+import { OverviewTab } from '@/components/features/dashboard/tabs';
+import type { DashboardAnalysisResult } from '@/types/dashboard';
 
 interface SharedAnalysis {
   id: string;
   websiteUrl: string | null;
   websiteName: string | null;
   overallScore: number;
-  seoResults: { score?: number } | null;
-  contentResults: { score?: number; wordCount?: number } | null;
-  securityResults: { score?: number } | null;
-  pageSpeedResults: { performance?: number } | null;
-  keywordResearch: Array<{ keyword: string }> | null;
-  competitorResults: Array<{ url: string; results?: { overallScore?: number } }> | null;
-  aiSummary: { overallAssessment?: string; keyFindings?: Array<string | { text?: string }> } | null;
-  aiVisibility: { score?: number } | null;
+  seoResults: Record<string, unknown> | null;
+  contentResults: Record<string, unknown> | null;
+  securityResults: Record<string, unknown> | null;
+  pageSpeedResults: Record<string, unknown> | null;
+  aiVisibility: DashboardAnalysisResult['aiVisibility'] | null;
   createdAt: string;
 }
 
-function normalizeKeyFindings(findings: Array<string | { text?: string }> | undefined) {
-  if (!findings || !Array.isArray(findings)) return [];
-  return findings
-    .map((finding) => {
-      if (typeof finding === 'string') return finding;
-      if (finding && typeof finding === 'object' && typeof finding.text === 'string') return finding.text;
-      return null;
-    })
-    .filter((value): value is string => Boolean(value && value.trim()));
+const defaultSeoResults: DashboardAnalysisResult['seoResults'] = {
+  score: 0,
+  meta: {
+    title: { content: null, length: 0, isOptimal: false },
+    description: { content: null, length: 0, isOptimal: false },
+    ogTags: { title: null, description: null, image: null },
+    canonical: null,
+  },
+  headings: { h1: { count: 0, contents: [] }, h2: { count: 0, contents: [] }, hasProperHierarchy: false },
+  images: { total: 0, withAlt: 0, withoutAlt: 0 },
+  links: { internal: { count: 0, urls: [] }, external: { count: 0 } },
+};
+
+const defaultSecurityResults: DashboardAnalysisResult['securityResults'] = {
+  score: 0,
+  ssl: { grade: 'Unknown', certificate: { daysUntilExpiry: null } },
+  headers: {
+    contentSecurityPolicy: false,
+    strictTransportSecurity: false,
+    xFrameOptions: false,
+    xContentTypeOptions: false,
+    referrerPolicy: false,
+    permissionsPolicy: false,
+    score: 0,
+  },
+  observatory: { grade: 'Unknown', score: 0 },
+};
+
+function mapSharedAnalysis(raw: SharedAnalysis): DashboardAnalysisResult {
+  const seoRaw = (raw.seoResults || {}) as Partial<DashboardAnalysisResult['seoResults']>;
+  const securityRaw = (raw.securityResults || {}) as Partial<DashboardAnalysisResult['securityResults']>;
+  const contentRaw = (raw.contentResults || {}) as Partial<DashboardAnalysisResult['contentResults']>;
+
+  return {
+    seoResults: {
+      score: seoRaw.score ?? 0,
+      meta: {
+        title: { ...defaultSeoResults.meta.title, ...(seoRaw.meta?.title || {}) },
+        description: { ...defaultSeoResults.meta.description, ...(seoRaw.meta?.description || {}) },
+        ogTags: { ...defaultSeoResults.meta.ogTags, ...(seoRaw.meta?.ogTags || {}) },
+        canonical: seoRaw.meta?.canonical ?? defaultSeoResults.meta.canonical,
+      },
+      headings: {
+        h1: { ...defaultSeoResults.headings.h1, ...(seoRaw.headings?.h1 || {}) },
+        h2: { ...defaultSeoResults.headings.h2, ...(seoRaw.headings?.h2 || {}) },
+        hasProperHierarchy: seoRaw.headings?.hasProperHierarchy ?? defaultSeoResults.headings.hasProperHierarchy,
+      },
+      images: { ...defaultSeoResults.images, ...(seoRaw.images || {}) },
+      links: {
+        internal: { ...defaultSeoResults.links.internal, ...(seoRaw.links?.internal || {}) },
+        external: { ...defaultSeoResults.links.external, ...(seoRaw.links?.external || {}) },
+      },
+    },
+    contentResults: {
+      score: contentRaw.score ?? 0,
+      wordCount: contentRaw.wordCount ?? 0,
+      keywords: contentRaw.keywords,
+      readability: contentRaw.readability,
+    },
+    securityResults: {
+      score: securityRaw.score ?? 0,
+      ssl: { ...defaultSecurityResults.ssl, ...(securityRaw.ssl || {}) },
+      headers: { ...defaultSecurityResults.headers, ...(securityRaw.headers || {}) },
+      observatory: { ...defaultSecurityResults.observatory, ...(securityRaw.observatory || {}) },
+    },
+    pageSpeedResults: (raw.pageSpeedResults || undefined) as DashboardAnalysisResult['pageSpeedResults'],
+    overallScore: raw.overallScore ?? 0,
+    aiVisibility: raw.aiVisibility || undefined,
+  };
 }
 
 function SharedAnalysesPageContent() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const tokenFromUrl = searchParams.get('token') || '';
   const [tokenInput, setTokenInput] = useState(tokenFromUrl);
@@ -57,6 +117,9 @@ function SharedAnalysesPageContent() {
         return;
       }
       setAnalysis(data.analysis);
+      if (tokenFromUrl !== token) {
+        router.replace(`/shared?token=${encodeURIComponent(token)}`);
+      }
     } catch {
       setAnalysis(null);
       setError('Kunne ikke laste delt analyse');
@@ -111,86 +174,30 @@ function SharedAnalysesPageContent() {
       ) : null}
 
       {analysis ? (
-        <div className="space-y-4">
-          {(() => {
-            const keyFindings = normalizeKeyFindings(analysis.aiSummary?.keyFindings);
-            const overallAssessment =
-              typeof analysis.aiSummary?.overallAssessment === 'string'
-                ? analysis.aiSummary.overallAssessment
-                : 'Ingen AI-oppsummering tilgjengelig.';
-
-            return (
-              <>
-          <Card>
-            <CardHeader>
-              <CardTitle>{analysis.websiteUrl || analysis.websiteName || 'Delt analyse'}</CardTitle>
-              <CardDescription>Readonly visning av delt analyse</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="secondary">Total: {analysis.overallScore}</Badge>
-                <Badge variant="outline">SEO: {analysis.seoResults?.score ?? 0}</Badge>
-                <Badge variant="outline">Innhold: {analysis.contentResults?.score ?? 0}</Badge>
-                <Badge variant="outline">Sikkerhet: {analysis.securityResults?.score ?? 0}</Badge>
-                <Badge variant="outline">Hastighet: {analysis.pageSpeedResults?.performance ?? '—'}</Badge>
-              </div>
-              <p className="text-xs text-neutral-500">
-                Opprettet {new Date(analysis.createdAt).toLocaleString('nb-NO')}
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Nøkkelord</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {(analysis.keywordResearch || []).length > 0 ? (
-                analysis.keywordResearch?.map((k) => (
-                  <Badge key={k.keyword} variant="outline">{k.keyword}</Badge>
-                ))
-              ) : (
-                <p className="text-sm text-neutral-500">Ingen nøkkelord i analysen.</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Konkurrenter</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {(analysis.competitorResults || []).length > 0 ? (
-                analysis.competitorResults?.map((c) => (
-                  <div key={c.url} className="flex items-center justify-between border rounded-lg p-2">
-                    <span className="text-sm">{c.url}</span>
-                    <Badge variant="outline">Score: {c.results?.overallScore ?? '—'}</Badge>
-                  </div>
-                ))
-              ) : (
-                <p className="text-sm text-neutral-500">Ingen konkurrentdata i analysen.</p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>AI</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <p className="text-sm">{overallAssessment}</p>
-              {keyFindings.length > 0 ? (
-                <ul className="text-sm list-disc pl-5 space-y-1">
-                  {keyFindings.map((f, idx) => <li key={`${idx}-${f.slice(0, 20)}`}>{f}</li>)}
-                </ul>
-              ) : null}
-              <p className="text-sm text-neutral-500">AI-synlighet: {analysis.aiVisibility?.score ?? '—'}</p>
-            </CardContent>
-          </Card>
-              </>
-            );
-          })()}
-        </div>
+        <TooltipProvider delayDuration={300} skipDelayDuration={0}>
+          <OverviewTab
+            result={mapSharedAnalysis(analysis)}
+            isPremium={true}
+            url={analysis.websiteUrl || analysis.websiteName || ''}
+            openSubpageDialog={() => {}}
+            fetchAISuggestion={() => {}}
+            setActiveTab={() => {}}
+            articleSuggestions={null}
+            loadingArticleSuggestions={false}
+            articleSuggestionsSavedAt={null}
+            fetchArticleSuggestions={() => {}}
+            hasCompetitors={false}
+            remainingArticleGenerations={0}
+            articleGenerationsLimit={0}
+            generatedArticleResult={null}
+            generatingArticleIndex={null}
+            fetchGenerateArticle={() => {}}
+            setGeneratedArticle={() => {}}
+            analysisHistory={[]}
+            loadingPageSpeed={false}
+            aiVisibilityResult={analysis.aiVisibility ?? null}
+          />
+        </TooltipProvider>
       ) : null}
     </div>
   );
