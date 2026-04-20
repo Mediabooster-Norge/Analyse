@@ -328,6 +328,31 @@ export default function AnalysisPage() {
     }
   };
 
+  useEffect(() => {
+    if (!shareDialog) return;
+    let cancelled = false;
+
+    async function loadExistingShare() {
+      try {
+        const res = await fetch(`/api/analysis/${shareDialog.id}/share`);
+        const data = await res.json();
+        if (cancelled) return;
+        if (res.ok && data.hasShare && data.shareUrl) {
+          setShareUrl(data.shareUrl);
+          setShareExpiresAt(data.expiresAt ?? null);
+          setIsSharePremium(Boolean(data.isPremium));
+        }
+      } catch {
+        // Ignore, user can still create share manually.
+      }
+    }
+
+    void loadExistingShare();
+    return () => {
+      cancelled = true;
+    };
+  }, [shareDialog]);
+
   const handleCopyShareUrl = async () => {
     if (!shareUrl) return;
     try {

@@ -19,11 +19,21 @@ export async function GET(_: NextRequest, { params }: RouteParams) {
   const admin = createAdminClient();
   const tokenHash = hashShareToken(token);
 
-  const { data: share } = await admin
+  let { data: share } = await admin
     .from('analysis_shares')
     .select('analysis_id, expires_at, revoked_at')
-    .eq('token_hash', tokenHash)
+    .eq('public_token', token)
     .maybeSingle();
+
+  // Backward compatibility for links created before public_token column existed.
+  if (!share) {
+    const { data: legacyShare } = await admin
+      .from('analysis_shares')
+      .select('analysis_id, expires_at, revoked_at')
+      .eq('token_hash', tokenHash)
+      .maybeSingle();
+    share = legacyShare;
+  }
 
   if (!share || share.revoked_at || isShareExpired(share.expires_at)) {
     return NextResponse.json({ error: 'Lenken er ugyldig eller utløpt' }, { status: 404 });

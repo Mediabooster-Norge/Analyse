@@ -18,9 +18,20 @@ interface SharedAnalysis {
   pageSpeedResults: { performance?: number } | null;
   keywordResearch: Array<{ keyword: string }> | null;
   competitorResults: Array<{ url: string; results?: { overallScore?: number } }> | null;
-  aiSummary: { overallAssessment?: string; keyFindings?: string[] } | null;
+  aiSummary: { overallAssessment?: string; keyFindings?: Array<string | { text?: string }> } | null;
   aiVisibility: { score?: number } | null;
   createdAt: string;
+}
+
+function normalizeKeyFindings(findings: Array<string | { text?: string }> | undefined) {
+  if (!findings || !Array.isArray(findings)) return [];
+  return findings
+    .map((finding) => {
+      if (typeof finding === 'string') return finding;
+      if (finding && typeof finding === 'object' && typeof finding.text === 'string') return finding.text;
+      return null;
+    })
+    .filter((value): value is string => Boolean(value && value.trim()));
 }
 
 function SharedAnalysesPageContent() {
@@ -101,6 +112,15 @@ function SharedAnalysesPageContent() {
 
       {analysis ? (
         <div className="space-y-4">
+          {(() => {
+            const keyFindings = normalizeKeyFindings(analysis.aiSummary?.keyFindings);
+            const overallAssessment =
+              typeof analysis.aiSummary?.overallAssessment === 'string'
+                ? analysis.aiSummary.overallAssessment
+                : 'Ingen AI-oppsummering tilgjengelig.';
+
+            return (
+              <>
           <Card>
             <CardHeader>
               <CardTitle>{analysis.websiteUrl || analysis.websiteName || 'Delt analyse'}</CardTitle>
@@ -158,15 +178,18 @@ function SharedAnalysesPageContent() {
               <CardTitle>AI</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <p className="text-sm">{analysis.aiSummary?.overallAssessment || 'Ingen AI-oppsummering tilgjengelig.'}</p>
-              {analysis.aiSummary?.keyFindings?.length ? (
+              <p className="text-sm">{overallAssessment}</p>
+              {keyFindings.length > 0 ? (
                 <ul className="text-sm list-disc pl-5 space-y-1">
-                  {analysis.aiSummary.keyFindings.map((f) => <li key={f}>{f}</li>)}
+                  {keyFindings.map((f, idx) => <li key={`${idx}-${f.slice(0, 20)}`}>{f}</li>)}
                 </ul>
               ) : null}
               <p className="text-sm text-neutral-500">AI-synlighet: {analysis.aiVisibility?.score ?? '—'}</p>
             </CardContent>
           </Card>
+              </>
+            );
+          })()}
         </div>
       ) : null}
     </div>
