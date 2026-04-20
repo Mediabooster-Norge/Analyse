@@ -330,11 +330,12 @@ export default function AnalysisPage() {
 
   useEffect(() => {
     if (!shareDialog) return;
+    const analysisId = shareDialog.id;
     let cancelled = false;
 
     async function loadExistingShare() {
       try {
-        const res = await fetch(`/api/analysis/${shareDialog.id}/share`);
+        const res = await fetch(`/api/analysis/${analysisId}/share`);
         const data = await res.json();
         if (cancelled) return;
         if (res.ok && data.hasShare && data.shareUrl) {
