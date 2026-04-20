@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Suspense, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,7 +23,7 @@ interface SharedAnalysis {
   createdAt: string;
 }
 
-export default function SharedAnalysesPage() {
+function SharedAnalysesPageContent() {
   const searchParams = useSearchParams();
   const tokenFromUrl = searchParams.get('token') || '';
   const [tokenInput, setTokenInput] = useState(tokenFromUrl);
@@ -170,5 +170,13 @@ export default function SharedAnalysesPage() {
         </div>
       ) : null}
     </div>
+  );
+}
+
+export default function SharedAnalysesPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-sm text-neutral-500">Laster delte analyser...</div>}>
+      <SharedAnalysesPageContent />
+    </Suspense>
   );
 }
