@@ -39,7 +39,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Protected routes
-  const protectedRoutes = ['/dashboard', '/analysis', '/settings'];
+  const protectedRoutes = ['/dashboard', '/analysis', '/settings', '/shared'];
   const isProtectedRoute = protectedRoutes.some((route) =>
     request.nextUrl.pathname.startsWith(route)
   );

@@ -19,6 +19,7 @@ import { createClient } from '@/lib/supabase/client';
 import {
   LayoutDashboard,
   BarChart3,
+  Share2,
   Settings,
   LogOut,
   Menu,
@@ -29,6 +30,7 @@ import { cn } from '@/lib/utils';
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Analyser', href: '/analysis', icon: BarChart3 },
+  { name: 'Delte analyser', href: '/shared', icon: Share2 },
   { name: 'Artikler / Poster', href: '/dashboard/articles', icon: FileText },
   { name: 'Innstillinger', href: '/settings', icon: Settings },
 ];

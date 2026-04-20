@@ -19,6 +19,8 @@ import {
   Trash2,
   AlertTriangle,
   Zap,
+  Share2,
+  Copy,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -69,6 +71,12 @@ export default function AnalysisPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; url: string } | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [page, setPage] = useState(1);
+  const [shareDialog, setShareDialog] = useState<{ id: string; url: string } | null>(null);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareExpiresAt, setShareExpiresAt] = useState<string | null>(null);
+  const [isSharePremium, setIsSharePremium] = useState(false);
+  const [sharing, setSharing] = useState(false);
+  const [revokingShare, setRevokingShare] = useState(false);
 
   const ANALYSES_PER_PAGE = 15;
   const totalPages = Math.max(1, Math.ceil(analyses.length / ANALYSES_PER_PAGE));
@@ -299,6 +307,58 @@ export default function AnalysisPage() {
     }
   };
 
+  const handleCreateShare = async () => {
+    if (!shareDialog) return;
+    setSharing(true);
+    try {
+      const res = await fetch(`/api/analysis/${shareDialog.id}/share`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Kunne ikke opprette delingslenke');
+        return;
+      }
+      setShareUrl(data.shareUrl);
+      setShareExpiresAt(data.expiresAt ?? null);
+      setIsSharePremium(Boolean(data.isPremium));
+      toast.success('Delingslenke opprettet');
+    } catch {
+      toast.error('Kunne ikke opprette delingslenke');
+    } finally {
+      setSharing(false);
+    }
+  };
+
+  const handleCopyShareUrl = async () => {
+    if (!shareUrl) return;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success('Lenke kopiert');
+    } catch {
+      toast.error('Kunne ikke kopiere lenke');
+    }
+  };
+
+  const handleRevokeShare = async () => {
+    if (!shareDialog) return;
+    setRevokingShare(true);
+    try {
+      const res = await fetch(`/api/analysis/${shareDialog.id}/share`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Kunne ikke deaktivere delingslenke');
+        return;
+      }
+      setShareUrl(null);
+      setShareExpiresAt(null);
+      setIsSharePremium(false);
+      toast.success('Delingslenke deaktivert');
+    } catch {
+      toast.error('Kunne ikke deaktivere delingslenke');
+    } finally {
+      setRevokingShare(false);
+    }
+  };
+
   const getScoreColor = (score: number) => {
     if (score >= 90) return 'text-green-600';
     if (score >= 70) return 'text-green-700';
@@ -430,6 +490,71 @@ export default function AnalysisPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Share Dialog */}
+      <Dialog
+        open={!!shareDialog}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShareDialog(null);
+            setShareUrl(null);
+            setShareExpiresAt(null);
+            setIsSharePremium(false);
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Del analyse</DialogTitle>
+            <DialogDescription>
+              Lag en unik lenke for <strong>{shareDialog?.url}</strong>. Mottakere uten bruker kan se Nettside-fanen.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="text-sm text-neutral-600">
+              {shareExpiresAt
+                ? `Lenken utløper ${new Date(shareExpiresAt).toLocaleString('nb-NO')}.`
+                : isSharePremium
+                  ? 'Lenken er gyldig til du deaktiverer den (premium).'
+                  : 'Opprett lenke for å aktivere deling.'}
+            </div>
+            {shareUrl ? (
+              <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2 text-xs break-all">
+                {shareUrl}
+              </div>
+            ) : null}
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={handleCreateShare} disabled={sharing}>
+                {sharing ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Oppretter...
+                  </>
+                ) : (
+                  <>
+                    <Share2 className="mr-2 h-4 w-4" />
+                    {shareUrl ? 'Forny lenke' : 'Opprett delingslenke'}
+                  </>
+                )}
+              </Button>
+              <Button variant="outline" onClick={handleCopyShareUrl} disabled={!shareUrl}>
+                <Copy className="mr-2 h-4 w-4" />
+                Kopier lenke
+              </Button>
+              <Button variant="outline" onClick={handleRevokeShare} disabled={revokingShare}>
+                {revokingShare ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Deaktiverer...
+                  </>
+                ) : (
+                  'Deaktiver lenke'
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -547,6 +672,20 @@ export default function AnalysisPage() {
                         <span className="min-[400px]:hidden">Detaljer</span>
                         <ArrowRight className="ml-1.5 sm:ml-2 h-3.5 sm:h-4 w-3.5 sm:w-4" />
                       </Link>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-9 sm:h-10 rounded-xl border-neutral-200 hover:bg-neutral-50 text-xs sm:text-sm"
+                      onClick={() => {
+                        setShareDialog({ id: analysis.id, url: analysis.url });
+                        setShareUrl(null);
+                        setShareExpiresAt(null);
+                        setIsSharePremium(false);
+                      }}
+                    >
+                      <Share2 className="h-3.5 sm:h-4 w-3.5 sm:w-4 mr-1.5" />
+                      Del
                     </Button>
                     <Button
                       variant="outline"
