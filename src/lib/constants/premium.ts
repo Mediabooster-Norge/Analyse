@@ -26,9 +26,14 @@ export const UNLIMITED_MONTHLY_ANALYSIS_LIMIT = 999;
 /** First N registered users automatically receive premium (founding members) */
 export const FOUNDING_MEMBER_LIMIT = 100;
 
-export function isMediaboosterEmail(email: string | null | undefined): boolean {
+export function isAllowlistedPremiumEmail(email: string | null | undefined): boolean {
   if (!email) return false;
-  return email.toLowerCase().endsWith('@mediabooster.no');
+  return PREMIUM_EMAILS.includes(email.toLowerCase());
+}
+
+/** @deprecated Use isAllowlistedPremiumEmail — suffix matching allowed any @mediabooster.no address */
+export function isMediaboosterEmail(email: string | null | undefined): boolean {
+  return isAllowlistedPremiumEmail(email);
 }
 
 export function getMonthlyAnalysisLimit(
@@ -37,6 +42,6 @@ export function getMonthlyAnalysisLimit(
   dbLimit?: number | null
 ): number {
   if (!isPremium) return FREE_MONTHLY_ANALYSIS_LIMIT;
-  if (isMediaboosterEmail(email)) return UNLIMITED_MONTHLY_ANALYSIS_LIMIT;
+  if (isAllowlistedPremiumEmail(email)) return UNLIMITED_MONTHLY_ANALYSIS_LIMIT;
   return dbLimit ?? PREMIUM_MONTHLY_ANALYSIS_LIMIT;
 }

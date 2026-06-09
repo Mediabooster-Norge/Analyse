@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
+import { verifyAnalysisOwnership } from '@/lib/analysis-ownership';
 import type { SocialPostSuggestion, SocialPlatform } from '@/types/dashboard';
 
 const openai = new OpenAI({
@@ -205,6 +206,11 @@ Returner JSON:
 
     let savedAt: string | null = null;
     if (analysisId && suggestions.length > 0) {
+      const ownsAnalysis = await verifyAnalysisOwnership(supabase, user.id, analysisId);
+      if (!ownsAnalysis) {
+        return NextResponse.json({ error: 'Fant ikke analyse' }, { status: 404 });
+      }
+
       const { data: savedData, error: saveError } = await supabase
         .from('social_post_suggestions')
         .upsert(
@@ -216,7 +222,7 @@ Returner JSON:
             platform: platformNorm,
             created_at: new Date().toISOString(),
           },
-          { onConflict: 'analysis_id,platform' }
+          { onConflict: 'user_id,analysis_id,platform' }
         )
         .select('created_at')
         .single();

@@ -8,7 +8,7 @@ import {
   FREE_MONTHLY_ANALYSIS_LIMIT,
   PREMIUM_MONTHLY_ANALYSIS_LIMIT,
   UNLIMITED_MONTHLY_ANALYSIS_LIMIT,
-  isMediaboosterEmail,
+  isAllowlistedPremiumEmail,
   getMonthlyAnalysisLimit,
 } from '@/lib/constants/premium';
 
@@ -73,7 +73,7 @@ export function usePremium(): PremiumStatus {
           return;
         }
 
-        if (isMediaboosterEmail(user.email)) {
+        if (isAllowlistedPremiumEmail(user.email)) {
           const hasUnlimitedArticles = UNLIMITED_ARTICLE_EMAILS.includes(user.email!);
           setStatus({
             isPremium: true,
@@ -152,7 +152,7 @@ export async function checkPremiumStatusClient(user: User | null): Promise<{
     return { isPremium: false, monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT };
   }
 
-  if (isMediaboosterEmail(user.email)) {
+  if (isAllowlistedPremiumEmail(user.email)) {
     return { isPremium: true, monthlyAnalysisLimit: UNLIMITED_MONTHLY_ANALYSIS_LIMIT };
   }
 

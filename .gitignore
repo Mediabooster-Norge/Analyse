@@ -39,6 +39,10 @@ yarn-error.log*
 # supabase cli
 supabase/.temp/
 
+# security audit automation memory (must not be committed)
+*---flagged-vulnerabilities*.json
+*---new-findings*.json
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

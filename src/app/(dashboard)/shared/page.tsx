@@ -28,6 +28,20 @@ interface SharedLinkItem {
   sharedAt: string;
 }
 
+interface ShareAnalysisFields {
+  website_url: string | null;
+  website_name: string | null;
+  overall_score: number | null;
+  created_at: string;
+}
+
+function getShareAnalysis(
+  analyses: ShareAnalysisFields | ShareAnalysisFields[] | null
+): ShareAnalysisFields | null {
+  if (!analyses) return null;
+  return Array.isArray(analyses) ? analyses[0] ?? null : analyses;
+}
+
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString('nb-NO', {
     day: 'numeric',
@@ -95,25 +109,24 @@ function SharedAnalysesPageContent() {
 
       const origin = window.location.origin;
       const mapped: SharedLinkItem[] = (data ?? [])
-        .filter((row) => row.public_token && row.analyses)
         .map((row) => {
-          const analysis = row.analyses as {
-            website_url: string | null;
-            website_name: string | null;
-            overall_score: number | null;
-            created_at: string;
-          };
+          const analysis = getShareAnalysis(
+            row.analyses as ShareAnalysisFields | ShareAnalysisFields[] | null
+          );
+          if (!row.public_token || !analysis) return null;
+
           const url = analysis.website_url || analysis.website_name || 'Ukjent nettside';
           return {
             analysisId: row.analysis_id,
-            token: row.public_token as string,
+            token: row.public_token,
             shareUrl: `${origin}/preview/${row.public_token}`,
             url,
             overallScore: analysis.overall_score ?? 0,
             analysisCreatedAt: analysis.created_at,
             sharedAt: row.updated_at,
           };
-        });
+        })
+        .filter((item): item is SharedLinkItem => item !== null);
 
       setItems(mapped);
     } catch {

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import * as cheerio from 'cheerio';
+import { createClient } from '@/lib/supabase/server';
+import { scrapeUrl } from '@/lib/services/scraper';
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -11,6 +13,13 @@ const DEFAULT_COUNT = 20;
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { url, count: requestedCount } = body;
 
@@ -28,37 +37,28 @@ export async function POST(request: NextRequest) {
     // Normalize URL
     const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
 
-    // Fetch and parse the webpage
+    // Fetch and parse the webpage (SSRF-protected via scrapeUrl)
     let pageContent = '';
     let pageTitle = '';
     let metaDescription = '';
-    
+
     try {
-      const response = await fetch(normalizedUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (compatible; NettsjekBot/1.0)',
-        },
-      });
-      
-      if (response.ok) {
-        const html = await response.text();
-        const $ = cheerio.load(html);
-        
+      const scraped = await scrapeUrl(normalizedUrl, { timeoutMs: 15_000 });
+      if (scraped.statusCode >= 200 && scraped.statusCode < 400) {
+        const $ = cheerio.load(scraped.html);
+
         pageTitle = $('title').text() || '';
         metaDescription = $('meta[name="description"]').attr('content') || '';
-        
-        // Extract text from main content areas
+
         const headings = $('h1, h2, h3').map((_, el) => $(el).text().trim()).get().join(' ');
         const paragraphs = $('p').map((_, el) => $(el).text().trim()).get().slice(0, 10).join(' ');
-        
+
         pageContent = `${pageTitle} ${metaDescription} ${headings} ${paragraphs}`.slice(0, 3000);
       }
     } catch (fetchError) {
       console.error('Failed to fetch URL:', fetchError);
       // Continue with URL-based suggestions only
     }
-
-    console.log('[suggest-keywords] URL:', normalizedUrl, 'PageContent length:', pageContent.length, 'Count:', safeCount);
 
     // Use AI to suggest keywords
     const completion = await openai.chat.completions.create({
@@ -97,42 +97,35 @@ Gi meg nøyaktig ${safeCount} søkeord som en JSON-array:`
     });
 
     const content = completion.choices[0]?.message?.content || '[]';
-    
-    console.log('[suggest-keywords] Raw AI response:', content.slice(0, 800));
-    
+
     // Strip markdown code fences if GPT wraps response in ```json ... ```
     const cleaned = content
       .replace(/^```(?:json)?\s*\n?/i, '')
       .replace(/\n?```\s*$/i, '')
       .trim();
-    
+
     // Parse the JSON response
     let keywords: string[] = [];
     try {
-      // Try direct parse first
       const parsed = JSON.parse(cleaned);
       if (Array.isArray(parsed)) {
         keywords = parsed;
       } else if (parsed && typeof parsed === 'object') {
-        // GPT-5 might wrap in an object like { keywords: [...] }
         const arrayVal = parsed.keywords || parsed.suggestions || parsed.nøkkelord;
         if (Array.isArray(arrayVal)) {
           keywords = arrayVal;
         } else {
-          // Try to find any array value in the object
           const found = Object.values(parsed).find(Array.isArray);
           keywords = (found as string[]) || [];
         }
       }
     } catch {
-      // Fallback: extract JSON array from response (in case there's extra text)
       try {
         const jsonMatch = cleaned.match(/\[[\s\S]*?\]/);
         if (jsonMatch) {
           keywords = JSON.parse(jsonMatch[0]);
         }
       } catch {
-        // Last resort: split by commas/newlines and clean numbered lists
         keywords = cleaned
           .replace(/[\[\]"{}]/g, '')
           .split(/[,\n]/)
@@ -140,10 +133,7 @@ Gi meg nøyaktig ${safeCount} søkeord som en JSON-array:`
           .filter(k => k.length > 0 && !k.startsWith('{'));
       }
     }
-    
-    console.log('[suggest-keywords] Parsed keywords count:', keywords.length, 'First 5:', keywords.slice(0, 5));
 
-    // Ensure we return an array of strings
     keywords = keywords
       .filter((k): k is string => typeof k === 'string')
       .map(k => k.toLowerCase().trim())

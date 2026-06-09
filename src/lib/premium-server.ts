@@ -4,7 +4,7 @@ import {
   UNLIMITED_ARTICLE_EMAILS,
   FREE_MONTHLY_ANALYSIS_LIMIT,
   UNLIMITED_MONTHLY_ANALYSIS_LIMIT,
-  isMediaboosterEmail,
+  isAllowlistedPremiumEmail,
   getMonthlyAnalysisLimit,
 } from '@/lib/constants/premium';
 
@@ -33,7 +33,7 @@ export async function getPremiumStatusServer(user: User | null): Promise<{
     };
   }
 
-  if (isMediaboosterEmail(user.email)) {
+  if (isAllowlistedPremiumEmail(user.email)) {
     const hasUnlimitedArticles = UNLIMITED_ARTICLE_EMAILS.includes(user.email!);
     return {
       isPremium: true,

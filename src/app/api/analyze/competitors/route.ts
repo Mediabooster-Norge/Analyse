@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@/lib/supabase/server';
 import { analyzeCompetitorsOnly } from '@/lib/analyzers';
 
 export const maxDuration = 60; // Allow up to 60 seconds for analysis
@@ -11,6 +12,13 @@ interface CompetitorAnalyzeRequest {
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const body = (await request.json()) as CompetitorAnalyzeRequest;
     const { competitorUrls = [] } = body;
 

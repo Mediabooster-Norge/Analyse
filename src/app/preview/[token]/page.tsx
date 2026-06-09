@@ -44,10 +44,9 @@ export default function PublicPreviewPage() {
     void load();
   }, [token]);
 
-  const visibleTabs = useMemo(
-    () => (analysis ? getSharedVisibleTabs(analysis) : ['overview']),
-    [analysis]
-  );
+  const visibleTabs = useMemo((): DashboardTab[] => {
+    return analysis ? getSharedVisibleTabs(analysis) : ['overview'];
+  }, [analysis]);
 
   useEffect(() => {
     if (!visibleTabs.includes(activeTab)) {
