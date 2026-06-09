@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createClient } from '@/lib/supabase/client';
-import { Loader2, AlertCircle, CheckCircle2, Sparkles, BarChart3, Shield, Eye } from 'lucide-react';
+import { Loader2, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
+import { FOUNDING_MEMBER_LIMIT } from '@/lib/constants/premium';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -131,8 +132,11 @@ export default function RegisterPage() {
                 <p className="text-muted-foreground mb-4">
                   Vi har sendt en bekreftelseslenke til <strong>{formData.email}</strong>
                 </p>
-                <p className="text-sm text-muted-foreground mb-4">
+                <p className="text-sm text-muted-foreground mb-2">
                   Klikk på lenken i e-posten for å aktivere kontoen din, så kan du logge inn.
+                </p>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Som en av de første {FOUNDING_MEMBER_LIMIT} brukerne får du Premium automatisk når kontoen er aktivert.
                 </p>
                 <Link href="/login">
                   <Button variant="outline">Gå til innlogging</Button>
@@ -152,9 +156,9 @@ export default function RegisterPage() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="text-center">
-        <CardTitle className="text-2xl">Opprett gratis konto</CardTitle>
+        <CardTitle className="text-2xl">Opprett konto</CardTitle>
         <CardDescription>
-          Analyser hvilken som helst nettside på sekunder
+          De første {FOUNDING_MEMBER_LIMIT} brukerne får Premium gratis
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -216,6 +220,11 @@ export default function RegisterPage() {
                 required
               />
             </div>
+          </div>
+
+          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            <Sparkles className="h-4 w-4 shrink-0 mt-0.5" />
+            <p>De første {FOUNDING_MEMBER_LIMIT} som registrerer seg får Premium uten ekstra kostnad.</p>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>

@@ -209,10 +209,10 @@ function mapAnalysisRowToResult(
 }
 
 export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardOptions) {
-  const { isPremium, articleGenerationsPerMonth, loading: premiumLoading } = usePremium();
+  const { isPremium, monthlyAnalysisLimit, articleGenerationsPerMonth, loading: premiumLoading } = usePremium();
   const limits = getPremiumLimits(isPremium);
   
-  const FREE_MONTHLY_LIMIT = limits.monthlyAnalyses;
+  const FREE_MONTHLY_LIMIT = monthlyAnalysisLimit;
   const FREE_KEYWORD_LIMIT = limits.keywords;
   const FREE_COMPETITOR_LIMIT = limits.competitors;
   const FREE_UPDATE_LIMIT = isPremium ? 999 : 5;

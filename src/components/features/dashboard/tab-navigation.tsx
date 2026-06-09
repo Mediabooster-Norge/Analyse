@@ -17,6 +17,8 @@ interface TabNavigationProps {
   onTabChange: (tab: DashboardTab) => void;
   competitorCount?: number;
   keywordCount?: number;
+  /** When set, only these tabs are shown (e.g. shared preview). */
+  visibleTabs?: DashboardTab[];
 }
 
 const allTabs = [
@@ -35,8 +37,11 @@ function getTabCount(tabId: string, competitorCount?: number, keywordCount?: num
   return undefined;
 }
 
-export function TabNavigation({ activeTab, onTabChange, competitorCount, keywordCount }: TabNavigationProps) {
-  const tabs = AI_VISIBILITY_ENABLED ? allTabs : allTabs.filter((t) => t.id !== 'ai-visibility');
+export function TabNavigation({ activeTab, onTabChange, competitorCount, keywordCount, visibleTabs }: TabNavigationProps) {
+  const baseTabs = AI_VISIBILITY_ENABLED ? allTabs : allTabs.filter((t) => t.id !== 'ai-visibility');
+  const tabs = visibleTabs
+    ? baseTabs.filter((t) => visibleTabs.includes(t.id))
+    : baseTabs;
   const activeTabConfig = tabs.find((t) => t.id === activeTab);
   const activeCount = activeTabConfig ? getTabCount(activeTabConfig.id, competitorCount, keywordCount) : undefined;
 

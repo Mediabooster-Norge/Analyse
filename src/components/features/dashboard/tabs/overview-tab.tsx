@@ -105,6 +105,8 @@ export interface OverviewTabProps {
   retryPageSpeed?: () => void;
   /** AI-synlighet fra manuell sjekk (viser i oversikt til result er oppdatert) */
   aiVisibilityResult?: { score: number; level: string; description: string } | null;
+  /** Readonly shared/preview view — disables AI interactions and upgrade prompts */
+  readOnly?: boolean;
 }
 
 export function OverviewTab({
@@ -129,6 +131,7 @@ export function OverviewTab({
   loadingPageSpeed = false,
   retryPageSpeed,
   aiVisibilityResult,
+  readOnly = false,
 }: OverviewTabProps) {
   const aiVisibility = result.aiVisibility ?? aiVisibilityResult ?? null;
   const copyTitle = (title: string) => {
@@ -445,7 +448,7 @@ export function OverviewTab({
                 pageTitle={result.seoResults.meta.title.content}
                 pageDescription={result.seoResults.meta.description.content}
                 ogTags={result.seoResults.meta.ogTags}
-                onGetTips={() => {
+                onGetTips={readOnly ? undefined : () => {
                   const missing = [
                     !result.seoResults.meta.ogTags.title && 'og:title',
                     !result.seoResults.meta.ogTags.description && 'og:description',
@@ -464,12 +467,14 @@ export function OverviewTab({
           </div>
 
           {/* AI hint – rett over metrikkortene */}
+          {!readOnly && (
           <div className="flex items-center gap-2 px-1">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#f5f3ff] border border-[#ddd6fe] text-xs text-[#6d28d9]">
               <RocketIcon className="w-3 h-3 text-[#7c3aed] shrink-0" />
               <span>Trykk på et kort for AI-drevne forbedringsforslag</span>
             </div>
           </div>
+          )}
 
           {/* SEO */}
           <div>
@@ -480,6 +485,7 @@ export function OverviewTab({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               <div data-metric="sidetittel">
               <MetricCard
+                readOnly={readOnly}
                 icon={Type}
                 title="Sidetittel"
                 description={result.seoResults.meta.title.content ? `${result.seoResults.meta.title.length} tegn` : 'Mangler'}
@@ -491,6 +497,7 @@ export function OverviewTab({
               </div>
               <div data-metric="meta-beskrivelse">
               <MetricCard
+                readOnly={readOnly}
                 icon={FileText}
                 title="Meta-beskrivelse"
                 description={result.seoResults.meta.description.content ? `${result.seoResults.meta.description.length} tegn` : 'Mangler'}
@@ -502,6 +509,7 @@ export function OverviewTab({
               </div>
               <div data-metric="h1-overskrift">
               <MetricCard
+                readOnly={readOnly}
                 icon={Type}
                 title="H1-overskrift"
                 description={result.seoResults.headings.h1.count === 1 ? 'Én H1' : result.seoResults.headings.h1.count === 0 ? 'Mangler' : `${result.seoResults.headings.h1.count} H1-er funnet`}
@@ -530,6 +538,7 @@ export function OverviewTab({
               </div>
               <div data-metric="h2-overskrifter">
               <MetricCard
+                readOnly={readOnly}
                 icon={Type}
                 title="H2-overskrifter"
                 description={`${result.seoResults.headings.h2.count} stk`}
@@ -541,6 +550,7 @@ export function OverviewTab({
               </div>
               <div data-metric="bilder-alt">
               <MetricCard
+                readOnly={readOnly}
                 icon={Image}
                 title="Bilder og alt-tekst"
                 description={`${result.seoResults.images.withAlt}/${result.seoResults.images.total} med alt`}
@@ -558,6 +568,7 @@ export function OverviewTab({
               </div>
               <div data-metric="open-graph">
               <MetricCard
+                readOnly={readOnly}
                 icon={Globe}
                 title="Open Graph"
                 description={result.seoResults.meta.ogTags.title ? 'Satt' : 'Mangler'}
@@ -579,6 +590,7 @@ export function OverviewTab({
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               <div data-metric="ordtelling">
               <MetricCard
+                readOnly={readOnly}
                 icon={FileText}
                 title="Ordtelling"
                 description={`${result.contentResults.wordCount} ord`}
@@ -590,6 +602,7 @@ export function OverviewTab({
               </div>
               <div data-metric="lesbarhet">
               <MetricCard
+                readOnly={readOnly}
                 icon={BarChart3}
                 title="Lesbarhet (LIX)"
                 description={result.contentResults.readability ? `LIX ${result.contentResults.readability.lixScore}` : 'Ikke beregnet'}
@@ -625,6 +638,7 @@ export function OverviewTab({
               />
               </div>
               <MetricCard
+                readOnly={readOnly}
                 icon={Link2}
                 title="Interne lenker"
                 description={`${result.seoResults.links.internal.count} lenker`}
@@ -634,6 +648,7 @@ export function OverviewTab({
                 onClick={() => fetchAISuggestion('Interne lenker', `${result.seoResults.links.internal.count} interne lenker`, result.seoResults.links.internal.count >= 3 ? 'good' : 'warning', result.seoResults.links.internal.count < 3 ? 'Flere interne lenker forbedrer navigasjon og SEO.' : undefined)}
               />
               <MetricCard
+                readOnly={readOnly}
                 icon={ExternalLink}
                 title="Eksterne lenker"
                 description={`${result.seoResults.links.external.count} lenker`}
@@ -653,6 +668,7 @@ export function OverviewTab({
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               <MetricCard
+                readOnly={readOnly}
                 icon={Lock}
                 title="SSL-sertifikat"
                 description={`Karakter ${result.securityResults.ssl.grade} · Sikrer kryptert forbindelse`}
@@ -663,6 +679,7 @@ export function OverviewTab({
               />
               <div data-metric="hsts">
               <MetricCard
+                readOnly={readOnly}
                 icon={Shield}
                 title="HSTS"
                 description="Sørger for at nettleseren alltid bruker sikker forbindelse"
@@ -674,6 +691,7 @@ export function OverviewTab({
               </div>
               <div data-metric="csp">
               <MetricCard
+                readOnly={readOnly}
                 icon={Shield}
                 title="Content Security Policy"
                 description="Begrenser hva slags kode som kan kjøres på siden"
@@ -684,6 +702,7 @@ export function OverviewTab({
               />
               </div>
               <MetricCard
+                readOnly={readOnly}
                 icon={Shield}
                 title="X-Frame-Options"
                 description="Forhindrer at andre sider viser din side i en ramme"
@@ -693,6 +712,7 @@ export function OverviewTab({
                 onClick={() => fetchAISuggestion('X-Frame-Options', result.securityResults.headers.xFrameOptions ? 'Satt' : 'Mangler', result.securityResults.headers.xFrameOptions ? 'good' : 'warning', !result.securityResults.headers.xFrameOptions ? 'Mangler clickjacking-beskyttelse.' : undefined)}
               />
               <MetricCard
+                readOnly={readOnly}
                 icon={Shield}
                 title="X-Content-Type-Options"
                 description="Sørger for at filer tolkes som riktig type"
@@ -702,6 +722,7 @@ export function OverviewTab({
                 onClick={() => fetchAISuggestion('X-Content-Type-Options', result.securityResults.headers.xContentTypeOptions ? 'nosniff' : 'Mangler', result.securityResults.headers.xContentTypeOptions ? 'good' : 'warning', !result.securityResults.headers.xContentTypeOptions ? 'Mangler nosniff-header.' : undefined)}
               />
               <MetricCard
+                readOnly={readOnly}
                 icon={Shield}
                 title="Referrer-Policy"
                 description="Styrer hva som sendes med når noen kommer fra din side"
@@ -735,6 +756,7 @@ export function OverviewTab({
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
               <MetricCard
+                readOnly={readOnly}
                 icon={loadingPageSpeed ? Loader2 : Gauge}
                 title={result.pageSpeedResults?.isEstimate ? 'Ytelsesestimat' : 'Performance (PageSpeed)'}
                 description={
@@ -773,6 +795,7 @@ export function OverviewTab({
               {!result.pageSpeedResults?.isEstimate && (
               <div data-metric="lcp">
               <MetricCard
+                readOnly={readOnly}
                 icon={Activity}
                 title="LCP (Largest Contentful Paint)"
                 description={result.pageSpeedResults?.coreWebVitals ? `${(result.pageSpeedResults.coreWebVitals.lcp / 1000).toFixed(1)}s` : 'Ikke målt'}
@@ -807,6 +830,7 @@ export function OverviewTab({
               {!result.pageSpeedResults?.isEstimate && (
               <div data-metric="cls">
               <MetricCard
+                readOnly={readOnly}
                 icon={Activity}
                 title="CLS (Cumulative Layout Shift)"
                 description={result.pageSpeedResults?.coreWebVitals ? result.pageSpeedResults.coreWebVitals.cls.toFixed(3) : 'Ikke målt'}
@@ -844,8 +868,8 @@ export function OverviewTab({
         </div>
       </div>
 
-      {/* Upgrade CTA - only for non-premium users */}
-      {!isPremium && (
+      {/* Upgrade CTA - only for non-premium users in the dashboard */}
+      {!isPremium && !readOnly && (
         <div className="rounded-2xl bg-neutral-900 p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">

@@ -43,6 +43,7 @@ export interface CompetitorsTabProps {
   removeEditCompetitor: (url: string) => void;
   cancelEditingCompetitors: () => void;
   updateCompetitorAnalysis: () => void;
+  readOnly?: boolean;
 }
 
 export function CompetitorsTab({
@@ -66,11 +67,12 @@ export function CompetitorsTab({
   removeEditCompetitor,
   cancelEditingCompetitors,
   updateCompetitorAnalysis,
+  readOnly = false,
 }: CompetitorsTabProps) {
   return (
     <>
       {/* Edit Competitors Panel */}
-      {editingCompetitors && (
+      {editingCompetitors && !readOnly && (
         <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-neutral-50/50 overflow-hidden mb-4 max-[400px]:mb-4 min-[401px]:mb-6 min-w-0">
           <div className="flex items-center justify-between p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-4 border-b border-neutral-200 bg-neutral-50">
             <div className="flex items-center gap-2 max-[400px]:gap-2 min-[401px]:gap-3 min-w-0">
@@ -189,7 +191,7 @@ export function CompetitorsTab({
                 </h3>
                 <p className="text-xs sm:text-sm text-neutral-600">Sammenlign din nettside med konkurrentene</p>
               </div>
-              {!editingCompetitors && (
+              {!editingCompetitors && !readOnly && (
                 <Button
                   variant="outline"
                   size="sm"
@@ -571,7 +573,7 @@ export function CompetitorsTab({
           <p className="text-sm text-neutral-500 max-w-md mx-auto mb-4">
             Legg til konkurrent-URL-er og hent data for å sammenligne med din nettside. Hvert oppslag bruker ett konkurrentoppdatering.
           </p>
-          {(isPremium || remainingCompetitorUpdates > 0) && !editingCompetitors && (
+          {!readOnly && (isPremium || remainingCompetitorUpdates > 0) && !editingCompetitors && (
             <Button variant="outline" onClick={startEditingCompetitors} className="rounded-xl">
               <Plus className="mr-2 h-4 w-4" />
               Legg til konkurrenter og hent data

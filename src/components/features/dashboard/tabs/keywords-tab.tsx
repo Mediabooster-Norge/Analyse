@@ -37,6 +37,7 @@ export interface KeywordsTabProps {
   updateKeywordAnalysis: () => void;
   suggestKeywords: () => void;
   suggestingKeywords: boolean;
+  readOnly?: boolean;
 }
 
 export function KeywordsTab({
@@ -59,11 +60,12 @@ export function KeywordsTab({
   updateKeywordAnalysis,
   suggestKeywords,
   suggestingKeywords,
+  readOnly = false,
 }: KeywordsTabProps) {
   return (
     <>
       {/* Edit Keywords Panel */}
-      {editingKeywords && (
+      {editingKeywords && !readOnly && (
         <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-neutral-50/50 overflow-hidden mb-4 max-[400px]:mb-4 min-[401px]:mb-6 min-w-0">
           <div className="flex items-center justify-between p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-4 border-b border-neutral-200 bg-neutral-50">
             <div className="flex items-center gap-2 max-[400px]:gap-2 min-[401px]:gap-3 min-w-0">
@@ -186,7 +188,7 @@ export function KeywordsTab({
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                {!editingKeywords && (
+                {!editingKeywords && !readOnly && (
                   <Button
                     variant="outline"
                     size="sm"
@@ -659,7 +661,7 @@ export function KeywordsTab({
           <p className="text-sm text-neutral-500 max-w-md mx-auto mb-4">
             Du la ikke til nøkkelord i den opprinnelige analysen.
           </p>
-          {(isPremium || remainingKeywordUpdates > 0) && !editingKeywords && (
+          {!readOnly && (isPremium || remainingKeywordUpdates > 0) && !editingKeywords && (
             <div className="flex items-center justify-center gap-3">
               <Button 
                 variant="default" 

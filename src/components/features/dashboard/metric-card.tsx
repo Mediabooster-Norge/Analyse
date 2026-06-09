@@ -13,6 +13,8 @@ interface MetricCardProps {
   recommendation: string;
   status: MetricStatus;
   onClick?: () => void;
+  /** When true, card is display-only (no AI click affordance). */
+  readOnly?: boolean;
 }
 
 const statusColors = {
@@ -44,13 +46,19 @@ export function MetricCard({
   recommendation,
   status,
   onClick,
+  readOnly = false,
 }: MetricCardProps) {
   const colors = statusColors[status];
+  const interactive = !readOnly && Boolean(onClick);
 
   return (
     <div
-      onClick={onClick}
-      className={`p-2 max-[400px]:p-2 min-[401px]:p-3 rounded-lg border cursor-pointer hover:shadow-md hover:scale-[1.01] transition-all group min-w-0 ${colors.bg} ${colors.border}`}
+      onClick={interactive ? onClick : undefined}
+      className={`p-2 max-[400px]:p-2 min-[401px]:p-3 rounded-lg border transition-all group min-w-0 ${colors.bg} ${colors.border} ${
+        interactive
+          ? 'cursor-pointer hover:shadow-md hover:scale-[1.01]'
+          : 'cursor-default'
+      }`}
     >
       {/* Header row */}
       <div className="flex items-center justify-between gap-1 max-[400px]:gap-1 min-[401px]:gap-2 mb-1 max-[400px]:mb-1 min-[401px]:mb-1.5">
@@ -61,10 +69,12 @@ export function MetricCard({
           <span className="font-medium text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-900 truncate">{title}</span>
         </div>
         <div className="flex items-center gap-0.5 shrink-0">
+          {!readOnly && (
           <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-neutral-100 text-neutral-500 text-[8px] max-[400px]:text-[7px] min-[401px]:text-[9px] font-medium group-hover:bg-neutral-200 transition-colors">
             <Lightbulb className="w-2.5 h-2.5" />
             AI
           </span>
+          )}
         </div>
       </div>
 

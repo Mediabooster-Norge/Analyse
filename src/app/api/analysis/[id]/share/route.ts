@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { getPremiumStatusServer } from '@/lib/premium-server';
 import { generateShareToken, getShareExpiration, hashShareToken } from '@/lib/analysis-share';
 
 interface RouteParams {
@@ -16,6 +15,14 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  let regenerate = false;
+  try {
+    const body = await request.json();
+    regenerate = Boolean(body?.regenerate);
+  } catch {
+    // Empty body is fine
+  }
+
   const { data: analysis, error: analysisError } = await supabase
     .from('analyses')
     .select('id')
@@ -27,29 +34,25 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Fant ikke analyse' }, { status: 404 });
   }
 
-  const premiumStatus = await getPremiumStatusServer(user);
   const { data: existingShare } = await supabase
     .from('analysis_shares')
-    .select('public_token, expires_at, revoked_at')
+    .select('public_token, revoked_at')
     .eq('analysis_id', analysisId)
     .eq('created_by', user.id)
     .maybeSingle();
 
-  if (existingShare?.public_token && !existingShare.revoked_at) {
-    const hasExpired =
-      existingShare.expires_at != null && new Date(existingShare.expires_at).getTime() <= Date.now();
-    if (!hasExpired) {
-      return NextResponse.json({
-        shareUrl: `${request.nextUrl.origin}/preview/${existingShare.public_token}`,
-        expiresAt: existingShare.expires_at,
-        isPremium: premiumStatus.isPremium,
-      });
-    }
+  if (
+    existingShare?.public_token &&
+    !existingShare.revoked_at &&
+    !regenerate
+  ) {
+    return NextResponse.json({
+      shareUrl: `${request.nextUrl.origin}/preview/${existingShare.public_token}`,
+    });
   }
 
   const token = generateShareToken();
   const tokenHash = hashShareToken(token);
-  const expiresAt = getShareExpiration(premiumStatus.isPremium);
 
   const { error: upsertError } = await supabase
     .from('analysis_shares')
@@ -58,7 +61,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       created_by: user.id,
       public_token: token,
       token_hash: tokenHash,
-      expires_at: expiresAt,
+      expires_at: getShareExpiration(),
       revoked_at: null,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'analysis_id' });
@@ -68,11 +71,8 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({ error: 'Kunne ikke opprette delingslenke' }, { status: 500 });
   }
 
-  const shareUrl = `${request.nextUrl.origin}/preview/${token}`;
   return NextResponse.json({
-    shareUrl,
-    expiresAt,
-    isPremium: premiumStatus.isPremium,
+    shareUrl: `${request.nextUrl.origin}/preview/${token}`,
   });
 }
 
@@ -84,7 +84,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   if (!user) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
-  const premiumStatus = await getPremiumStatusServer(user);
 
   const { data: analysis } = await supabase
     .from('analyses')
@@ -99,25 +98,18 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
   const { data: share } = await supabase
     .from('analysis_shares')
-    .select('public_token, expires_at, revoked_at')
+    .select('public_token, revoked_at')
     .eq('analysis_id', analysisId)
     .eq('created_by', user.id)
     .maybeSingle();
 
   if (!share?.public_token || share.revoked_at) {
-    return NextResponse.json({ hasShare: false, isPremium: premiumStatus.isPremium });
-  }
-
-  const isExpired = share.expires_at != null && new Date(share.expires_at).getTime() <= Date.now();
-  if (isExpired) {
-    return NextResponse.json({ hasShare: false, isPremium: premiumStatus.isPremium });
+    return NextResponse.json({ hasShare: false });
   }
 
   return NextResponse.json({
     hasShare: true,
     shareUrl: `${request.nextUrl.origin}/preview/${share.public_token}`,
-    expiresAt: share.expires_at,
-    isPremium: premiumStatus.isPremium,
   });
 }
 

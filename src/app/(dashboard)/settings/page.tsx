@@ -52,7 +52,7 @@ export default function SettingsPage() {
   });
   
   // Premium status
-  const { isPremium, loading: premiumLoading } = usePremium();
+  const { isPremium, monthlyAnalysisLimit, loading: premiumLoading } = usePremium();
   const limits = getPremiumLimits(isPremium);
 
   useEffect(() => {
@@ -277,10 +277,14 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <p className="text-sm text-neutral-500">Analyser denne måneden</p>
-                      <p className="text-2xl font-bold text-neutral-900">{analysisCount}</p>
+                      <p className="text-2xl font-bold text-neutral-900">
+                        {monthlyAnalysisLimit >= 999 ? analysisCount : `${analysisCount} / ${monthlyAnalysisLimit}`}
+                      </p>
                     </div>
                   </div>
-                  <p className="text-xs text-neutral-600 font-medium">Ubegrenset tilgang</p>
+                  <p className="text-xs text-neutral-600 font-medium">
+                    {monthlyAnalysisLimit >= 999 ? 'Ubegrenset tilgang' : `${monthlyAnalysisLimit} analyser per måned`}
+                  </p>
                 </div>
                 <div className="p-4 rounded-xl bg-white border border-neutral-200">
                   <div className="flex items-center gap-3 mb-3">
@@ -302,7 +306,9 @@ export default function SettingsPage() {
                 <div className="grid md:grid-cols-2 gap-2">
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
                     <CheckCircle2 className="h-4 w-4 text-neutral-900 shrink-0" />
-                    <span className="text-sm text-neutral-700">Ubegrenset analyser</span>
+                    <span className="text-sm text-neutral-700">
+                      {monthlyAnalysisLimit >= 999 ? 'Ubegrenset analyser' : `${monthlyAnalysisLimit} analyser per måned`}
+                    </span>
                   </div>
                   <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
                     <CheckCircle2 className="h-4 w-4 text-neutral-900 shrink-0" />

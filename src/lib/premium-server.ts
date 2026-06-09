@@ -1,6 +1,12 @@
 import { createClient } from '@/lib/supabase/server';
 import type { User } from '@supabase/supabase-js';
-import { PREMIUM_EMAILS, UNLIMITED_ARTICLE_EMAILS, FREE_MONTHLY_ANALYSIS_LIMIT } from '@/lib/constants/premium';
+import {
+  UNLIMITED_ARTICLE_EMAILS,
+  FREE_MONTHLY_ANALYSIS_LIMIT,
+  UNLIMITED_MONTHLY_ANALYSIS_LIMIT,
+  isMediaboosterEmail,
+  getMonthlyAnalysisLimit,
+} from '@/lib/constants/premium';
 
 /** Article generations per month: free 5, premium 30, unlimited 999 */
 const ARTICLE_GENERATIONS = { free: 5, premium: 30, unlimited: 999 };
@@ -27,11 +33,11 @@ export async function getPremiumStatusServer(user: User | null): Promise<{
     };
   }
 
-  if (user.email && PREMIUM_EMAILS.includes(user.email)) {
-    const hasUnlimitedArticles = UNLIMITED_ARTICLE_EMAILS.includes(user.email);
+  if (isMediaboosterEmail(user.email)) {
+    const hasUnlimitedArticles = UNLIMITED_ARTICLE_EMAILS.includes(user.email!);
     return {
       isPremium: true,
-      monthlyAnalysisLimit: 999,
+      monthlyAnalysisLimit: UNLIMITED_MONTHLY_ANALYSIS_LIMIT,
       articleGenerationsPerMonth: hasUnlimitedArticles ? ARTICLE_GENERATIONS.unlimited : ARTICLE_GENERATIONS.premium,
       aiVisibilityChecksPerMonth: AI_VISIBILITY_CHECKS.premium,
     };
@@ -57,7 +63,11 @@ export async function getPremiumStatusServer(user: User | null): Promise<{
   const isPremium = data.is_premium ?? false;
   return {
     isPremium,
-    monthlyAnalysisLimit: data.monthly_analysis_limit ?? FREE_MONTHLY_ANALYSIS_LIMIT,
+    monthlyAnalysisLimit: getMonthlyAnalysisLimit(
+      isPremium,
+      user.email,
+      data.monthly_analysis_limit
+    ),
     articleGenerationsPerMonth: isPremium ? ARTICLE_GENERATIONS.premium : ARTICLE_GENERATIONS.free,
     aiVisibilityChecksPerMonth: isPremium ? AI_VISIBILITY_CHECKS.premium : AI_VISIBILITY_CHECKS.free,
   };

@@ -33,5 +33,5 @@ export async function GET(request: NextRequest) {
   }
 
   // If we get here, something went wrong
-  return NextResponse.redirect(`${origin}/login?message=E-post bekreftet! Logg inn for å fortsette.`);
+  return NextResponse.redirect(`${origin}/login?error=Bekreftelseslenken er ugyldig eller utløpt. Prøv å registrere deg på nytt eller be om ny lenke.`);
 }

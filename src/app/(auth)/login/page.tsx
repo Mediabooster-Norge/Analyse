@@ -15,6 +15,7 @@ function LoginPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const message = searchParams.get('message');
+  const urlError = searchParams.get('error');
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -37,6 +38,8 @@ function LoginPageContent() {
       if (authError) {
         if (authError.message === 'Invalid login credentials') {
           setError('Feil e-post eller passord');
+        } else if (authError.message.toLowerCase().includes('email not confirmed')) {
+          setError('E-posten din er ikke bekreftet ennå. Sjekk innboksen (og søppelpost) for bekreftelseslenken.');
         } else {
           setError(authError.message);
         }
@@ -68,6 +71,13 @@ function LoginPageContent() {
             <Alert className="border-[#0f515a]/30 bg-[#0f515a]/10">
               <CheckCircle2 className="h-4 w-4 text-[#0f515a]" />
               <AlertDescription className="text-[#0f515a]">{message}</AlertDescription>
+            </Alert>
+          )}
+
+          {urlError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{urlError}</AlertDescription>
             </Alert>
           )}
           
