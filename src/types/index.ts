@@ -328,8 +328,12 @@ export interface AIVisibilityData {
   recommendations: string[];
   /** Hvilke spørsmål faktisk brukte live websøk (flertall) vs. modellkunnskap */
   source?: 'web_search' | 'model_knowledge';
-  /** ISO timestamp for when the check was run (used for 24h throttle in the UI) */
+  /** ISO timestamp for when the check was run */
   checked_at?: string;
+  /** Nøkkelord/bransje spørsmålene ble stilt om (f.eks. «digital markedsføring») */
+  focusKeyword?: string;
+  /** Hvilken modellprofil som ble brukt (hybrid / premium / mini) */
+  modelProfile?: 'hybrid' | 'premium' | 'mini';
 }
 
 // ============================================================================

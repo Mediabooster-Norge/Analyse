@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -107,6 +107,8 @@ function DashboardPageContent() {
     competitorSort,
     setCompetitorSort,
     aiVisibilityResult,
+    aiVisibilityAnalysisId,
+    currentAnalysisId,
     checkingAiVisibility,
     aiVisibilityElapsedTime,
     suggestionSheetOpen,
@@ -147,6 +149,8 @@ function DashboardPageContent() {
     setGeneratedSocialPost,
     analysisHistory,
     checkAiVisibility,
+    aiVisibilityKeyword,
+    setAiVisibilityKeyword,
     retryPageSpeed,
     startEditingCompetitors,
     addEditCompetitor,
@@ -166,6 +170,12 @@ function DashboardPageContent() {
   const FREE_KEYWORD_LIMIT = limits.keywords;
   const FREE_COMPETITOR_LIMIT = limits.competitors;
   const hasUnlimitedAnalyses = FREE_MONTHLY_LIMIT >= 999;
+
+  useEffect(() => {
+    if (!isPremium && activeTab === 'ai-visibility') {
+      setActiveTab('overview');
+    }
+  }, [isPremium, activeTab, setActiveTab]);
 
   const analysisSteps = ANALYSIS_STEPS;
 
@@ -556,6 +566,7 @@ function DashboardPageContent() {
             <TabNavigation
               activeTab={activeTab}
               onTabChange={setActiveTab}
+              isPremium={isPremium}
               competitorCount={result.competitors?.length}
               keywordCount={result.keywordResearch?.length}
             />
@@ -585,6 +596,8 @@ function DashboardPageContent() {
               loadingPageSpeed={loadingPageSpeed}
               retryPageSpeed={retryPageSpeed}
               aiVisibilityResult={aiVisibilityResult}
+              currentAnalysisId={currentAnalysisId}
+              aiVisibilityAnalysisId={aiVisibilityAnalysisId}
             />
           )}
 
@@ -644,17 +657,22 @@ function DashboardPageContent() {
             <AiTab result={result} fetchAISuggestion={fetchAISuggestion} />
           )}
 
-          {activeTab === 'ai-visibility' && (
+          {activeTab === 'ai-visibility' && isPremium && (
             <AiVisibilityTab
               result={result}
               isPremium={isPremium}
               aiVisibilityResult={aiVisibilityResult}
+              currentAnalysisId={currentAnalysisId}
+              aiVisibilityAnalysisId={aiVisibilityAnalysisId}
               companyUrl={companyUrl}
               url={url}
               companyName={companyName}
               checkingAiVisibility={checkingAiVisibility}
               aiVisibilityElapsedTime={aiVisibilityElapsedTime}
+              aiVisibilityKeyword={aiVisibilityKeyword}
+              setAiVisibilityKeyword={setAiVisibilityKeyword}
               onCheckAiVisibility={checkAiVisibility}
+              onGoToKeywords={() => setActiveTab('keywords')}
             />
           )}
 

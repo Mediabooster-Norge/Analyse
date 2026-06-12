@@ -4,6 +4,12 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { usePremium, getPremiumLimits } from '@/hooks/usePremium';
 import { toast } from 'sonner';
+import {
+  getVisibilityKeywordOptions,
+  getDefaultAiVisibilityKeyword,
+  hasKeywordsForAiVisibility,
+  normalizeVisibilityKeyword,
+} from '@/lib/utils/visibility-keywords';
 import type {
   DashboardAnalysisResult,
   DashboardTab,
@@ -80,6 +86,10 @@ interface DashboardState {
   
   // AI features
   aiVisibilityResult: AIVisibilityData | null;
+  /** Analyse-ID session-resultatet tilhører (unngår lekkasje mellom analyser) */
+  aiVisibilityAnalysisId: string | null;
+  /** Valgt nøkkelord for AI-synlighetssjekk (bransjekontekst) */
+  aiVisibilityKeyword: string | null;
   checkingAiVisibility: boolean;
   /** Sekunder siden «Kjør sjekk» startet (for modal-timer) */
   aiVisibilityElapsedTime: number;
@@ -254,6 +264,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     keywordSort: null,
     competitorSort: null,
     aiVisibilityResult: null,
+    aiVisibilityAnalysisId: null,
+    aiVisibilityKeyword: null,
     checkingAiVisibility: false,
     aiVisibilityElapsedTime: 0,
     suggestingKeywords: false,
@@ -280,16 +292,21 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
   });
 
   const [cacheKey, setCacheKey] = useState<string | null>(null);
+  const dataLoadedFromServerRef = useRef(false);
 
   // Helper to update state partially
   const updateState = useCallback((updates: Partial<DashboardState>) => {
     setState(prev => ({ ...prev, ...updates }));
   }, []);
 
+  useEffect(() => {
+    dataLoadedFromServerRef.current = false;
+  }, [analysisIdFromUrl]);
+
   // Load cached data only when viewing a specific analysis and cache matches that analysis.
   // When viewing "latest" (no analysisIdFromUrl), do not apply cache so Supabase fetch result is not overwritten.
   useEffect(() => {
-    if (!cacheKey || !analysisIdFromUrl) return;
+    if (!cacheKey || !analysisIdFromUrl || dataLoadedFromServerRef.current) return;
 
     try {
       const cached = sessionStorage.getItem(cacheKey);
@@ -314,6 +331,13 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             companyId: data.companyId || null,
             competitorUrls: cachedCompetitors,
             keywords: cachedKeywords,
+            aiVisibilityResult: data.aiVisibilityResult ?? data.result?.aiVisibility ?? null,
+            aiVisibilityAnalysisId:
+              data.aiVisibilityAnalysisId ??
+              (data.aiVisibilityResult || data.result?.aiVisibility ? data.currentAnalysisId : null),
+            aiVisibilityKeyword:
+              data.aiVisibilityKeyword ??
+              getDefaultAiVisibilityKeyword(data.result ?? null),
             loading: data.result ? false : state.loading,
           });
         }
@@ -377,6 +401,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         const { data: analysis } = await analysisQuery.maybeSingle();
 
         if (analysis) {
+          dataLoadedFromServerRef.current = true;
 
           // Pre-fill competitors and keywords from the loaded analysis
           const loadedCompetitors = (analysis.competitor_results || [])
@@ -447,6 +472,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             }
           }
 
+          const mappedResult = mapAnalysisRowToResult(analysis);
+
           updateState({
             currentAnalysisId: analysis.id,
             companyUrl: analysis.website_url || null,
@@ -462,7 +489,10 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             socialPostSuggestions: savedSocialSuggestions,
             socialPostSuggestionsSavedAt: savedSocialSuggestionsAt,
             analysisHistory,
-            result: mapAnalysisRowToResult(analysis),
+            result: mappedResult,
+            aiVisibilityResult: mappedResult.aiVisibility ?? null,
+            aiVisibilityAnalysisId: mappedResult.aiVisibility ? analysis.id : null,
+            aiVisibilityKeyword: getDefaultAiVisibilityKeyword(mappedResult),
             // When opening fresh "new analysis" dialog, keep input fields empty.
             // Otherwise pre-fill from the loaded analysis.
             ...(showNewDialog
@@ -471,6 +501,9 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             ),
           });
         } else {
+          if (analysisIdFromUrl) {
+            dataLoadedFromServerRef.current = true;
+          }
           updateState({
             userName: firstName || null,
             remainingAnalyses: Math.max(0, FREE_MONTHLY_LIMIT - analysisCount),
@@ -479,7 +512,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           });
         }
       }
-      
+
       updateState({ loading: false });
     }
     
@@ -506,6 +539,9 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           selectedSocialPlatform: state.selectedSocialPlatform,
           currentAnalysisId: state.currentAnalysisId,
           companyId: state.companyId,
+          aiVisibilityResult: state.aiVisibilityResult,
+          aiVisibilityAnalysisId: state.aiVisibilityAnalysisId,
+          aiVisibilityKeyword: state.aiVisibilityKeyword,
           timestamp: Date.now(),
         };
         sessionStorage.setItem(cacheKey, JSON.stringify(cacheData));
@@ -517,7 +553,9 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       state.remainingAnalyses, state.remainingCompetitorUpdates, state.remainingKeywordUpdates,
       state.remainingArticleGenerations, state.articleGenerationsLimit,
       state.socialPostSuggestions, state.socialPostSuggestionsSavedAt, state.selectedSocialPlatform,
-      state.currentAnalysisId, state.companyId, state.loading, cacheKey]);
+      state.currentAnalysisId, state.companyId,
+      state.aiVisibilityResult, state.aiVisibilityAnalysisId, state.aiVisibilityKeyword,
+      state.loading, cacheKey]);
 
   // Timer for analysis
   useEffect(() => {
@@ -587,14 +625,38 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
   const setEditCompetitorInput = useCallback((input: string) => updateState({ editCompetitorInput: input }), [updateState]);
   const setEditKeywordInput = useCallback((input: string) => updateState({ editKeywordInput: input }), [updateState]);
   const setAiVisibilityResult = useCallback((data: AIVisibilityData | null) => updateState({ aiVisibilityResult: data }), [updateState]);
+  const setAiVisibilityKeyword = useCallback(
+    (keyword: string | null) => updateState({ aiVisibilityKeyword: keyword }),
+    [updateState]
+  );
 
   const checkAiVisibility = useCallback(async () => {
+    if (!isPremium) {
+      toast.error('AI-synlighet er en Premium-funksjon');
+      return;
+    }
+    if (!hasKeywordsForAiVisibility(state.result)) {
+      toast.error('Legg til nøkkelord først', {
+        description: 'Gå til SEO / Nøkkelord, legg til nøkkelord og trykk «Oppdater analyse».',
+      });
+      return;
+    }
+
     updateState({ checkingAiVisibility: true });
     try {
+      const keywordOptions = getVisibilityKeywordOptions(state.result);
+      const normalizedSelection = state.aiVisibilityKeyword
+        ? normalizeVisibilityKeyword(state.aiVisibilityKeyword)
+        : '';
+      const focusKeyword =
+        normalizedSelection && keywordOptions.includes(normalizedSelection)
+          ? normalizedSelection
+          : keywordOptions[0];
+
       const body: Record<string, unknown> = {
         url: state.companyUrl || state.url,
         companyName: state.companyName,
-        keywords: state.result?.keywordResearch?.slice(0, 3).map((k) => k.keyword) || [],
+        keywords: focusKeyword ? [focusKeyword] : [],
         analysisId: state.currentAnalysisId || undefined,
       };
       const response = await fetch('/api/analyze/ai-visibility', {
@@ -620,6 +682,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           toast.error((data.error as string) || 'AI-synlighet kunne ikke sjekkes pga. API-begrensning. Prøv igjen senere.');
         } else if (response.status === 401) {
           toast.error('Logg inn for å kjøre sjekk');
+        } else if (response.status === 400 && data.keywordsRequired) {
+          toast.error((data.error as string) || 'Legg til nøkkelord først');
         } else {
           toast.error((data.error as string) || 'Kunne ikke sjekke AI-synlighet');
         }
@@ -633,7 +697,15 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
 
       const visibility = data.ai_visibility ?? (data.score !== undefined ? (data as unknown as AIVisibilityData) : null);
       if (visibility) {
-        updateState({ aiVisibilityResult: visibility });
+        setState((prev) => ({
+          ...prev,
+          aiVisibilityResult: visibility,
+          aiVisibilityAnalysisId: prev.currentAnalysisId,
+          aiVisibilityKeyword: focusKeyword,
+          result: prev.result
+            ? { ...prev.result, aiVisibility: visibility }
+            : prev.result,
+        }));
         const remaining = data.remaining;
         const limit = data.limit;
         const estimated = (visibility as AIVisibilityData & { source?: string }).source === 'model_knowledge' || data.source === 'model_knowledge';
@@ -649,7 +721,16 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     } finally {
       updateState({ checkingAiVisibility: false });
     }
-  }, [state.companyUrl, state.url, state.companyName, state.result, state.currentAnalysisId, updateState]);
+  }, [
+    state.companyUrl,
+    state.url,
+    state.companyName,
+    state.result,
+    state.aiVisibilityKeyword,
+    state.currentAnalysisId,
+    isPremium,
+    updateState,
+  ]);
 
   const addKeyword = useCallback(() => {
     const trimmed = state.keywordInput.trim().toLowerCase();
@@ -705,7 +786,14 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     }
 
     const isSubpage = !!state.subpageUrl;
-    updateState({ analyzing: true, analysisStep: 0, result: null });
+    updateState({
+      analyzing: true,
+      analysisStep: 0,
+      result: null,
+      aiVisibilityResult: null,
+      aiVisibilityAnalysisId: null,
+      aiVisibilityKeyword: null,
+    });
 
     const stepTimings = [5000, 8000, 12000, 8000, 12000];
     let currentStep = 0;
@@ -800,6 +888,9 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         competitorProgress: willFetchCompetitors ? { current: 0, total: competitorUrlsToFetch.length } : null,
         analysisStep: willFetchPageSpeed || willFetchCompetitors ? 5 : state.analysisStep,
         activeTab: 'overview',
+        aiVisibilityResult: mappedResult?.aiVisibility ?? null,
+        aiVisibilityAnalysisId: mappedResult?.aiVisibility && analysisId ? analysisId : null,
+        aiVisibilityKeyword: getDefaultAiVisibilityKeyword(mappedResult),
         ...(isSubpage ? { articleSuggestions: null, articleSuggestionsSavedAt: null } : {}),
       });
       if (!willFetchPageSpeed && !willFetchCompetitors) toast.success('Analyse fullført!');
@@ -1508,26 +1599,44 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         throw new Error(errorData?.error || 'Kunne ikke oppdatere nøkkelordanalyse');
       }
       const data = await response.json();
-      if (state.result && data.keywordResearch) {
-        const nextRemaining =
-          typeof data.remainingAnalyses === 'number'
-            ? data.remainingAnalyses
-            : Math.max(0, state.remainingAnalyses - 1);
-        updateState({
-          result: { ...state.result, keywordResearch: data.keywordResearch },
-          remainingAnalyses: nextRemaining,
-          editingKeywords: false,
-          editKeywords: [],
-        });
-        if (state.currentAnalysisId) {
-          const supabase = createClient();
-          await supabase
-            .from('analyses')
-            .update({ keyword_research: data.keywordResearch })
-            .eq('id', state.currentAnalysisId);
-        }
-        toast.success('Nøkkelordanalyse oppdatert!');
+      if (!data.keywordResearch) {
+        throw new Error('Manglende nøkkelorddata fra server');
       }
+
+      const keywordResearch = data.keywordResearch;
+      const savedKeywords = keywordResearch.map((k: { keyword: string }) => k.keyword);
+
+      if (state.currentAnalysisId) {
+        const supabase = createClient();
+        const { error: saveError } = await supabase
+          .from('analyses')
+          .update({ keyword_research: keywordResearch })
+          .eq('id', state.currentAnalysisId);
+        if (saveError) {
+          throw new Error('Kunne ikke lagre nøkkelord – prøv igjen');
+        }
+      }
+
+      const nextRemaining =
+        typeof data.remainingAnalyses === 'number'
+          ? data.remainingAnalyses
+          : Math.max(0, state.remainingAnalyses - 1);
+
+      setState((prev) => ({
+        ...prev,
+        result: prev.result ? { ...prev.result, keywordResearch } : prev.result,
+        keywords: savedKeywords,
+        remainingAnalyses: nextRemaining,
+        editingKeywords: false,
+        editKeywords: [],
+        aiVisibilityKeyword: getDefaultAiVisibilityKeyword(
+          prev.result ? { ...prev.result, keywordResearch } : null
+        ),
+      }));
+      if (data.truncated && typeof data.keywordLimit === 'number') {
+        toast.warning(`Kun de første ${data.keywordLimit} nøkkelordene ble analysert (planbegrensning).`);
+      }
+      toast.success('Nøkkelordanalyse oppdatert!');
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'En feil oppstod');
     } finally {
@@ -1608,6 +1717,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     setEditKeywordInput,
     setAiVisibilityResult,
     checkAiVisibility,
+    aiVisibilityKeyword: state.aiVisibilityKeyword,
+    setAiVisibilityKeyword,
     addKeyword,
     removeKeyword,
     clearKeywords,

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { DashboardAnalysisResult, KeywordResearchData, KeywordSort } from '@/types/dashboard';
@@ -16,6 +17,12 @@ import {
   Minus,
 } from 'lucide-react';
 import { RocketIcon } from '../rocket-icon';
+
+const KEYWORD_UPDATE_MESSAGES = [
+  'Henter søkedata for nøkkelordene...',
+  'Analyserer søkevolum og konkurranse...',
+  'Bygger nøkkelordtabellen...',
+];
 
 export interface KeywordsTabProps {
   result: DashboardAnalysisResult;
@@ -70,6 +77,29 @@ export function KeywordsTab({
   const quotaHint = hasUnlimitedAnalyses
     ? null
     : `${remainingAnalyses} av ${monthlyAnalysisLimit} analyser igjen denne måneden`;
+
+  const [updateMessageIndex, setUpdateMessageIndex] = useState(0);
+  const [updateElapsed, setUpdateElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!updatingKeywords) return;
+
+    setUpdateMessageIndex(0);
+    setUpdateElapsed(0);
+
+    const messageInterval = setInterval(() => {
+      setUpdateMessageIndex((prev) => (prev + 1) % KEYWORD_UPDATE_MESSAGES.length);
+    }, 3500);
+
+    const elapsedInterval = setInterval(() => {
+      setUpdateElapsed((prev) => prev + 1);
+    }, 1000);
+
+    return () => {
+      clearInterval(messageInterval);
+      clearInterval(elapsedInterval);
+    };
+  }, [updatingKeywords]);
 
   const keywordActionButtons = (
     <div className="flex items-center gap-2 flex-wrap">
@@ -142,6 +172,7 @@ export function KeywordsTab({
             <div className="space-y-1">
               <p className="text-sm text-neutral-600">
                 Legg til nøkkelord du vil analysere. Trykk Enter eller &quot;Legg til&quot; etter hvert nøkkelord.
+                Nøkkelord lagres når du trykker «Oppdater analyse» nedenfor.
               </p>
               {!hasUnlimitedAnalyses && (
                 <p className="text-xs text-neutral-500">
@@ -202,6 +233,49 @@ export function KeywordsTab({
               </div>
             )}
 
+            {updatingKeywords && (
+              <div className="rounded-xl border border-neutral-200 bg-white p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="relative w-11 h-11 shrink-0">
+                    <svg className="w-11 h-11 -rotate-90" viewBox="0 0 44 44">
+                      <circle cx="22" cy="22" r="18" fill="none" stroke="#e5e5e5" strokeWidth="3" />
+                      <circle
+                        cx="22"
+                        cy="22"
+                        r="18"
+                        fill="none"
+                        stroke="#737373"
+                        strokeWidth="3"
+                        strokeLinecap="round"
+                        className="animate-pulse"
+                        strokeDasharray="56.5 113"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 text-neutral-600 animate-spin" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-neutral-900">
+                      {KEYWORD_UPDATE_MESSAGES[updateMessageIndex]}
+                    </p>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      Vanligvis 10–30 sekunder · teller som én analyse fra kvoten
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-neutral-50 border border-neutral-200 shrink-0">
+                    <div className="w-1.5 h-1.5 rounded-full bg-neutral-900 animate-pulse" />
+                    <span className="text-xs font-medium text-neutral-700 tabular-nums">
+                      {Math.floor(updateElapsed / 60)}:{(updateElapsed % 60).toString().padStart(2, '0')}
+                    </span>
+                  </div>
+                </div>
+                <div className="h-1.5 bg-neutral-100 rounded-full overflow-hidden">
+                  <div className="h-full w-1/3 bg-neutral-800 rounded-full animate-[pulse_1.5s_ease-in-out_infinite]" />
+                </div>
+              </div>
+            )}
+
             <Button
               onClick={updateKeywordAnalysis}
               disabled={
@@ -214,7 +288,7 @@ export function KeywordsTab({
               {updatingKeywords ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Oppdaterer...
+                  Oppdaterer nøkkelord...
                 </>
               ) : (
                 <>

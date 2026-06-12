@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { generateKeywordResearch } from '@/lib/services/openai';
 import { getPremiumStatusServer } from '@/lib/premium-server';
+import { getKeywordLimit } from '@/lib/constants/premium';
+import { generateKeywordResearchForList } from '@/lib/utils/keyword-research';
 import {
   checkMonthlyAnalysisQuota,
   recordAnalysisQuotaEvent,
   buildAnalysisLimitError,
 } from '@/lib/analysis-quota';
 
-export const maxDuration = 30; // Allow up to 30 seconds for keyword research
+export const maxDuration = 60;
 
 interface KeywordAnalyzeRequest {
   keywords: string[];
@@ -49,11 +50,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Limit to 10 keywords max
-    const limitedKeywords = keywords.slice(0, 10);
+    const keywordLimit = getKeywordLimit(premiumStatus.isPremium);
+    const limitedKeywords = keywords
+      .map((k) => k.trim().toLowerCase())
+      .filter(Boolean)
+      .slice(0, keywordLimit);
 
-    // Run keyword research
-    const keywordResult = await generateKeywordResearch(limitedKeywords, industry);
+    const keywordResult = await generateKeywordResearchForList(limitedKeywords, industry);
 
     if (!keywordResult || keywordResult.keywords.length === 0) {
       return NextResponse.json({ error: 'Failed to generate keyword research' }, { status: 500 });
@@ -64,6 +67,8 @@ export async function POST(request: NextRequest) {
     const remainingAnalyses =
       quota.limit >= 999 ? quota.limit : Math.max(0, quota.limit - quota.usage - 1);
 
+    const normalizedInput = keywords.map((k) => k.trim().toLowerCase()).filter(Boolean);
+
     return NextResponse.json({
       success: true,
       keywordResearch: keywordResult.keywords,
@@ -71,6 +76,8 @@ export async function POST(request: NextRequest) {
       costUsd: keywordResult.costUsd,
       remainingAnalyses,
       monthlyLimit: quota.limit,
+      keywordLimit,
+      truncated: normalizedInput.length > limitedKeywords.length,
     });
   } catch (error) {
     console.error('Keyword research error:', error);

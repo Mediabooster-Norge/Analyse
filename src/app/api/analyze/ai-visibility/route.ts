@@ -3,8 +3,18 @@ import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getPremiumStatusServer } from '@/lib/premium-server';
+import {
+  getAiVisibilityModelMode,
+  resolveModelProfile,
+  resolveQueryModel,
+  resolveInsightModel,
+  optionalTemperature,
+  chatCompletionTokenLimit,
+  AI_VISIBILITY_WEB_SEARCH_TOOL,
+} from '@/lib/ai-visibility-models';
+import { normalizeVisibilityKeyword } from '@/lib/utils/visibility-keywords';
 
-export const maxDuration = 60; // Kun eget domene (10 spørsmål, kjøres parallelt)
+export const maxDuration = 60; // 10 spørsmål parallelt (hybrid: gpt-5-mini + gpt-4o-mini)
 
 interface AIVisibilityRequest {
   /** Domene-URL som skal sjekkes (påkrevd) */
@@ -19,10 +29,9 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Model & cost: Primary = Responses API (gpt-4o-mini + web_search) for live search at lower token cost.
-// Fallback = Chat Completions (gpt-4o-mini, no web search) ved feil/429.
-// Kjøring: 10 spørsmål parallelt (concurrency-grense) + ev. 1 oppsummeringskall for konkurrent-innsikt.
-// Estimert kostnad: web search ~$0.01/kall + tokens → ca. $0.10–0.20 per kjøring.
+// Modell: AI_VISIBILITY_QUERY_MODEL=hybrid|premium|mini|auto (standard hybrid).
+// hybrid = gpt-5-mini på nøytrale spørsmål, gpt-4o-mini på navngitte. Websøk med user_location NO.
+// Fallback = Chat Completions uten websøk ved feil/429. Estimert kostnad: ca. $0.15–0.35 per kjøring (hybrid).
 
 /** Hvor mange spørringer som kjøres samtidig (holder oss trygt under maxDuration). */
 const QUERY_CONCURRENCY = 4;
@@ -46,6 +55,10 @@ type AIVisibilityPayload = {
   recommendations: string[];
   /** 'web_search' når flertallet av spørringene brukte live søk, ellers 'model_knowledge'. */
   source?: 'web_search' | 'model_knowledge';
+  /** Bransjenøkkelord spørsmålene ble stilt om */
+  focusKeyword?: string;
+  /** hybrid | premium | mini */
+  modelProfile?: 'hybrid' | 'premium' | 'mini';
 };
 
 /** Kjører async-funksjon over en liste med en maks samtidighet, bevarer rekkefølge. */
@@ -76,18 +89,53 @@ function buildNameRegex(name: string): RegExp | null {
   return new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}([^\\p{L}\\p{N}]|$)`, 'iu');
 }
 
+/** Hoveddel av domenet uten TLD, f.eks. «iteo» fra iteo.com – brukes når AI nevner merkenavn, ikke domene. */
+function getDomainBrand(domain: string): string | null {
+  const host = domain.toLowerCase().replace(/^www\./, '');
+  const parts = host.split('.').filter(Boolean);
+  if (parts.length < 2) return null;
+  const sld = parts[parts.length - 2];
+  if (!sld || sld.length <= 3) return null;
+  return sld;
+}
+
+/** Navn/alias vi skal lete etter i AI-svar (domene, merke fra domene, firmanavn). */
+function buildVisibilityMatchTerms(domain: string, companyName?: string): string[] {
+  const terms = new Set<string>();
+  const domainLower = domain.toLowerCase().replace(/^www\./, '');
+  terms.add(domainLower);
+
+  const brand = getDomainBrand(domainLower);
+  if (brand) terms.add(brand);
+
+  const rawName = companyName?.trim();
+  if (rawName) {
+    terms.add(rawName.toLowerCase());
+    const firstToken = rawName.split(/[\s|–—-]+/)[0]?.trim().toLowerCase();
+    if (firstToken && firstToken.length > 3) terms.add(firstToken);
+  }
+
+  return [...terms];
+}
+
+function termAppearsInResponse(responseLower: string, term: string): boolean {
+  if (term.includes('.')) {
+    return responseLower.includes(term);
+  }
+  const regex = buildNameRegex(term);
+  return regex ? regex.test(responseLower) : responseLower.includes(term);
+}
+
 /**
  * Avgjør om svaret nevner bedriften, og om det skjer i en negativ/usikker kontekst.
  * Returnerer { appears, negated } slik at en "kjenner ikke til X"-respons ikke gir poeng.
  */
 function classifyResponse(
   responseLower: string,
-  domainLower: string,
-  nameRegex: RegExp | null,
+  matchTerms: string[],
   notFoundPhrases: string[]
 ): { appears: boolean; negated: boolean } {
-  const appears =
-    responseLower.includes(domainLower) || (nameRegex ? nameRegex.test(responseLower) : false);
+  const appears = matchTerms.some((term) => termAppearsInResponse(responseLower, term));
   const negated = notFoundPhrases.some((phrase) => responseLower.includes(phrase));
   return { appears, negated };
 }
@@ -97,6 +145,7 @@ async function runOneVisibilityCheck(
   companyName?: string,
   keywords: string[] = []
 ): Promise<AIVisibilityPayload> {
+  keywords = keywords.map(normalizeVisibilityKeyword).filter(Boolean);
   let domain: string;
   try {
     const urlObj = new URL(url.startsWith('http') ? url : `https://${url}`);
@@ -212,8 +261,7 @@ async function runOneVisibilityCheck(
     ];
   }
 
-  const domainLower = domain.toLowerCase();
-  const nameRegex = buildNameRegex(name);
+  const matchTerms = buildVisibilityMatchTerms(domain, companyName);
   const notFoundPhrases = [
     'finner ingen informasjon',
     'ingen kjent informasjon',
@@ -250,6 +298,9 @@ async function runOneVisibilityCheck(
     error: boolean;
   };
 
+  const modelMode = getAiVisibilityModelMode();
+  const modelProfile = resolveModelProfile(modelMode);
+
   const queryResults = await mapWithConcurrency<QuerySpec, QueryResult>(
     specs,
     QUERY_CONCURRENCY,
@@ -257,13 +308,14 @@ async function runOneVisibilityCheck(
       let resultContent = '';
       let queryError = false;
       let usedWebSearch = false;
+      const queryModel = resolveQueryModel(spec.type, modelMode);
 
       try {
         const response = await openai.responses.create({
-          model: 'gpt-4o-mini',
-          tools: [{ type: 'web_search' as const }],
+          model: queryModel,
+          tools: [AI_VISIBILITY_WEB_SEARCH_TOOL],
           input: spec.web,
-          temperature: QUERY_TEMPERATURE,
+          ...optionalTemperature(queryModel, QUERY_TEMPERATURE),
         });
         resultContent = (response.output_text || '').trim().replace(/\n{3,}/g, '\n\n');
         usedWebSearch = true;
@@ -277,8 +329,8 @@ async function runOneVisibilityCheck(
 
         try {
           const completion = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
-            temperature: QUERY_TEMPERATURE,
+            model: queryModel,
+            ...optionalTemperature(queryModel, QUERY_TEMPERATURE),
             messages: [
               {
                 role: 'system',
@@ -287,7 +339,7 @@ async function runOneVisibilityCheck(
               },
               { role: 'user', content: spec.model },
             ],
-            max_tokens: 300,
+            ...chatCompletionTokenLimit(queryModel, 300),
           });
           const raw = completion.choices[0]?.message?.content ?? '';
           if (raw.trim()) {
@@ -309,7 +361,7 @@ async function runOneVisibilityCheck(
       const contentLower = resultContent.toLowerCase();
       const { appears, negated } = queryError
         ? { appears: false, negated: false }
-        : classifyResponse(contentLower, domainLower, nameRegex, notFoundPhrases);
+        : classifyResponse(contentLower, matchTerms, notFoundPhrases);
       // "known" = bedriften dukker opp positivt. En "kjenner ikke til X"-respons gir IKKE poeng.
       const known = appears && !negated;
       const uncertain = appears && negated;
@@ -396,6 +448,8 @@ async function runOneVisibilityCheck(
         `AI anbefaler i dag andre aktører (f.eks. ${competitorsMentioned.slice(0, 3).join(', ')}) på nøytrale spørsmål – jobb med omtale og innhold for å bli nevnt`,
     ].filter(Boolean) as string[],
     source: valid.length > 0 ? source : undefined,
+    modelProfile,
+    ...(hasKeyword ? { focusKeyword: rawKeyword } : {}),
   };
 }
 
@@ -410,9 +464,10 @@ async function extractCompetitorInsight(
       .slice(0, 5)
       .map((r, i) => `Svar ${i + 1}: ${r}`)
       .join('\n\n');
+    const insightModel = resolveInsightModel();
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      temperature: 0,
+      model: insightModel,
+      ...optionalTemperature(insightModel, 0),
       response_format: { type: 'json_object' },
       messages: [
         {
@@ -424,7 +479,7 @@ async function extractCompetitorInsight(
           content: `Følgende er AI-svar på nøytrale spørsmål om "${k}" i Norge, der bedriften "${name}" IKKE ble anbefalt.\n\n${joined}\n\nReturner JSON på formen {"competitors": string[], "insight": string}. "competitors" = inntil 6 unike, faktiske firmanavn som ble anbefalt (ekskluder "${name}", ekskluder generiske ord). "insight" = én kort norsk setning om hva dette betyr for ${name}s AI-synlighet.`,
         },
       ],
-      max_tokens: 250,
+      ...chatCompletionTokenLimit(insightModel, 250),
     });
     const raw = completion.choices[0]?.message?.content ?? '';
     if (!raw.trim()) return null;
@@ -516,7 +571,7 @@ function getDomainFromUrl(url: string): string {
  * Lagres i `domain`-kolonnen (som er conflict target) for å unngå migrasjon.
  */
 function buildCacheKey(domain: string, keywords: string[]): string {
-  const top = (keywords[0] ?? keywords[1] ?? '').toLowerCase().trim().replace(/\s+/g, '-');
+  const top = normalizeVisibilityKeyword(keywords[0] ?? keywords[1] ?? '').replace(/\s+/g, '-');
   return top ? `${domain}|kw:${top}` : domain;
 }
 
@@ -591,8 +646,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 });
     }
 
+    const focusKeyword = normalizeVisibilityKeyword(keywords[0] ?? '');
+    const normalizedKeywords = focusKeyword ? [focusKeyword] : [];
+    if (!focusKeyword) {
+      return NextResponse.json(
+        {
+          error:
+            'Legg til nøkkelord under SEO / Nøkkelord og oppdater analysen før du kjører AI-synlighetssjekk.',
+          keywordsRequired: true,
+        },
+        { status: 400 }
+      );
+    }
+
     const mainDomain = getDomainFromUrl(url);
-    const cacheKey = buildCacheKey(mainDomain, keywords);
+    const cacheKey = buildCacheKey(mainDomain, normalizedKeywords);
 
     /** Renser, beskriver og lagrer payload på analysen, og returnerer responsen. */
     const respondWithPayload = async (raw: AIVisibilityPayload, remaining: number) => {
@@ -614,7 +682,7 @@ export async function POST(request: NextRequest) {
       });
     };
 
-    // Cache-treff: server umiddelbart UTEN å belaste kvote eller 24t-throttle (ingen ny kostnad).
+    // Cache-treff: server umiddelbart uten å belaste månedskvote (ingen ny kostnad).
     const cached = await getCachedPayload(supabase, cacheKey);
     if (cached && cached.details.queriesTested > 0) {
       return respondWithPayload(cached, Math.max(0, limit - used));
@@ -632,38 +700,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const skip24hThrottle =
-      process.env.AI_VISIBILITY_SKIP_24H_THROTTLE === 'true' ||
-      process.env.AI_VISIBILITY_SKIP_24H_THROTTLE === '1';
-
-    if (!skip24hThrottle && analysisId && typeof analysisId === 'string') {
-      const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-      const { data: recentForAnalysis, error: recentError } = await supabase
-        .from('ai_visibility_checks')
-        .select('id, created_at')
-        .eq('user_id', user.id)
-        .eq('analysis_id', analysisId)
-        .gte('created_at', twentyFourHoursAgo)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (recentError) {
-        console.error('ai_visibility_checks recent check error:', recentError);
-      } else if (recentForAnalysis?.created_at) {
-        const lastCheckTime = new Date(recentForAnalysis.created_at).getTime();
-        const throttleUntilIso = new Date(lastCheckTime + 24 * 60 * 60 * 1000).toISOString();
-        return NextResponse.json(
-          {
-            error:
-              'Du har allerede kjørt AI-synlighetssjekk for denne analysen i løpet av siste 24 timer. Prøv igjen senere.',
-            throttleUntil: throttleUntilIso,
-          },
-          { status: 429 }
-        );
-      }
-    }
-
     if (!process.env.OPENAI_API_KEY) {
       return NextResponse.json({
         score: null,
@@ -672,7 +708,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const mainPayload = await runOneVisibilityCheck(url, companyName, keywords);
+    const mainPayload = await runOneVisibilityCheck(url, companyName, normalizedKeywords);
 
     if (mainPayload.details.queriesTested === 0) {
       return NextResponse.json(

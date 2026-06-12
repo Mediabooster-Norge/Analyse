@@ -29,6 +29,14 @@ export const UNLIMITED_MONTHLY_AI_VISIBILITY_LIMIT = 999;
 /** Free-tier monthly analysis limit (matches DB default) */
 export const FREE_MONTHLY_ANALYSIS_LIMIT = 5;
 
+/** Max keywords per analysis by plan */
+export const FREE_KEYWORD_LIMIT = 10;
+export const PREMIUM_KEYWORD_LIMIT = 50;
+
+export function getKeywordLimit(isPremium: boolean): number {
+  return isPremium ? PREMIUM_KEYWORD_LIMIT : FREE_KEYWORD_LIMIT;
+}
+
 /** Premium-tier monthly analysis limit (non-Mediabooster users) */
 export const PREMIUM_MONTHLY_ANALYSIS_LIMIT = 30;
 

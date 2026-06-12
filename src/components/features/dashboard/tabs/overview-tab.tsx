@@ -15,7 +15,13 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { ScoreRing, SummaryCard, MetricCard, ScoreTrendChart, SocialPreview, RocketIcon } from '@/components/features/dashboard';
-import type { DashboardAnalysisResult, ArticleSuggestion, GeneratedArticleResult } from '@/types/dashboard';
+import type {
+  DashboardAnalysisResult,
+  ArticleSuggestion,
+  GeneratedArticleResult,
+  AIVisibilityData,
+} from '@/types/dashboard';
+import { resolveAiVisibilityData } from '@/lib/utils/visibility-keywords';
 import {
   Search,
   TrendingUp,
@@ -104,7 +110,9 @@ export interface OverviewTabProps {
   /** Re-run only the PageSpeed test for the current analysis */
   retryPageSpeed?: () => void;
   /** AI-synlighet fra manuell sjekk (viser i oversikt til result er oppdatert) */
-  aiVisibilityResult?: { score: number; level: string; description: string } | null;
+  aiVisibilityResult?: AIVisibilityData | null;
+  currentAnalysisId?: string | null;
+  aiVisibilityAnalysisId?: string | null;
   /** Readonly shared/preview view — disables AI interactions and upgrade prompts */
   readOnly?: boolean;
 }
@@ -131,9 +139,17 @@ export function OverviewTab({
   loadingPageSpeed = false,
   retryPageSpeed,
   aiVisibilityResult,
+  currentAnalysisId = null,
+  aiVisibilityAnalysisId = null,
   readOnly = false,
 }: OverviewTabProps) {
-  const aiVisibility = result.aiVisibility ?? aiVisibilityResult ?? null;
+  const aiVisibility =
+    resolveAiVisibilityData(
+      result,
+      aiVisibilityResult ?? null,
+      currentAnalysisId,
+      aiVisibilityAnalysisId
+    ) ?? null;
   const copyTitle = (title: string) => {
     navigator.clipboard.writeText(title).then(
       () => toast.success('Tittel kopiert'),
@@ -263,7 +279,7 @@ export function OverviewTab({
                         label="AI"
                         size="md"
                         showStatus={isPremium}
-                        title={`AI-synlighet: ${aiVisibility.score} – hvor godt AI kjenner til og anbefaler bedriften`}
+                        title={`AI-synlighet: ${aiVisibility.score} – hvor godt OpenAI ChatGPT kjenner til og anbefaler bedriften`}
                       />
                       <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">AI-synlighet</p>
                     </>
