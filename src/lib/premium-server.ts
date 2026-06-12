@@ -6,13 +6,11 @@ import {
   UNLIMITED_MONTHLY_ANALYSIS_LIMIT,
   isAllowlistedPremiumEmail,
   getMonthlyAnalysisLimit,
+  getAiVisibilityChecksLimit,
 } from '@/lib/constants/premium';
 
 /** Article generations per month: free 5, premium 30, unlimited 999 */
 const ARTICLE_GENERATIONS = { free: 5, premium: 30, unlimited: 999 };
-
-/** AI visibility checks per month: free 0 (Premium required), premium ubegrenset */
-const AI_VISIBILITY_CHECKS = { free: 0, premium: 999 };
 
 /**
  * Server-side premium check. Use this in API routes and Server Components.
@@ -29,7 +27,7 @@ export async function getPremiumStatusServer(user: User | null): Promise<{
       isPremium: false,
       monthlyAnalysisLimit: 5,
       articleGenerationsPerMonth: ARTICLE_GENERATIONS.free,
-      aiVisibilityChecksPerMonth: AI_VISIBILITY_CHECKS.free,
+      aiVisibilityChecksPerMonth: 0,
     };
   }
 
@@ -39,7 +37,7 @@ export async function getPremiumStatusServer(user: User | null): Promise<{
       isPremium: true,
       monthlyAnalysisLimit: UNLIMITED_MONTHLY_ANALYSIS_LIMIT,
       articleGenerationsPerMonth: hasUnlimitedArticles ? ARTICLE_GENERATIONS.unlimited : ARTICLE_GENERATIONS.premium,
-      aiVisibilityChecksPerMonth: AI_VISIBILITY_CHECKS.premium,
+      aiVisibilityChecksPerMonth: getAiVisibilityChecksLimit(true, user.email),
     };
   }
 
@@ -56,7 +54,7 @@ export async function getPremiumStatusServer(user: User | null): Promise<{
       isPremium: false,
       monthlyAnalysisLimit: 5,
       articleGenerationsPerMonth: ARTICLE_GENERATIONS.free,
-      aiVisibilityChecksPerMonth: AI_VISIBILITY_CHECKS.free,
+      aiVisibilityChecksPerMonth: 0,
     };
   }
 
@@ -69,6 +67,6 @@ export async function getPremiumStatusServer(user: User | null): Promise<{
       data.monthly_analysis_limit
     ),
     articleGenerationsPerMonth: isPremium ? ARTICLE_GENERATIONS.premium : ARTICLE_GENERATIONS.free,
-    aiVisibilityChecksPerMonth: isPremium ? AI_VISIBILITY_CHECKS.premium : AI_VISIBILITY_CHECKS.free,
+    aiVisibilityChecksPerMonth: getAiVisibilityChecksLimit(isPremium, user.email),
   };
 }

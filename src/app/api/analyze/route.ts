@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runFullAnalysis, runCompetitorAnalysis } from '@/lib/analyzers';
 import { createClient } from '@/lib/supabase/server';
 import { getPremiumStatusServer } from '@/lib/premium-server';
+import { checkMonthlyAnalysisQuota, buildAnalysisLimitError } from '@/lib/analysis-quota';
 
 export const maxDuration = 300; // Krever Fluid Compute (Hobby eller Pro). Uten Fluid: Hobby 60s. Med Fluid: 300s på begge.
 
@@ -110,27 +111,17 @@ export async function POST(request: NextRequest) {
       console.log(`[Analyze] Trimmed competitors to ${MAX_COMPETITORS} (isPremium: ${isPremium})`);
     }
     
-    // Check monthly analysis limit
-    const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-    
-    const { data: monthlyAnalyses } = await supabase
-      .from('analyses')
-      .select('id, created_at')
-      .eq('user_id', userId)
-      .gte('created_at', firstDayOfMonth);
+    const quota = await checkMonthlyAnalysisQuota(supabase, user);
 
-    const analysisCount = monthlyAnalyses?.length || 0;
-
-    if (analysisCount >= FREE_MONTHLY_LIMIT && FREE_MONTHLY_LIMIT < 999) {
+    if (quota.limitReached) {
       return NextResponse.json(
-        { 
-          error: `Du har brukt opp dine ${FREE_MONTHLY_LIMIT} gratis analyser denne måneden. Oppgrader til Premium for ubegrensede analyser!`,
+        {
+          error: buildAnalysisLimitError(FREE_MONTHLY_LIMIT, isPremium),
           limitReached: true,
-          analysisCount,
+          analysisCount: quota.usage,
           monthlyLimit: FREE_MONTHLY_LIMIT,
           remainingAnalyses: 0,
-          contactUrl: 'https://mediabooster.no/kontakt/'
+          contactUrl: 'https://mediabooster.no/kontakt/',
         },
         { status: 429 }
       );

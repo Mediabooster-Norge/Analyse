@@ -24,9 +24,10 @@ export interface KeywordsTabProps {
   editKeywords: string[];
   editKeywordInput: string;
   setEditKeywordInput: (v: string) => void;
-  remainingKeywordUpdates: number;
+  remainingAnalyses: number;
+  monthlyAnalysisLimit: number;
+  hasUnlimitedAnalyses: boolean;
   FREE_KEYWORD_LIMIT: number;
-  FREE_UPDATE_LIMIT: number;
   keywordSort: KeywordSort | null;
   setKeywordSort: (v: KeywordSort | null) => void;
   updatingKeywords: boolean;
@@ -35,7 +36,8 @@ export interface KeywordsTabProps {
   removeEditKeyword: (keyword: string) => void;
   cancelEditingKeywords: () => void;
   updateKeywordAnalysis: () => void;
-  suggestKeywords: () => void;
+  suggestKeywordsForTab: () => void;
+  addSuggestedKeyword: (keyword: string) => void;
   suggestingKeywords: boolean;
   readOnly?: boolean;
 }
@@ -47,9 +49,10 @@ export function KeywordsTab({
   editKeywords,
   editKeywordInput,
   setEditKeywordInput,
-  remainingKeywordUpdates,
+  remainingAnalyses,
+  monthlyAnalysisLimit,
+  hasUnlimitedAnalyses,
   FREE_KEYWORD_LIMIT,
-  FREE_UPDATE_LIMIT,
   keywordSort,
   setKeywordSort,
   updatingKeywords,
@@ -58,10 +61,57 @@ export function KeywordsTab({
   removeEditKeyword,
   cancelEditingKeywords,
   updateKeywordAnalysis,
-  suggestKeywords,
+  suggestKeywordsForTab,
+  addSuggestedKeyword,
   suggestingKeywords,
   readOnly = false,
 }: KeywordsTabProps) {
+  const canEditKeywords = !readOnly && (hasUnlimitedAnalyses || remainingAnalyses > 0);
+  const quotaHint = hasUnlimitedAnalyses
+    ? null
+    : `${remainingAnalyses} av ${monthlyAnalysisLimit} analyser igjen denne måneden`;
+
+  const keywordActionButtons = (
+    <div className="flex items-center gap-2 flex-wrap">
+      {!editingKeywords && canEditKeywords && (
+        <>
+          <Button
+            variant="default"
+            size="sm"
+            onClick={suggestKeywordsForTab}
+            disabled={suggestingKeywords}
+            className="rounded-lg text-xs"
+          >
+            {suggestingKeywords ? (
+              <>
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
+                Henter forslag...
+              </>
+            ) : (
+              <>
+                <RocketIcon className="mr-1 h-3.5 w-3.5" />
+                Foreslå nøkkelord
+              </>
+            )}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={startEditingKeywords}
+            className="rounded-lg text-xs"
+          >
+            <Plus className="mr-1 h-3.5 w-3.5" />
+            {result.keywordResearch?.length ? 'Endre nøkkelord' : 'Legg til nøkkelord'}
+            {quotaHint && (
+              <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
+                {remainingAnalyses}/{monthlyAnalysisLimit}
+              </span>
+            )}
+          </Button>
+        </>
+      )}
+    </div>
+  );
   return (
     <>
       {/* Edit Keywords Panel */}
@@ -73,9 +123,9 @@ export function KeywordsTab({
                 <Tag className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-neutral-600" />
                 Rediger nøkkelord
               </h3>
-              {!isPremium && (
+              {quotaHint && (
                 <span className="px-2 py-0.5 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">
-                  {remainingKeywordUpdates} oppdatering{remainingKeywordUpdates !== 1 ? 'er' : ''} igjen
+                  {quotaHint}
                 </span>
               )}
             </div>
@@ -93,9 +143,9 @@ export function KeywordsTab({
               <p className="text-sm text-neutral-600">
                 Legg til nøkkelord du vil analysere. Trykk Enter eller &quot;Legg til&quot; etter hvert nøkkelord.
               </p>
-              {!isPremium && (
+              {!hasUnlimitedAnalyses && (
                 <p className="text-xs text-neutral-500">
-                  Du kan endre nøkkelord opptil {FREE_UPDATE_LIMIT} ganger per analyse.
+                  «Oppdater analyse» teller som én analyse fra månedskvoten ({monthlyAnalysisLimit} per måned).
                 </p>
               )}
             </div>
@@ -154,7 +204,11 @@ export function KeywordsTab({
 
             <Button
               onClick={updateKeywordAnalysis}
-              disabled={updatingKeywords || (!isPremium && remainingKeywordUpdates <= 0) || editKeywords.length === 0}
+              disabled={
+                updatingKeywords ||
+                (!hasUnlimitedAnalyses && remainingAnalyses <= 0) ||
+                editKeywords.length === 0
+              }
               className="w-full rounded-xl bg-neutral-900 hover:bg-neutral-800"
             >
               {updatingKeywords ? (
@@ -188,23 +242,7 @@ export function KeywordsTab({
                 </p>
               </div>
               <div className="flex items-center gap-2 flex-wrap">
-                {!editingKeywords && !readOnly && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={startEditingKeywords}
-                    disabled={!isPremium && remainingKeywordUpdates <= 0}
-                    className="rounded-lg text-xs"
-                  >
-                    <Plus className="mr-1 h-3.5 w-3.5" />
-                    Endre nøkkelord
-                    {!isPremium && (
-                      <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
-                        {remainingKeywordUpdates}/{FREE_UPDATE_LIMIT}
-                      </span>
-                    )}
-                  </Button>
-                )}
+                {keywordActionButtons}
                 <span className="px-2.5 py-1 rounded-full bg-amber-100 text-neutral-900 text-xs font-medium">
                   AI-estimater
                 </span>
@@ -542,9 +580,16 @@ export function KeywordsTab({
                         </h5>
                         <div className="flex flex-wrap gap-1.5">
                           {result.aiSummary.keywordAnalysis.missingKeywords.map((kw, i) => (
-                            <span key={i} className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium border border-amber-200">
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={() => addSuggestedKeyword(kw)}
+                              disabled={!canEditKeywords}
+                              className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-medium border border-amber-200 hover:bg-amber-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                              title={canEditKeywords ? 'Klikk for å legge til i listen' : undefined}
+                            >
                               + {kw}
-                            </span>
+                            </button>
                           ))}
                         </div>
                       </div>
@@ -595,16 +640,17 @@ export function KeywordsTab({
           return (
             <div className="rounded-2xl border border-neutral-200 bg-white overflow-hidden">
               <div className="p-6 border-b border-neutral-100">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
                   <div>
                     <h3 className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-sm font-medium mb-3">
                       <Tag className="h-4 w-4 text-neutral-600" />
                       Nøkkelordanalyse
                     </h3>
                     <p className="text-sm text-neutral-600">
-                      Søkeord fra AI-analyse (CPC/søkevolum ikke tilgjengelig uten nøkkelord i analysen)
+                      Søkeord fra AI-analyse. Legg til eller endre nøkkelord for å hente søkevolum, CPC og konkurranse.
                     </p>
                   </div>
+                  {keywordActionButtons}
                 </div>
               </div>
               <div className="p-6">
@@ -620,19 +666,35 @@ export function KeywordsTab({
                       </tr>
                     </thead>
                     <tbody>
-                      {aiKeywordsAsTable.map((kw, i) => (
+                      {aiKeywordsAsTable.map((kw, i) => {
+                        const isSuggestion = kw.keyword.startsWith('+ ');
+                        const rawKeyword = isSuggestion ? kw.keyword.slice(2) : kw.keyword;
+                        return (
                         <tr key={i} className="border-b border-neutral-100 last:border-b-0">
                           <td className="py-4 px-4">
-                            <span className={`font-medium ${kw.keyword.startsWith('+ ') ? 'text-amber-700' : 'text-neutral-900'}`}>
-                              {kw.keyword}
-                            </span>
+                            {isSuggestion && canEditKeywords ? (
+                              <button
+                                type="button"
+                                onClick={() => addSuggestedKeyword(rawKeyword)}
+                                disabled={!canEditKeywords}
+                                className="font-medium text-amber-700 hover:text-amber-800 hover:underline disabled:opacity-50 disabled:cursor-not-allowed"
+                                title="Klikk for å legge til i listen"
+                              >
+                                + {rawKeyword}
+                              </button>
+                            ) : (
+                              <span className={`font-medium ${isSuggestion ? 'text-amber-700' : 'text-neutral-900'}`}>
+                                {kw.keyword}
+                              </span>
+                            )}
                           </td>
                           <td className="py-4 px-4 text-right text-neutral-400">–</td>
                           <td className="py-4 px-4 text-right text-neutral-400">–</td>
                           <td className="py-4 px-4 text-center text-neutral-400">–</td>
                           <td className="py-4 px-4 text-center text-neutral-400">–</td>
                         </tr>
-                      ))}
+                      );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -645,9 +707,11 @@ export function KeywordsTab({
                     <p className="text-sm text-neutral-700">{result.aiSummary.keywordAnalysis.recommendations}</p>
                   </div>
                 )}
-                <p className="mt-4 text-xs text-neutral-500">
-                  Legg til nøkkelord før analyse for å få full CPC-tabell med søkevolum og konkurranse.
-                </p>
+                {canEditKeywords && !editingKeywords && (
+                  <p className="mt-4 text-xs text-neutral-500">
+                    Klikk på forslag med + for å legge dem til, eller bruk knappene over. Deretter «Oppdater analyse» for full tabell med søkedata.
+                  </p>
+                )}
               </div>
             </div>
           );
@@ -661,35 +725,9 @@ export function KeywordsTab({
           <p className="text-sm text-neutral-500 max-w-md mx-auto mb-4">
             Du la ikke til nøkkelord i den opprinnelige analysen.
           </p>
-          {!readOnly && (isPremium || remainingKeywordUpdates > 0) && !editingKeywords && (
-            <div className="flex items-center justify-center gap-3">
-              <Button 
-                variant="default" 
-                onClick={suggestKeywords}
-                disabled={suggestingKeywords}
-                className="rounded-xl"
-              >
-                {suggestingKeywords ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Analyserer...
-                  </>
-                ) : (
-                  <>
-                    <RocketIcon className="mr-2 h-4 w-4" />
-                    Foreslå nøkkelord
-                  </>
-                )}
-              </Button>
-              <Button variant="outline" onClick={startEditingKeywords} className="rounded-xl">
-                <Plus className="mr-2 h-4 w-4" />
-                Legg til manuelt
-                {!isPremium && (
-                  <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
-                    {remainingKeywordUpdates}/{FREE_UPDATE_LIMIT}
-                  </span>
-                )}
-              </Button>
+          {canEditKeywords && !editingKeywords && (
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              {keywordActionButtons}
             </div>
           )}
         </div>

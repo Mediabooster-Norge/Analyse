@@ -308,16 +308,26 @@ export interface AIVisibilityData {
   description: string;
   details: {
     queriesTested: number;
+    /** Antall spørsmål der bedriften ble funnet positivt (kjent/anbefalt) */
     timesCited: number;
+    /** Antall spørsmål der navnet dukket opp, men i usikker/negativ kontekst */
     timesMentioned: number;
+    /** Konkurrenter AI nevnte i nøytrale spørsmål der bedriften ikke ble funnet */
+    competitorsMentioned?: string[];
+    /** Kort innsikt utledet fra de nøytrale spørsmålene */
+    insight?: string;
     queries: Array<{
       query: string;
       cited: boolean;
       mentioned: boolean;
       aiResponse?: string;
+      /** 'unprompted' = nøytralt spørsmål uten bedriftsnavn, 'named' = navngitt */
+      type?: 'unprompted' | 'named';
     }>;
   };
   recommendations: string[];
+  /** Hvilke spørsmål faktisk brukte live websøk (flertall) vs. modellkunnskap */
+  source?: 'web_search' | 'model_knowledge';
   /** ISO timestamp for when the check was run (used for 24h throttle in the UI) */
   checked_at?: string;
 }

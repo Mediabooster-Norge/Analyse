@@ -32,9 +32,10 @@ export interface CompetitorsTabProps {
   editCompetitorUrls: string[];
   editCompetitorInput: string;
   setEditCompetitorInput: (v: string) => void;
-  remainingCompetitorUpdates: number;
+  remainingAnalyses: number;
+  monthlyAnalysisLimit: number;
+  hasUnlimitedAnalyses: boolean;
   FREE_COMPETITOR_LIMIT: number;
-  FREE_UPDATE_LIMIT: number;
   competitorSort: CompetitorSort | null;
   setCompetitorSort: (v: CompetitorSort | null) => void;
   updatingCompetitors: boolean;
@@ -56,9 +57,10 @@ export function CompetitorsTab({
   editCompetitorUrls,
   editCompetitorInput,
   setEditCompetitorInput,
-  remainingCompetitorUpdates,
+  remainingAnalyses,
+  monthlyAnalysisLimit,
+  hasUnlimitedAnalyses,
   FREE_COMPETITOR_LIMIT,
-  FREE_UPDATE_LIMIT,
   competitorSort,
   setCompetitorSort,
   updatingCompetitors,
@@ -69,6 +71,11 @@ export function CompetitorsTab({
   updateCompetitorAnalysis,
   readOnly = false,
 }: CompetitorsTabProps) {
+  const quotaHint = hasUnlimitedAnalyses
+    ? null
+    : `${remainingAnalyses} av ${monthlyAnalysisLimit} analyser igjen denne måneden`;
+  const canEditCompetitors = !readOnly && (hasUnlimitedAnalyses || remainingAnalyses > 0);
+
   return (
     <>
       {/* Edit Competitors Panel */}
@@ -80,9 +87,9 @@ export function CompetitorsTab({
                 <BarChart3 className="h-3.5 w-3.5 max-[400px]:h-3 max-[400px]:w-3 text-neutral-600" />
                 Rediger konkurrenter
               </h3>
-              {!isPremium && (
+              {quotaHint && (
                 <span className="px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 text-xs font-medium">
-                  {remainingCompetitorUpdates} oppdatering{remainingCompetitorUpdates !== 1 ? 'er' : ''} igjen
+                  {quotaHint}
                 </span>
               )}
             </div>
@@ -100,9 +107,9 @@ export function CompetitorsTab({
               <p className="text-sm text-neutral-600">
                 Legg til konkurrenter du vil sammenligne med. Trykk Enter eller &quot;Legg til&quot; etter hver URL.
               </p>
-              {!isPremium && (
+              {!hasUnlimitedAnalyses && (
                 <p className="text-xs text-neutral-500">
-                  Du kan endre konkurrenter opptil {FREE_UPDATE_LIMIT} ganger per analyse.
+                  «Oppdater analyse» teller som én analyse fra månedskvoten ({monthlyAnalysisLimit} per måned).
                 </p>
               )}
             </div>
@@ -161,7 +168,7 @@ export function CompetitorsTab({
 
             <Button
               onClick={updateCompetitorAnalysis}
-              disabled={updatingCompetitors || (!isPremium && remainingCompetitorUpdates <= 0)}
+              disabled={updatingCompetitors || (!hasUnlimitedAnalyses && remainingAnalyses <= 0)}
               className="w-full rounded-xl bg-neutral-900 hover:bg-neutral-800"
             >
               {updatingCompetitors ? (
@@ -196,14 +203,14 @@ export function CompetitorsTab({
                   variant="outline"
                   size="sm"
                   onClick={startEditingCompetitors}
-                  disabled={!isPremium && remainingCompetitorUpdates <= 0}
+                  disabled={!canEditCompetitors}
                   className="rounded-lg text-xs w-full sm:w-auto"
                 >
                   <Plus className="mr-1 h-3.5 w-3.5" />
                   Endre konkurrenter
-                  {!isPremium && (
+                  {quotaHint && (
                     <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
-                      {remainingCompetitorUpdates}/{FREE_UPDATE_LIMIT}
+                      {remainingAnalyses}/{monthlyAnalysisLimit}
                     </span>
                   )}
                 </Button>
@@ -571,15 +578,16 @@ export function CompetitorsTab({
           </div>
           <h3 className="font-semibold text-neutral-900 mb-2">Sammenlign med konkurrenter</h3>
           <p className="text-sm text-neutral-500 max-w-md mx-auto mb-4">
-            Legg til konkurrent-URL-er og hent data for å sammenligne med din nettside. Hvert oppslag bruker ett konkurrentoppdatering.
+            Legg til konkurrent-URL-er og hent data for å sammenligne med din nettside.
+            {!hasUnlimitedAnalyses && ' Hver oppdatering teller som én analyse fra månedskvoten.'}
           </p>
-          {!readOnly && (isPremium || remainingCompetitorUpdates > 0) && !editingCompetitors && (
+          {!readOnly && canEditCompetitors && !editingCompetitors && (
             <Button variant="outline" onClick={startEditingCompetitors} className="rounded-xl">
               <Plus className="mr-2 h-4 w-4" />
               Legg til konkurrenter og hent data
-              {!isPremium && (
+              {quotaHint && (
                 <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-xs">
-                  {remainingCompetitorUpdates}/{FREE_UPDATE_LIMIT}
+                  {remainingAnalyses}/{monthlyAnalysisLimit}
                 </span>
               )}
             </Button>

@@ -31,7 +31,12 @@ import {
   Tag,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { usePremium, getPremiumLimits } from '@/hooks/usePremium';
+import { usePremium, getPremiumLimits, PREMIUM_LIMITS } from '@/hooks/usePremium';
+import {
+  isAllowlistedPremiumEmail,
+  PREMIUM_MONTHLY_ANALYSIS_LIMIT,
+  getAiVisibilityChecksLimit,
+} from '@/lib/constants/premium';
 
 interface UserData {
   id: string;
@@ -54,6 +59,26 @@ export default function SettingsPage() {
   // Premium status
   const { isPremium, monthlyAnalysisLimit, loading: premiumLoading } = usePremium();
   const limits = getPremiumLimits(isPremium);
+  const planLimits = PREMIUM_LIMITS.premium;
+  const hasUnlimitedAnalyses = Boolean(user?.email && isAllowlistedPremiumEmail(user.email));
+  const displayAnalysisLimit = hasUnlimitedAnalyses
+    ? monthlyAnalysisLimit
+    : isPremium
+      ? PREMIUM_MONTHLY_ANALYSIS_LIMIT
+      : limits.monthlyAnalyses;
+  const displayAiVisibilityLimit = user?.email
+    ? getAiVisibilityChecksLimit(isPremium, user.email)
+    : planLimits.aiVisibilityChecks;
+
+  const premiumBenefits = [
+    `${planLimits.monthlyAnalyses} analyser per måned (inkl. oppdateringer)`,
+    `Opptil ${planLimits.competitors} konkurrenter per analyse`,
+    `Opptil ${planLimits.keywords} nøkkelord per analyse`,
+    `${planLimits.articleGenerationsPerMonth} AI-artikler per måned`,
+    `${displayAiVisibilityLimit} AI-synlighetssjekker per måned`,
+    'Foreslåtte undersider',
+    'Prioritert support',
+  ];
 
   useEffect(() => {
     async function fetchData() {
@@ -85,13 +110,20 @@ export default function SettingsPage() {
       const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
       
-      const { data: analyses } = await supabase
-        .from('analyses')
-        .select('id')
-        .eq('user_id', authUser.id)
-        .gte('created_at', firstDayOfMonth);
-      
-      setAnalysisCount(analyses?.length || 0);
+      const [{ data: analyses }, { count: quotaEventCount }] = await Promise.all([
+        supabase
+          .from('analyses')
+          .select('id')
+          .eq('user_id', authUser.id)
+          .gte('created_at', firstDayOfMonth),
+        supabase
+          .from('analysis_quota_events')
+          .select('*', { count: 'exact', head: true })
+          .eq('user_id', authUser.id)
+          .gte('created_at', firstDayOfMonth),
+      ]);
+
+      setAnalysisCount((analyses?.length || 0) + (quotaEventCount ?? 0));
       setLoading(false);
     }
 
@@ -278,12 +310,14 @@ export default function SettingsPage() {
                     <div>
                       <p className="text-sm text-neutral-500">Analyser denne måneden</p>
                       <p className="text-2xl font-bold text-neutral-900">
-                        {monthlyAnalysisLimit >= 999 ? analysisCount : `${analysisCount} / ${monthlyAnalysisLimit}`}
+                        {hasUnlimitedAnalyses ? analysisCount : `${analysisCount} / ${displayAnalysisLimit}`}
                       </p>
                     </div>
                   </div>
                   <p className="text-xs text-neutral-600 font-medium">
-                    {monthlyAnalysisLimit >= 999 ? 'Ubegrenset tilgang' : `${monthlyAnalysisLimit} analyser per måned`}
+                    {hasUnlimitedAnalyses
+                      ? 'Ubegrenset tilgang'
+                      : `Ny analyse og oppdatering av nøkkelord/konkurrenter teller mot ${displayAnalysisLimit} per måned`}
                   </p>
                 </div>
                 <div className="p-4 rounded-xl bg-white border border-neutral-200">
@@ -300,36 +334,19 @@ export default function SettingsPage() {
                 </div>
               </div>
 
-              {/* Premium-fordeler (AI-synlighet bruker GPT-4o og er derfor begrenset til Premium) */}
+              {/* Premium-fordeler — dynamiske verdier fra PREMIUM_LIMITS / usePremium */}
               <div>
                 <h4 className="text-sm font-semibold text-neutral-700 mb-3">Dine Premium-fordeler</h4>
                 <div className="grid md:grid-cols-2 gap-2">
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
-                    <CheckCircle2 className="h-4 w-4 text-neutral-900 shrink-0" />
-                    <span className="text-sm text-neutral-700">
-                      {monthlyAnalysisLimit >= 999 ? 'Ubegrenset analyser' : `${monthlyAnalysisLimit} analyser per måned`}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
-                    <CheckCircle2 className="h-4 w-4 text-neutral-900 shrink-0" />
-                    <span className="text-sm text-neutral-700">Opptil 5 konkurrenter</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
-                    <CheckCircle2 className="h-4 w-4 text-neutral-900 shrink-0" />
-                    <span className="text-sm text-neutral-700">Opptil 50 nøkkelord</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
-                    <CheckCircle2 className="h-4 w-4 text-neutral-900 shrink-0" />
-                    <span className="text-sm text-neutral-700">Ubegrenset oppdateringer</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
-                    <CheckCircle2 className="h-4 w-4 text-neutral-900 shrink-0" />
-                    <span className="text-sm text-neutral-700">Analyser flere nettsider</span>
-                  </div>
-                  <div className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200">
-                    <CheckCircle2 className="h-4 w-4 text-neutral-900 shrink-0" />
-                    <span className="text-sm text-neutral-700">Prioritert support</span>
-                  </div>
+                  {premiumBenefits.map((benefit) => (
+                    <div
+                      key={benefit}
+                      className="flex items-center gap-2 p-2.5 rounded-lg bg-white border border-neutral-200"
+                    >
+                      <CheckCircle2 className="h-4 w-4 text-neutral-900 shrink-0" />
+                      <span className="text-sm text-neutral-700">{benefit}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
@@ -364,6 +381,9 @@ export default function SettingsPage() {
                     {analysisCount} / {limits.monthlyAnalyses}
                   </span>
                 </div>
+                <p className="text-xs text-neutral-500 mb-2">
+                  Inkluderer nye analyser og oppdateringer av nøkkelord eller konkurrenter.
+                </p>
                 <div className="w-full bg-neutral-200 rounded-full h-2">
                   <div 
                     className={`h-2 rounded-full ${analysisCount >= limits.monthlyAnalyses ? 'bg-red-400' : 'bg-green-600'}`}
@@ -402,7 +422,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="font-semibold mb-1">Oppgrader til Premium</h4>
-                    <p className="text-sm text-neutral-300">Ubegrenset analyser, konkurrenter og mer</p>
+                    <p className="text-sm text-neutral-300">30 analyser/mnd, flere konkurrenter og mer</p>
                   </div>
                   <Button variant="secondary" className="bg-white text-neutral-900 hover:bg-neutral-100" asChild>
                     <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">

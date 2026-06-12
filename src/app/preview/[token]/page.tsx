@@ -164,9 +164,10 @@ export default function PublicPreviewPage() {
             editCompetitorUrls={[]}
             editCompetitorInput=""
             setEditCompetitorInput={() => {}}
-            remainingCompetitorUpdates={0}
+            remainingAnalyses={0}
+            monthlyAnalysisLimit={0}
+            hasUnlimitedAnalyses={false}
             FREE_COMPETITOR_LIMIT={0}
-            FREE_UPDATE_LIMIT={0}
             competitorSort={competitorSort}
             setCompetitorSort={setCompetitorSort}
             updatingCompetitors={false}
@@ -185,9 +186,10 @@ export default function PublicPreviewPage() {
             editKeywords={[]}
             editKeywordInput=""
             setEditKeywordInput={() => {}}
-            remainingKeywordUpdates={0}
+            remainingAnalyses={0}
+            monthlyAnalysisLimit={0}
+            hasUnlimitedAnalyses={false}
             FREE_KEYWORD_LIMIT={0}
-            FREE_UPDATE_LIMIT={0}
             keywordSort={keywordSort}
             setKeywordSort={setKeywordSort}
             updatingKeywords={false}
@@ -196,7 +198,8 @@ export default function PublicPreviewPage() {
             removeEditKeyword={() => {}}
             cancelEditingKeywords={() => {}}
             updateKeywordAnalysis={() => {}}
-            suggestKeywords={() => {}}
+            suggestKeywordsForTab={() => {}}
+            addSuggestedKeyword={() => {}}
             suggestingKeywords={false}
           />
         )}

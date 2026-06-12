@@ -1002,7 +1002,7 @@ export function AnalysisReportPdf({ result, companyUrl, companyName }: AnalysisR
               {result.aiVisibility.details && (
                 <View style={{ marginTop: 10 }}>
                   <DetailRow label="Spørringer testet" value={`${result.aiVisibility.details.queriesTested}`} />
-                  <DetailRow label="Ganger nevnt" value={`${result.aiVisibility.details.timesMentioned}`} />
+                  <DetailRow label="Ganger kjent/anbefalt" value={`${result.aiVisibility.details.timesCited}`} />
                 </View>
               )}
             </View>

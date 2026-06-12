@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { getPremiumStatusServer } from '@/lib/premium-server';
 
-export const maxDuration = 60; // Kun eget domene (10 spørsmål)
+export const maxDuration = 60; // Kun eget domene (10 spørsmål, kjøres parallelt)
 
 interface AIVisibilityRequest {
   /** Domene-URL som skal sjekkes (påkrevd) */
@@ -19,9 +19,17 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// Model & cost: Primary = Responses API (gpt-4o-mini + web_search) for live search at lower token cost. Fallback = Chat Completions (gpt-4o-mini, no web search).
-// Calls per run: (queries × (1 + competitors)). 10 queries + 5 competitors = 60 calls.
-// Estimated cost (gpt-4o-mini + web_search): web search ~$0.01/call + tokens → ca. $0.25–0.50 per run for 60 calls.
+// Model & cost: Primary = Responses API (gpt-4o-mini + web_search) for live search at lower token cost.
+// Fallback = Chat Completions (gpt-4o-mini, no web search) ved feil/429.
+// Kjøring: 10 spørsmål parallelt (concurrency-grense) + ev. 1 oppsummeringskall for konkurrent-innsikt.
+// Estimert kostnad: web search ~$0.01/kall + tokens → ca. $0.10–0.20 per kjøring.
+
+/** Hvor mange spørringer som kjøres samtidig (holder oss trygt under maxDuration). */
+const QUERY_CONCURRENCY = 4;
+/** Lav temperatur for mer reproduserbar score mellom kjøringer. */
+const QUERY_TEMPERATURE = 0.2;
+
+type QueryType = 'unprompted' | 'named';
 
 type AIVisibilityPayload = {
   score: number;
@@ -31,12 +39,58 @@ type AIVisibilityPayload = {
     queriesTested: number;
     timesCited: number;
     timesMentioned: number;
-    queries: Array<{ query: string; cited: boolean; mentioned: boolean; aiResponse?: string }>;
+    competitorsMentioned?: string[];
+    insight?: string;
+    queries: Array<{ query: string; cited: boolean; mentioned: boolean; aiResponse?: string; type?: QueryType }>;
   };
   recommendations: string[];
-  /** Når fallback brukes (f.eks. 429 fra web search), synlighet er estimert fra modellens kunnskap */
+  /** 'web_search' når flertallet av spørringene brukte live søk, ellers 'model_knowledge'. */
   source?: 'web_search' | 'model_knowledge';
 };
+
+/** Kjører async-funksjon over en liste med en maks samtidighet, bevarer rekkefølge. */
+async function mapWithConcurrency<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let cursor = 0;
+  async function worker() {
+    while (true) {
+      const index = cursor++;
+      if (index >= items.length) break;
+      results[index] = await fn(items[index], index);
+    }
+  }
+  const workers = Array.from({ length: Math.min(limit, items.length) }, () => worker());
+  await Promise.all(workers);
+  return results;
+}
+
+/** Bygger en case-insensitiv ordgrense-regex for et navn (unngår delstreng-falske-positive). */
+function buildNameRegex(name: string): RegExp | null {
+  const trimmed = name.trim();
+  if (trimmed.length <= 3) return null;
+  const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}([^\\p{L}\\p{N}]|$)`, 'iu');
+}
+
+/**
+ * Avgjør om svaret nevner bedriften, og om det skjer i en negativ/usikker kontekst.
+ * Returnerer { appears, negated } slik at en "kjenner ikke til X"-respons ikke gir poeng.
+ */
+function classifyResponse(
+  responseLower: string,
+  domainLower: string,
+  nameRegex: RegExp | null,
+  notFoundPhrases: string[]
+): { appears: boolean; negated: boolean } {
+  const appears =
+    responseLower.includes(domainLower) || (nameRegex ? nameRegex.test(responseLower) : false);
+  const negated = notFoundPhrases.some((phrase) => responseLower.includes(phrase));
+  return { appears, negated };
+}
 
 async function runOneVisibilityCheck(
   url: string,
@@ -62,182 +116,257 @@ async function runOneVisibilityCheck(
     const withoutTrailingNorge = rawKeyword.replace(/\s+(i\s+)?(norge|norway)$/i, '').trim();
     return withoutTrailingNorge || rawKeyword;
   })();
-  const kContext = hasKeyword ? ` innen ${k}` : '';
+  type QuerySpec = { web: string; model: string; type: QueryType; weight: number };
 
-  // 10 spørsmålstyper: k = normalisert søkeord (uten overflødig "norge" når vi allerede har "i Norge")
-  const queriesWeb = [
-    `Søk: Hvilke selskaper er ledende innen ${k} i Norge? Er ${name} (${domain}) blant dem?${PROMPT_INSTRUCTION_SUFFIX}`,
-    hasKeyword
-      ? `Søk: Hvem kan hjelpe med ${k} i Norge? Er ${name} (${domain}) nevnt som aktør som løser dette behovet?${PROMPT_INSTRUCTION_SUFFIX}`
-      : `Søk: Hvem kan hjelpe med typiske kundebehov innen ${name}s felt? Er ${name} (${domain}) nevnt?${PROMPT_INSTRUCTION_SUFFIX}`,
-    hasKeyword
-      ? `Søk: Hva er forskjellen på ${name} (${domain}) og andre aktører innen ${k}? Eller: hvem anbefales oftest sammenlignet med ${name}?${PROMPT_INSTRUCTION_SUFFIX}`
-      : `Søk: Hvem konkurrerer med ${name} (${domain}), og hvem anbefales oftest i samme bransje? Er ${name} nevnt i sammenligninger?${PROMPT_INSTRUCTION_SUFFIX}`,
-    hasKeyword
-      ? `Søk: Hvilket selskap bør jeg velge for ${k} i Norge? Er ${name} (${domain}) blant anbefalingene?${PROMPT_INSTRUCTION_SUFFIX}`
-      : `Søk: Hvilket selskap bør jeg velge for tjenester som ${name} tilbyr? Er ${name} (${domain}) nevnt?${PROMPT_INSTRUCTION_SUFFIX}`,
-    hasKeyword
-      ? `Søk: Hvem er eksperter på ${k} i Norge? Er ${name} (${domain}) nevnt som ekspert eller autoritet?${PROMPT_INSTRUCTION_SUFFIX}`
-      : `Søk: Hvem regnes som eksperter innen ${name}s felt i Norge? Er ${name} (${domain}) nevnt?${PROMPT_INSTRUCTION_SUFFIX}`,
-    hasKeyword
-      ? `Søk: Hvilke selskaper tilbyr ${k} i Norge? Er ${name} (${domain}) med i slike lister eller anbefalinger?${PROMPT_INSTRUCTION_SUFFIX}`
-      : `Søk: Hvilke selskaper tilbyr tjenester som ${name} (${domain}) i Norge? Er de selv nevnt?${PROMPT_INSTRUCTION_SUFFIX}`,
-    hasKeyword
-      ? `Søk: Hvem er best på ${k} i Norge? Er ${name} (${domain}) nevnt på topplister eller som spesialist?${PROMPT_INSTRUCTION_SUFFIX}`
-      : `Søk: Hvem er best innen ${name}s spesialisering? Er ${name} (${domain}) nevnt?${PROMPT_INSTRUCTION_SUFFIX}`,
-    hasKeyword
-      ? `Søk: Hvilke selskaper har dokumenterte resultater eller case innen ${k}? Er ${name} (${domain}) nevnt?${PROMPT_INSTRUCTION_SUFFIX}`
-      : `Søk: Hvilke selskaper har dokumenterte resultater eller troverdighet innen ${name}s felt? Er ${name} (${domain}) nevnt?${PROMPT_INSTRUCTION_SUFFIX}`,
-    hasKeyword
-      ? `Søk: Hvem bruker anerkjente metoder eller er kjent for profesjonell tilnærming innen ${k}? Er ${name} (${domain}) nevnt?${PROMPT_INSTRUCTION_SUFFIX}`
-      : `Søk: Hvem er kjent for moderne eller anerkjente metoder innen ${name}s felt? Er ${name} (${domain}) nevnt?${PROMPT_INSTRUCTION_SUFFIX}`,
-    `Søk: Hva er ${name} (${domain}) kjent for? Beskriv brandets kjerneposisjon eller hovedtilbud i 1–2 setninger.`,
-  ];
-  const queriesModel = [
-    `Hvilke selskaper er ledende innen ${k} i Norge? Er ${name} (${domain}) blant dem? Svar kort.`,
-    `Hvem kan hjelpe med ${k}? Er ${name} (${domain}) nevnt? Svar kort.`,
-    `Hvem anbefales oftest sammenlignet med ${name} (${domain})${kContext}? Svar kort.`,
-    `Hvilket selskap bør jeg velge for ${k}? Er ${name} (${domain}) nevnt? Svar kort.`,
-    `Hvem er eksperter på ${k} i Norge? Er ${name} (${domain}) nevnt? Svar kort.`,
-    `Hvilke selskaper tilbyr ${k} i Norge? Er ${name} (${domain}) med? Svar kort.`,
-    `Hvem er best på ${k}? Er ${name} (${domain}) nevnt? Svar kort.`,
-    `Hvilke selskaper har dokumenterte resultater innen ${k}? Er ${name} (${domain}) nevnt? Svar kort.`,
-    `Hvem er kjent for gode metoder innen ${k}? Er ${name} (${domain}) nevnt? Svar kort.`,
-    `Hva er ${name} (${domain}) kjent for? Svar i 1–2 setninger.`,
-  ];
+  // Suffiks som ber AI om å navngi aktørene i nøytrale spørsmål (gjør konkurrent-uttrekk mulig).
+  const unpromptedSuffix = ' List opp de mest aktuelle selskapene ved navn.' + PROMPT_INSTRUCTION_SUFFIX;
+
+  let specs: QuerySpec[];
+  if (hasKeyword) {
+    // Nøytrale spørsmål (uoppfordret): nevner IKKE bedriften. Måler om AI anbefaler den selv.
+    // Vektes tyngst (2) fordi dette er det egentlig verdifulle: blir vi anbefalt uten å nevne oss selv?
+    const unprompted: QuerySpec[] = [
+      {
+        type: 'unprompted', weight: 2,
+        web: `Søk: Hvilke selskaper er ledende innen ${k} i Norge?${unpromptedSuffix}`,
+        model: `Hvilke selskaper er ledende innen ${k} i Norge? Nevn navn. Svar kort.`,
+      },
+      {
+        type: 'unprompted', weight: 2,
+        web: `Søk: Hvem bør jeg velge for ${k} i Norge? Gi konkrete anbefalinger.${unpromptedSuffix}`,
+        model: `Hvem bør jeg velge for ${k} i Norge? Nevn navn. Svar kort.`,
+      },
+      {
+        type: 'unprompted', weight: 2,
+        web: `Søk: Hvem er de beste ekspertene på ${k} i Norge?${unpromptedSuffix}`,
+        model: `Hvem er de beste ekspertene på ${k} i Norge? Nevn navn. Svar kort.`,
+      },
+      {
+        type: 'unprompted', weight: 2,
+        web: `Søk: Hvilke selskaper tilbyr ${k} i Norge?${unpromptedSuffix}`,
+        model: `Hvilke selskaper tilbyr ${k} i Norge? Nevn navn. Svar kort.`,
+      },
+      {
+        type: 'unprompted', weight: 2,
+        web: `Søk: Hvilke aktører har best omtale og resultater innen ${k} i Norge?${unpromptedSuffix}`,
+        model: `Hvilke aktører har best omtale og resultater innen ${k} i Norge? Nevn navn. Svar kort.`,
+      },
+    ];
+    // Navngitte spørsmål (kjennskap): nevner bedriften. Måler om AI faktisk vet hvem den er.
+    const named: QuerySpec[] = [
+      {
+        type: 'named', weight: 1,
+        web: `Søk: Er ${name} (${domain}) blant de ledende innen ${k} i Norge?${PROMPT_INSTRUCTION_SUFFIX}`,
+        model: `Er ${name} (${domain}) blant de ledende innen ${k} i Norge? Svar kort.`,
+      },
+      {
+        type: 'named', weight: 1,
+        web: `Søk: Kan du anbefale ${name} (${domain}) for ${k}? Hva er styrkene?${PROMPT_INSTRUCTION_SUFFIX}`,
+        model: `Kan du anbefale ${name} (${domain}) for ${k}? Svar kort.`,
+      },
+      {
+        type: 'named', weight: 1,
+        web: `Søk: Hvordan skiller ${name} (${domain}) seg fra andre innen ${k}?${PROMPT_INSTRUCTION_SUFFIX}`,
+        model: `Hvordan skiller ${name} (${domain}) seg fra andre innen ${k}? Svar kort.`,
+      },
+      {
+        type: 'named', weight: 1,
+        web: `Søk: Hvilke resultater eller omtale har ${name} (${domain}) innen ${k}?${PROMPT_INSTRUCTION_SUFFIX}`,
+        model: `Hvilke resultater eller omtale har ${name} (${domain}) innen ${k}? Svar kort.`,
+      },
+      {
+        type: 'named', weight: 1,
+        web: `Søk: Hva er ${name} (${domain}) kjent for? Beskriv kjerneposisjonen i 1–2 setninger.`,
+        model: `Hva er ${name} (${domain}) kjent for? Svar i 1–2 setninger.`,
+      },
+    ];
+    specs = [...unprompted, ...named];
+  } else {
+    // Uten nøkkelord kan vi ikke stille gode nøytrale spørsmål → fall tilbake til ren kjennskap.
+    specs = [
+      {
+        type: 'named', weight: 1,
+        web: `Søk: Hva er ${name} (${domain}) kjent for? Beskriv i 1–2 setninger.`,
+        model: `Hva er ${name} (${domain}) kjent for? Svar i 1–2 setninger.`,
+      },
+      {
+        type: 'named', weight: 1,
+        web: `Søk: Hvem konkurrerer med ${name} (${domain}), og er ${name} nevnt i sammenligninger?${PROMPT_INSTRUCTION_SUFFIX}`,
+        model: `Hvem konkurrerer med ${name} (${domain})? Er ${name} nevnt? Svar kort.`,
+      },
+      {
+        type: 'named', weight: 1,
+        web: `Søk: Hvilke tjenester eller produkter tilbyr ${name} (${domain})?${PROMPT_INSTRUCTION_SUFFIX}`,
+        model: `Hvilke tjenester tilbyr ${name} (${domain})? Svar kort.`,
+      },
+      {
+        type: 'named', weight: 1,
+        web: `Søk: Har ${name} (${domain}) god omtale på nett?${PROMPT_INSTRUCTION_SUFFIX}`,
+        model: `Har ${name} (${domain}) god omtale på nett? Svar kort.`,
+      },
+      {
+        type: 'named', weight: 1,
+        web: `Søk: Regnes ${name} (${domain}) som en seriøs aktør i sin bransje?${PROMPT_INSTRUCTION_SUFFIX}`,
+        model: `Regnes ${name} (${domain}) som en seriøs aktør i sin bransje? Svar kort.`,
+      },
+    ];
+  }
 
   const domainLower = domain.toLowerCase();
-  const nameLower = name.toLowerCase();
+  const nameRegex = buildNameRegex(name);
   const notFoundPhrases = [
     'finner ingen informasjon',
     'ingen kjent informasjon',
     'ingen konkrete resultater',
     'ikke kjent',
+    'ikke kjent med',
+    'kjenner ikke til',
+    'ingen kjennskap',
     'not found',
     'no results',
     'could not find',
     "couldn't find",
-    'don\'t have information',
+    "don't have information",
     'no information available',
     'ingen treff',
     'søket ga ingen',
     'unable to find',
     'vet ikke om',
-    'kjenner ikke til',
-    'don\'t know about',
+    "don't know about",
     'har ikke informasjon',
     'ikke funnet',
+    'finner ingen',
+    'ingen informasjon om',
   ];
 
-  type QuerySource = 'web_search' | 'model_knowledge';
-  const results: Array<{
+  type QueryResult = {
     query: string;
-    cited: boolean;
-    mentioned: boolean;
+    type: QueryType;
+    weight: number;
+    known: boolean;
+    uncertain: boolean;
     response: string;
-    source: QuerySource;
-    error?: boolean;
-  }> = [];
+    usedWebSearch: boolean;
+    error: boolean;
+  };
 
-  for (let i = 0; i < queriesWeb.length; i++) {
-    const queryWeb = queriesWeb[i];
-    const queryModel = queriesModel[i];
-    let resultContent = '';
-    let queryError = false;
-    let querySource: QuerySource = 'web_search';
-
-    try {
-      const response = await openai.responses.create({
-        model: 'gpt-4o-mini',
-        tools: [{ type: 'web_search' as const }],
-        input: queryWeb,
-      });
-      resultContent = (response.output_text || '').trim().replace(/\n{3,}/g, '\n\n');
-      querySource = 'web_search';
-    } catch (err) {
-      const isQuotaOrAccess =
-        err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 429;
-      if (isQuotaOrAccess && i === 0) {
-        console.warn('AI visibility: Responses API web_search 429/forbudt, bruker Chat Completions som fallback');
-      } else if (!isQuotaOrAccess) {
-        console.error('OpenAI visibility query error:', err);
-      }
-      queryError = true;
+  const queryResults = await mapWithConcurrency<QuerySpec, QueryResult>(
+    specs,
+    QUERY_CONCURRENCY,
+    async (spec) => {
+      let resultContent = '';
+      let queryError = false;
+      let usedWebSearch = false;
 
       try {
-        const completion = await openai.chat.completions.create({
+        const response = await openai.responses.create({
           model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content:
-                'Du svarer kort og ærlig på norsk eller engelsk. Ikke inkluder nettsideadresser i parentes (f.eks. (domene.no)) i svaret. Svar kun på det som spørres—unngå å gjenta samme firmabeskrivelse i hvert svar. Hvis du kjenner til bedriften, beskriv kort. Hvis ikke, si at du ikke har informasjon.',
-            },
-            { role: 'user', content: queryModel },
-          ],
-          max_tokens: 300,
+          tools: [{ type: 'web_search' as const }],
+          input: spec.web,
+          temperature: QUERY_TEMPERATURE,
         });
-        const raw = completion.choices[0]?.message?.content ?? '';
-        if (raw.trim()) {
-          resultContent = raw.trim().replace(/\n{3,}/g, '\n\n');
-          querySource = 'model_knowledge';
-          queryError = false;
+        resultContent = (response.output_text || '').trim().replace(/\n{3,}/g, '\n\n');
+        usedWebSearch = true;
+      } catch (err) {
+        const isQuotaOrAccess =
+          err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 429;
+        if (!isQuotaOrAccess) {
+          console.error('OpenAI visibility query error:', err);
         }
-      } catch (fallbackErr) {
-        console.error('OpenAI visibility fallback error:', fallbackErr);
+        queryError = true;
+
+        try {
+          const completion = await openai.chat.completions.create({
+            model: 'gpt-4o-mini',
+            temperature: QUERY_TEMPERATURE,
+            messages: [
+              {
+                role: 'system',
+                content:
+                  'Du svarer kort og ærlig på norsk eller engelsk. Ikke inkluder nettsideadresser i parentes (f.eks. (domene.no)) i svaret. Svar kun på det som spørres—unngå å gjenta samme firmabeskrivelse i hvert svar. Hvis du kjenner til bedriften, beskriv kort. Hvis ikke, si tydelig at du ikke har informasjon.',
+              },
+              { role: 'user', content: spec.model },
+            ],
+            max_tokens: 300,
+          });
+          const raw = completion.choices[0]?.message?.content ?? '';
+          if (raw.trim()) {
+            resultContent = raw.trim().replace(/\n{3,}/g, '\n\n');
+            usedWebSearch = false;
+            queryError = false;
+          }
+        } catch (fallbackErr) {
+          console.error('OpenAI visibility fallback error:', fallbackErr);
+        }
       }
+
+      if (!resultContent) {
+        queryError = true;
+      } else {
+        resultContent = cleanAiResponseForDisplay(resultContent);
+      }
+
+      const contentLower = resultContent.toLowerCase();
+      const { appears, negated } = queryError
+        ? { appears: false, negated: false }
+        : classifyResponse(contentLower, domainLower, nameRegex, notFoundPhrases);
+      // "known" = bedriften dukker opp positivt. En "kjenner ikke til X"-respons gir IKKE poeng.
+      const known = appears && !negated;
+      const uncertain = appears && negated;
+
+      return {
+        query: spec.web,
+        type: spec.type,
+        weight: spec.weight,
+        known,
+        uncertain,
+        response: resultContent,
+        usedWebSearch,
+        error: queryError,
+      };
     }
+  );
 
-    if (!resultContent) {
-      queryError = true;
-    } else {
-      resultContent = cleanAiResponseForDisplay(resultContent);
+  const valid = queryResults.filter((r) => !r.error);
+  const totalWeight = valid.reduce((sum, r) => sum + r.weight, 0);
+  const earnedWeight = valid.reduce((sum, r) => sum + (r.known ? r.weight : 0), 0);
+  const score = totalWeight > 0 ? Math.round((earnedWeight / totalWeight) * 100) : 0;
+
+  const citedCount = valid.filter((r) => r.known).length;
+  const uncertainCount = valid.filter((r) => r.uncertain).length;
+  const webSearchCount = valid.filter((r) => r.usedWebSearch).length;
+  // source = web_search kun når flertallet av gyldige spørringer faktisk brukte live søk.
+  const source: 'web_search' | 'model_knowledge' =
+    valid.length > 0 && webSearchCount >= valid.length / 2 ? 'web_search' : 'model_knowledge';
+
+  // Konkurrent-innsikt: hva anbefalte AI i de nøytrale spørsmålene der bedriften IKKE dukket opp?
+  let competitorsMentioned: string[] | undefined;
+  let insight: string | undefined;
+  const unpromptedMisses = valid
+    .filter((r) => r.type === 'unprompted' && !r.known && r.response)
+    .map((r) => r.response);
+  if (unpromptedMisses.length > 0) {
+    const extracted = await extractCompetitorInsight(unpromptedMisses, name, k);
+    if (extracted) {
+      competitorsMentioned = extracted.competitors.length > 0 ? extracted.competitors : undefined;
+      insight = extracted.insight || undefined;
     }
-
-    const contentLower = resultContent.toLowerCase();
-    const isMentioned =
-      !queryError &&
-      (contentLower.includes(domainLower) || (nameLower.length > 3 && contentLower.includes(nameLower)));
-    const notFound = notFoundPhrases.some((phrase) => contentLower.includes(phrase));
-    const isCited = isMentioned && !notFound;
-
-    results.push({
-      query: queryWeb,
-      cited: isCited,
-      mentioned: isMentioned,
-      response: resultContent,
-      source: querySource,
-      ...(queryError ? { error: true } : {}),
-    });
-  }
-
-  const validResults = results.filter((r) => !('error' in r && r.error));
-  const citedCount = validResults.filter((r) => r.cited).length;
-  const mentionedCount = validResults.filter((r) => r.mentioned).length;
-  const usedWebSearch = validResults.some((r) => r.source === 'web_search');
-  const source: 'web_search' | 'model_knowledge' = usedWebSearch ? 'web_search' : 'model_knowledge';
-
-  let score = 0;
-  if (validResults.length > 0) {
-    // Poeng per spørsmål: "cited" = 2, "mentioned" = 1. Maks = antall * 3 (alle cited).
-    // Med 10 spørsmål gir det robust gjennomsnitt og finere nivåer.
-    score = Math.round(((citedCount * 2 + mentionedCount) / (validResults.length * 3)) * 100);
   }
 
   let level: 'high' | 'medium' | 'low' | 'none';
   let description: string;
   if (score >= 70) {
     level = 'high';
-    description = 'AI-modeller finner bedriften i live-søk og kan anbefale den til brukere.';
+    description = 'AI anbefaler bedriften på nøytrale spørsmål og kjenner den godt.';
   } else if (score >= 40) {
     level = 'medium';
-    description = 'AI-modeller finner bedriften i noen søk, men synligheten kan styrkes.';
+    description = 'AI kjenner bedriften, men anbefaler den sjelden uoppfordret.';
   } else if (score > 0) {
     level = 'low';
-    description = 'AI-modeller finner sjelden bedriften i live web-søk.';
+    description = 'AI kjenner bedriften såvidt, og anbefaler den nesten aldri uoppfordret.';
   } else {
     level = 'none';
-    description = 'AI-modeller finner ikke bedriften i live web-søk ennå.';
+    description = 'AI finner ikke bedriften – verken navngitt eller på nøytrale spørsmål.';
   }
 
   return {
@@ -245,24 +374,77 @@ async function runOneVisibilityCheck(
     level,
     description,
     details: {
-      queriesTested: validResults.length,
+      queriesTested: valid.length,
       timesCited: citedCount,
-      timesMentioned: mentionedCount,
-      queries: results.map((r) => ({
+      timesMentioned: uncertainCount,
+      ...(competitorsMentioned ? { competitorsMentioned } : {}),
+      ...(insight ? { insight } : {}),
+      queries: queryResults.map((r) => ({
         query: r.query,
-        cited: r.cited,
-        mentioned: r.mentioned,
-        aiResponse: 'response' in r ? r.response : undefined,
+        cited: r.known,
+        mentioned: r.uncertain,
+        aiResponse: r.response || undefined,
+        type: r.type,
       })),
     },
     recommendations: [
       score < 70 && 'Publiser mer innhold som svarer på vanlige spørsmål i din bransje',
-      score < 50 && 'Øk online tilstedeværelse gjennom PR, artikler og bransjekataloge',
-      citedCount === 0 && 'Skap autorativt innhold som etablerer bedriften som en kjent ekspert',
-      mentionedCount === 0 && 'Bygg merkevarebevissthet gjennom sosiale medier og bransjeomtaler',
+      score < 50 && 'Øk online tilstedeværelse gjennom PR, artikler og bransjekataloger',
+      citedCount === 0 && 'Skap autoritativt innhold som etablerer bedriften som en kjent ekspert',
+      competitorsMentioned &&
+        competitorsMentioned.length > 0 &&
+        `AI anbefaler i dag andre aktører (f.eks. ${competitorsMentioned.slice(0, 3).join(', ')}) på nøytrale spørsmål – jobb med omtale og innhold for å bli nevnt`,
     ].filter(Boolean) as string[],
-    source: validResults.length > 0 ? source : undefined,
+    source: valid.length > 0 ? source : undefined,
   };
+}
+
+/** Trekker ut konkurrentnavn + kort innsikt fra nøytrale AI-svar der bedriften ikke ble anbefalt. */
+async function extractCompetitorInsight(
+  responses: string[],
+  name: string,
+  k: string
+): Promise<{ competitors: string[]; insight: string } | null> {
+  try {
+    const joined = responses
+      .slice(0, 5)
+      .map((r, i) => `Svar ${i + 1}: ${r}`)
+      .join('\n\n');
+    const completion = await openai.chat.completions.create({
+      model: 'gpt-4o-mini',
+      temperature: 0,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content: 'Du trekker ut firmanavn fra tekst og svarer kun med gyldig JSON.',
+        },
+        {
+          role: 'user',
+          content: `Følgende er AI-svar på nøytrale spørsmål om "${k}" i Norge, der bedriften "${name}" IKKE ble anbefalt.\n\n${joined}\n\nReturner JSON på formen {"competitors": string[], "insight": string}. "competitors" = inntil 6 unike, faktiske firmanavn som ble anbefalt (ekskluder "${name}", ekskluder generiske ord). "insight" = én kort norsk setning om hva dette betyr for ${name}s AI-synlighet.`,
+        },
+      ],
+      max_tokens: 250,
+    });
+    const raw = completion.choices[0]?.message?.content ?? '';
+    if (!raw.trim()) return null;
+    const parsed = JSON.parse(raw) as { competitors?: unknown; insight?: unknown };
+    const competitors = Array.isArray(parsed.competitors)
+      ? Array.from(
+          new Set(
+            parsed.competitors
+              .filter((c): c is string => typeof c === 'string' && c.trim().length > 0)
+              .map((c) => c.trim())
+          )
+        ).slice(0, 6)
+      : [];
+    const insight = typeof parsed.insight === 'string' ? parsed.insight.trim() : '';
+    if (competitors.length === 0 && !insight) return null;
+    return { competitors, insight };
+  } catch (err) {
+    console.error('AI visibility competitor extraction error:', err);
+    return null;
+  }
 }
 
 function buildPayloadWithDescription(mainPayload: AIVisibilityPayload): AIVisibilityPayload {
@@ -270,12 +452,12 @@ function buildPayloadWithDescription(mainPayload: AIVisibilityPayload): AIVisibi
     ...mainPayload,
     description:
       mainPayload.level === 'high'
-        ? 'AI-modeller kjenner godt til bedriften din og kan anbefale den til brukere.'
+        ? 'AI kjenner bedriften godt og anbefaler den også på nøytrale spørsmål.'
         : mainPayload.level === 'medium'
-          ? 'AI-modeller har noe kjennskap til bedriften, men synligheten kan forbedres.'
+          ? 'AI kjenner bedriften, men anbefaler den sjelden uoppfordret. Synligheten kan styrkes.'
           : mainPayload.level === 'low'
-            ? 'AI-modeller har begrenset kjennskap til bedriften din.'
-            : 'AI-modeller ser ikke ut til å kjenne til bedriften din ennå.',
+            ? 'AI har begrenset kjennskap til bedriften, og anbefaler den nesten aldri uoppfordret.'
+            : 'AI ser ikke ut til å kjenne til bedriften din ennå.',
   };
 }
 
@@ -328,28 +510,38 @@ function getDomainFromUrl(url: string): string {
   }
 }
 
+/**
+ * Cache-nøkkel = domene + normalisert øverste nøkkelord. Spørsmålene avhenger av nøkkelordet,
+ * så to analyser på samme domene med ulike nøkkelord må ikke dele cache.
+ * Lagres i `domain`-kolonnen (som er conflict target) for å unngå migrasjon.
+ */
+function buildCacheKey(domain: string, keywords: string[]): string {
+  const top = (keywords[0] ?? keywords[1] ?? '').toLowerCase().trim().replace(/\s+/g, '-');
+  return top ? `${domain}|kw:${top}` : domain;
+}
+
 async function getCachedPayload(
   supabase: Awaited<ReturnType<typeof createClient>>,
-  domain: string
+  cacheKey: string
 ): Promise<AIVisibilityPayload | null> {
   const minCheckedAt = new Date(Date.now() - CACHE_TTL_MS).toISOString();
   const { data } = await supabase
     .from('ai_visibility_cache')
     .select('payload')
-    .eq('domain', domain)
+    .eq('domain', cacheKey)
     .gte('checked_at', minCheckedAt)
     .maybeSingle();
   return (data?.payload as AIVisibilityPayload) ?? null;
 }
 
 async function setCachedPayload(
-  domain: string,
+  cacheKey: string,
   payload: AIVisibilityPayload
 ): Promise<void> {
   // Uses service-role client so writes succeed even though RLS blocks authenticated users.
   const adminClient = createAdminClient();
   await adminClient.from('ai_visibility_cache').upsert(
-    { domain, payload, checked_at: new Date().toISOString() },
+    { domain: cacheKey, payload, checked_at: new Date().toISOString() },
     { onConflict: 'domain' }
   );
 }
@@ -397,6 +589,35 @@ export async function POST(request: NextRequest) {
 
     if (!url) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 });
+    }
+
+    const mainDomain = getDomainFromUrl(url);
+    const cacheKey = buildCacheKey(mainDomain, keywords);
+
+    /** Renser, beskriver og lagrer payload på analysen, og returnerer responsen. */
+    const respondWithPayload = async (raw: AIVisibilityPayload, remaining: number) => {
+      const cleaned = cleanPayloadQueriesForDisplay(raw, mainDomain);
+      const payload = buildPayloadWithDescription(cleaned);
+      const checkedAt = new Date().toISOString();
+      if (analysisId && typeof analysisId === 'string') {
+        const { error: updateError } = await supabase
+          .from('analyses')
+          .update({ ai_visibility: { ...payload, checked_at: checkedAt } })
+          .eq('id', analysisId)
+          .eq('user_id', user.id);
+        if (updateError) console.error('AI visibility save to analysis:', updateError);
+      }
+      return NextResponse.json({
+        ai_visibility: { ...payload, checked_at: checkedAt },
+        remaining,
+        limit,
+      });
+    };
+
+    // Cache-treff: server umiddelbart UTEN å belaste kvote eller 24t-throttle (ingen ny kostnad).
+    const cached = await getCachedPayload(supabase, cacheKey);
+    if (cached && cached.details.queriesTested > 0) {
+      return respondWithPayload(cached, Math.max(0, limit - used));
     }
 
     if (used >= limit) {
@@ -451,12 +672,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const mainDomain = getDomainFromUrl(url);
-    let mainPayload = await getCachedPayload(supabase, mainDomain);
-    if (!mainPayload) {
-      mainPayload = await runOneVisibilityCheck(url, companyName, keywords);
-      await setCachedPayload(mainDomain, mainPayload);
-    }
+    const mainPayload = await runOneVisibilityCheck(url, companyName, keywords);
 
     if (mainPayload.details.queriesTested === 0) {
       return NextResponse.json(
@@ -468,9 +684,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    mainPayload = cleanPayloadQueriesForDisplay(mainPayload, mainDomain);
-    const payload = buildPayloadWithDescription(mainPayload);
+    await setCachedPayload(cacheKey, mainPayload);
 
+    // Belast kvote kun når vi faktisk har regnet ut et nytt resultat.
     const { error: insertError } = await supabase
       .from('ai_visibility_checks')
       .insert({
@@ -482,24 +698,7 @@ export async function POST(request: NextRequest) {
       console.error('ai_visibility_checks insert error:', insertError);
     }
 
-    if (analysisId && typeof analysisId === 'string') {
-      const payloadWithTime = { ...payload, checked_at: new Date().toISOString() };
-      const { error: updateError } = await supabase
-        .from('analyses')
-        .update({ ai_visibility: payloadWithTime })
-        .eq('id', analysisId)
-        .eq('user_id', user.id);
-      if (updateError) console.error('AI visibility save to analysis:', updateError);
-    }
-
-    const remaining = Math.max(0, limit - used - 1);
-    const checkedAt = new Date().toISOString();
-    const aiVisibility = { ...payload, checked_at: checkedAt };
-    return NextResponse.json({
-      ai_visibility: aiVisibility,
-      remaining,
-      limit,
-    });
+    return respondWithPayload(mainPayload, Math.max(0, limit - used - 1));
   } catch (error) {
     console.error('AI visibility check error:', error);
     return NextResponse.json(

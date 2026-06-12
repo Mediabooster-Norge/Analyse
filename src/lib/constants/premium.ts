@@ -14,6 +14,18 @@ export const PREMIUM_EMAILS: string[] = [
 /** Emails that receive unlimited article generations */
 export const UNLIMITED_ARTICLE_EMAILS: string[] = ['web@mediabooster.no'];
 
+/** Emails that receive unlimited AI visibility checks (dev / internal) */
+export const UNLIMITED_AI_VISIBILITY_EMAILS: string[] = [
+  'web@mediabooster.no',
+  'kvam@mediabooster.no',
+];
+
+/** Premium-tier monthly AI visibility checks (non-internal users) */
+export const PREMIUM_MONTHLY_AI_VISIBILITY_LIMIT = 10;
+
+/** Unlimited AI visibility checks (internal dev accounts) */
+export const UNLIMITED_MONTHLY_AI_VISIBILITY_LIMIT = 999;
+
 /** Free-tier monthly analysis limit (matches DB default) */
 export const FREE_MONTHLY_ANALYSIS_LIMIT = 5;
 
@@ -44,4 +56,15 @@ export function getMonthlyAnalysisLimit(
   if (!isPremium) return FREE_MONTHLY_ANALYSIS_LIMIT;
   if (isAllowlistedPremiumEmail(email)) return UNLIMITED_MONTHLY_ANALYSIS_LIMIT;
   return dbLimit ?? PREMIUM_MONTHLY_ANALYSIS_LIMIT;
+}
+
+export function getAiVisibilityChecksLimit(
+  isPremium: boolean,
+  email?: string | null
+): number {
+  if (!isPremium) return 0;
+  if (email && UNLIMITED_AI_VISIBILITY_EMAILS.includes(email.toLowerCase())) {
+    return UNLIMITED_MONTHLY_AI_VISIBILITY_LIMIT;
+  }
+  return PREMIUM_MONTHLY_AI_VISIBILITY_LIMIT;
 }

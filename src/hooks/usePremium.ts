@@ -7,9 +7,12 @@ import {
   UNLIMITED_ARTICLE_EMAILS,
   FREE_MONTHLY_ANALYSIS_LIMIT,
   PREMIUM_MONTHLY_ANALYSIS_LIMIT,
+  PREMIUM_MONTHLY_AI_VISIBILITY_LIMIT,
+  UNLIMITED_MONTHLY_AI_VISIBILITY_LIMIT,
   UNLIMITED_MONTHLY_ANALYSIS_LIMIT,
   isAllowlistedPremiumEmail,
   getMonthlyAnalysisLimit,
+  getAiVisibilityChecksLimit,
 } from '@/lib/constants/premium';
 
 interface PremiumStatus {
@@ -28,7 +31,7 @@ export const PREMIUM_LIMITS = {
     keywords: 10,
     keywordUpdates: 5,
     competitorUpdates: 5,
-    aiVisibilityChecks: 1,
+    aiVisibilityChecks: 0,
     articleGenerationsPerMonth: 5,
   },
   premium: {
@@ -37,7 +40,7 @@ export const PREMIUM_LIMITS = {
     keywords: 50,
     keywordUpdates: 999,
     competitorUpdates: 999,
-    aiVisibilityChecks: 999,
+    aiVisibilityChecks: PREMIUM_MONTHLY_AI_VISIBILITY_LIMIT,
     articleGenerationsPerMonth: 30,
   },
 };

@@ -98,8 +98,6 @@ function DashboardPageContent() {
     editKeywords,
     editKeywordInput,
     setEditKeywordInput,
-    remainingCompetitorUpdates,
-    remainingKeywordUpdates,
     editingCompetitors,
     editingKeywords,
     updatingCompetitors,
@@ -156,6 +154,8 @@ function DashboardPageContent() {
     cancelEditingCompetitors,
     updateCompetitorAnalysis,
     startEditingKeywords,
+    addSuggestedKeyword,
+    suggestKeywordsForTab,
     addEditKeyword,
     removeEditKeyword,
     cancelEditingKeywords,
@@ -165,7 +165,7 @@ function DashboardPageContent() {
   const FREE_MONTHLY_LIMIT = limits.monthlyAnalyses;
   const FREE_KEYWORD_LIMIT = limits.keywords;
   const FREE_COMPETITOR_LIMIT = limits.competitors;
-  const FREE_UPDATE_LIMIT = limits.updates;
+  const hasUnlimitedAnalyses = FREE_MONTHLY_LIMIT >= 999;
 
   const analysisSteps = ANALYSIS_STEPS;
 
@@ -240,11 +240,11 @@ function DashboardPageContent() {
             trigger={
               <Button
                 className="bg-neutral-900 hover:bg-neutral-800 text-white w-full sm:w-auto text-sm max-[400px]:text-xs max-[400px]:h-9"
-                disabled={!isPremium && remainingAnalyses === 0}
+                disabled={!hasUnlimitedAnalyses && remainingAnalyses === 0}
               >
                 <Plus className="mr-1.5 max-[400px]:mr-1 h-4 w-4 max-[400px]:h-3.5 max-[400px]:w-3.5" />
                 Ny analyse
-                {!isPremium && remainingAnalyses < FREE_MONTHLY_LIMIT && (
+                {!hasUnlimitedAnalyses && remainingAnalyses < FREE_MONTHLY_LIMIT && (
                   <span className="ml-1.5 max-[400px]:ml-1 px-1.5 max-[400px]:px-1 py-0.5 rounded-full bg-white/20 text-[10px] max-[400px]:text-[9px]">
                     {remainingAnalyses} igjen
                   </span>
@@ -328,8 +328,8 @@ function DashboardPageContent() {
         </div>
       )}
 
-      {/* Monthly Usage – kun for gratis-brukere */}
-      {!isPremium && remainingAnalyses === 0 ? (
+      {/* Monthly Usage – når kvoten er brukt opp */}
+      {!hasUnlimitedAnalyses && remainingAnalyses === 0 ? (
         <div className="rounded-2xl bg-gradient-to-r from-red-50 to-amber-50 border border-red-200 p-4 sm:p-5">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
@@ -339,31 +339,33 @@ function DashboardPageContent() {
               <div>
                 <h3 className="font-semibold text-neutral-900 text-sm sm:text-base">Analyser brukt opp</h3>
                 <p className="text-xs sm:text-sm text-neutral-500">
-                  Du har brukt {FREE_MONTHLY_LIMIT}/{FREE_MONTHLY_LIMIT} analyser denne måneden.
+                  Du har brukt {FREE_MONTHLY_LIMIT}/{FREE_MONTHLY_LIMIT} analyser denne måneden
+                  (inkl. oppdateringer av nøkkelord og konkurrenter).
                 </p>
-                <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3 mt-2">
-                  <span className="text-[10px] sm:text-xs text-neutral-500">Premium gir:</span>
-                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600">
-                    <CheckCircle2 className="h-3 w-3 text-neutral-900" />Ubegrenset
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600">
-                    <CheckCircle2 className="h-3 w-3 text-neutral-900" />Flere konkurrenter
-                  </span>
-                  <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600 hidden sm:inline-flex">
-                    <Clock className="h-3 w-3 text-neutral-900" />AI-synlighet (snart)
-                  </span>
-                </div>
+                {!isPremium && (
+                  <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3 mt-2">
+                    <span className="text-[10px] sm:text-xs text-neutral-500">Premium gir:</span>
+                    <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600">
+                      <CheckCircle2 className="h-3 w-3 text-neutral-900" />30 analyser/mnd
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600">
+                      <CheckCircle2 className="h-3 w-3 text-neutral-900" />Flere konkurrenter
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
-            <Button asChild className="bg-neutral-900 hover:bg-neutral-800 text-white w-full sm:w-auto">
-              <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
-                Oppgrader til Premium
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </a>
-            </Button>
+            {!isPremium && (
+              <Button asChild className="bg-neutral-900 hover:bg-neutral-800 text-white w-full sm:w-auto">
+                <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
+                  Oppgrader til Premium
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </a>
+              </Button>
+            )}
           </div>
         </div>
-      ) : !isPremium && result ? (
+      ) : !hasUnlimitedAnalyses && result ? (
         <div className="rounded-xl bg-neutral-50 border border-neutral-100 px-3 py-2 flex flex-wrap items-center gap-2 gap-y-1">
           <span className="text-xs font-medium text-neutral-700">{remainingAnalyses} av {FREE_MONTHLY_LIMIT} igjen</span>
           <div className="flex-1 min-w-[80px] max-w-[120px] h-1.5 bg-neutral-200 rounded-full overflow-hidden">
@@ -372,14 +374,19 @@ function DashboardPageContent() {
               style={{ width: `${(remainingAnalyses / FREE_MONTHLY_LIMIT) * 100}%` }}
             />
           </div>
-          <a
-            href="https://mediabooster.no/kontakt"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs text-neutral-500 hover:text-neutral-800"
-          >
-            Oppgrader →
-          </a>
+          {!isPremium && (
+            <a
+              href="https://mediabooster.no/kontakt"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-neutral-500 hover:text-neutral-800"
+            >
+              Oppgrader →
+            </a>
+          )}
+          <span className="text-[10px] text-neutral-400 w-full sm:w-auto">
+            Oppdateringer av nøkkelord/konkurrenter teller med
+          </span>
         </div>
       ) : null}
 
@@ -592,9 +599,10 @@ function DashboardPageContent() {
               editCompetitorUrls={editCompetitorUrls}
               editCompetitorInput={editCompetitorInput}
               setEditCompetitorInput={setEditCompetitorInput}
-              remainingCompetitorUpdates={remainingCompetitorUpdates}
+              remainingAnalyses={remainingAnalyses}
+              monthlyAnalysisLimit={FREE_MONTHLY_LIMIT}
+              hasUnlimitedAnalyses={hasUnlimitedAnalyses}
               FREE_COMPETITOR_LIMIT={FREE_COMPETITOR_LIMIT}
-              FREE_UPDATE_LIMIT={FREE_UPDATE_LIMIT}
               competitorSort={competitorSort}
               setCompetitorSort={setCompetitorSort}
               updatingCompetitors={updatingCompetitors}
@@ -614,9 +622,10 @@ function DashboardPageContent() {
               editKeywords={editKeywords}
               editKeywordInput={editKeywordInput}
               setEditKeywordInput={setEditKeywordInput}
-              remainingKeywordUpdates={remainingKeywordUpdates}
+              remainingAnalyses={remainingAnalyses}
+              monthlyAnalysisLimit={FREE_MONTHLY_LIMIT}
+              hasUnlimitedAnalyses={hasUnlimitedAnalyses}
               FREE_KEYWORD_LIMIT={FREE_KEYWORD_LIMIT}
-              FREE_UPDATE_LIMIT={FREE_UPDATE_LIMIT}
               keywordSort={keywordSort}
               setKeywordSort={setKeywordSort}
               updatingKeywords={updatingKeywords}
@@ -625,7 +634,8 @@ function DashboardPageContent() {
               removeEditKeyword={removeEditKeyword}
               cancelEditingKeywords={cancelEditingKeywords}
               updateKeywordAnalysis={updateKeywordAnalysis}
-              suggestKeywords={suggestKeywords}
+              suggestKeywordsForTab={suggestKeywordsForTab}
+              addSuggestedKeyword={addSuggestedKeyword}
               suggestingKeywords={suggestingKeywords}
             />
           )}

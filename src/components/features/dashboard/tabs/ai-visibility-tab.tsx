@@ -449,9 +449,17 @@ export function AiVisibilityTab({
                     </div>
                     <div className="p-3 rounded-xl bg-amber-50 text-center">
                       <p className="text-2xl font-bold text-amber-700">{visData.details.timesMentioned}</p>
-                      <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Delvis</p>
+                      <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Usikker</p>
                     </div>
                   </div>
+
+                  {visData.source && (
+                    <p className="text-[10px] text-neutral-400 text-center">
+                      {visData.source === 'web_search'
+                        ? 'Testet med ChatGPT (gpt-4o-mini) med live websøk'
+                        : 'Testet med ChatGPT (gpt-4o-mini) – modellkunnskap (websøk utilgjengelig)'}
+                    </p>
+                  )}
 
                   {visData.recommendations.length > 0 && (
                     <div className={`p-4 rounded-xl border ${
@@ -493,9 +501,37 @@ export function AiVisibilityTab({
                       </p>
                     </div>
                   )}
+
+                  {(visData.details.insight || (visData.details.competitorsMentioned?.length ?? 0) > 0) && (
+                    <div className="mb-4 p-4 rounded-xl border border-[#ddd6fe] bg-[#f5f3ff]">
+                      <h4 className="text-sm font-semibold text-[#6d28d9] mb-1.5">
+                        Hvem anbefaler AI i stedet?
+                      </h4>
+                      {visData.details.insight && (
+                        <p className="text-xs sm:text-sm text-[#6d28d9] leading-relaxed mb-2">
+                          {visData.details.insight}
+                        </p>
+                      )}
+                      {(visData.details.competitorsMentioned?.length ?? 0) > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {visData.details.competitorsMentioned!.map((competitor) => (
+                            <span
+                              key={competitor}
+                              className="px-2.5 py-1 rounded-full bg-white border border-[#ddd6fe] text-[#6d28d9] text-xs font-medium"
+                            >
+                              {competitor}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   <div className="mb-4">
                     <h4 className="font-medium text-neutral-900">AI-svar på spørsmål</h4>
-                    <p className="text-xs text-neutral-500 mt-0.5">Klikk for å åpne/lukke svar</p>
+                    <p className="text-xs text-neutral-500 mt-0.5">
+                      Nøytrale spørsmål nevner ikke bedriften – navngitte gjør det. Klikk for å åpne/lukke svar.
+                    </p>
                   </div>
                   <Accordion type="single" collapsible className="space-y-2">
                     {visData.details.queries.map((q, i) => (
@@ -506,21 +542,28 @@ export function AiVisibilityTab({
                           q.cited
                             ? 'bg-green-50 border-green-200'
                             : q.mentioned
-                              ? 'bg-[#f5f3ff] border-[#ddd6fe]'
+                              ? 'bg-amber-50 border-amber-200'
                               : 'bg-neutral-50/50 border-neutral-200'
                         }`}
                       >
                         <AccordionTrigger className="px-3 sm:px-4 py-3 hover:no-underline [&[data-state=open]]:border-b [&[data-state=open]]:border-neutral-200/80">
                           <div className="flex items-start justify-between gap-3 text-left w-full">
-                            <p className="text-sm sm:text-base text-neutral-800 leading-snug break-words flex-1 min-w-0 pr-2">
-                              {cleanQueryForDisplay(q.query, getHostname(companyUrl || url))}
-                            </p>
+                            <div className="flex-1 min-w-0 pr-2">
+                              {q.type && (
+                                <span className="inline-block mb-1 text-[10px] px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-500 font-medium">
+                                  {q.type === 'unprompted' ? 'Nøytralt spørsmål' : 'Navngitt'}
+                                </span>
+                              )}
+                              <p className="text-sm sm:text-base text-neutral-800 leading-snug break-words">
+                                {cleanQueryForDisplay(q.query, getHostname(companyUrl || url))}
+                              </p>
+                            </div>
                             <span
                               className={`shrink-0 text-[10px] px-2.5 py-1 rounded-full font-medium ${
-                                q.cited ? 'bg-green-50 text-green-600' : q.mentioned ? 'bg-[#f5f3ff] text-[#6d28d9]' : 'bg-neutral-200 text-neutral-600'
+                                q.cited ? 'bg-green-50 text-green-600' : q.mentioned ? 'bg-amber-50 text-amber-700' : 'bg-neutral-200 text-neutral-600'
                               }`}
                             >
-                              {q.cited ? 'Kjent' : q.mentioned ? 'Delvis' : 'Ukjent'}
+                              {q.cited ? 'Kjent' : q.mentioned ? 'Usikker' : 'Ukjent'}
                             </span>
                           </div>
                         </AccordionTrigger>

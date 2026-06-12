@@ -339,13 +339,20 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         const now = new Date();
         const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
         
-        const { data: monthlyAnalyses } = await supabase
-          .from('analyses')
-          .select('id, created_at')
-          .eq('user_id', user.id)
-          .gte('created_at', firstDayOfMonth);
+        const [{ data: monthlyAnalyses }, { count: quotaEventCount }] = await Promise.all([
+          supabase
+            .from('analyses')
+            .select('id, created_at')
+            .eq('user_id', user.id)
+            .gte('created_at', firstDayOfMonth),
+          supabase
+            .from('analysis_quota_events')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', firstDayOfMonth),
+        ]);
 
-        const analysisCount = monthlyAnalyses?.length || 0;
+        const analysisCount = (monthlyAnalyses?.length || 0) + (quotaEventCount ?? 0);
 
         const { count: articleGenCount } = await supabase
           .from('article_generations')
@@ -1307,9 +1314,13 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     updateState({ editingCompetitors: false, editCompetitorUrls: [], editCompetitorInput: '' });
   }, [updateState]);
 
+  const hasUnlimitedAnalyses = FREE_MONTHLY_LIMIT >= 999;
+
   const updateCompetitorAnalysis = useCallback(async () => {
-    if (!isPremium && state.remainingCompetitorUpdates <= 0) {
-      toast.error('Du har brukt opp dine gratis oppdateringer for konkurrenter');
+    if (!hasUnlimitedAnalyses && state.remainingAnalyses <= 0) {
+      toast.error('Du har brukt opp månedskvoten for analyser', {
+        description: 'Oppdatering av konkurrenter teller som én analyse.',
+      });
       return;
     }
     const currentCompetitors = state.result?.competitors?.map((c) => c.url) || [];
@@ -1328,16 +1339,29 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           mainUrl: state.companyUrl || state.url,
           competitorUrls: newCompetitors,
           existingCompetitors: state.editCompetitorUrls.filter((c) => currentCompetitors.includes(c)),
+          analysisId: state.currentAnalysisId,
         }),
       });
-      if (!response.ok) throw new Error('Kunne ikke oppdatere konkurrentanalyse');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        if (errorData?.limitReached) {
+          updateState({ remainingAnalyses: 0 });
+          toast.error(errorData.error || 'Du har brukt opp månedskvoten for analyser');
+          return;
+        }
+        throw new Error(errorData?.error || 'Kunne ikke oppdatere konkurrentanalyse');
+      }
       const data = await response.json();
       if (state.result && data.competitors) {
         const existingToKeep = state.result.competitors?.filter((c) => state.editCompetitorUrls.includes(c.url)) || [];
         const updatedCompetitors = [...existingToKeep, ...data.competitors];
+        const nextRemaining =
+          typeof data.remainingAnalyses === 'number'
+            ? data.remainingAnalyses
+            : Math.max(0, state.remainingAnalyses - 1);
         updateState({
           result: { ...state.result, competitors: updatedCompetitors },
-          remainingCompetitorUpdates: state.remainingCompetitorUpdates - 1,
+          remainingAnalyses: nextRemaining,
           editingCompetitors: false,
           editCompetitorUrls: [],
         });
@@ -1345,10 +1369,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           const supabase = createClient();
           await supabase
             .from('analyses')
-            .update({
-              competitor_results: updatedCompetitors,
-              remaining_competitor_updates: state.remainingCompetitorUpdates - 1,
-            })
+            .update({ competitor_results: updatedCompetitors })
             .eq('id', state.currentAnalysisId);
         }
         toast.success('Konkurrentanalyse oppdatert!');
@@ -1358,18 +1379,86 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     } finally {
       updateState({ updatingCompetitors: false });
     }
-  }, [state.result, state.editCompetitorUrls, state.companyUrl, state.url, state.currentAnalysisId, state.remainingCompetitorUpdates, isPremium, updateState]);
+  }, [state.result, state.editCompetitorUrls, state.companyUrl, state.url, state.currentAnalysisId, state.remainingAnalyses, hasUnlimitedAnalyses, updateState]);
+
+  const getEditableKeywordSeed = useCallback((): string[] => {
+    const fromResearch = state.result?.keywordResearch?.map((k) => k.keyword) || [];
+    if (fromResearch.length > 0) return fromResearch;
+    return state.result?.aiSummary?.keywordAnalysis?.primaryKeywords || [];
+  }, [state.result?.keywordResearch, state.result?.aiSummary?.keywordAnalysis?.primaryKeywords]);
 
   const startEditingKeywords = useCallback(() => {
-    const currentKeywords = state.result?.keywordResearch?.map((k) => k.keyword) || [];
-    updateState({ editKeywords: currentKeywords, editingKeywords: true });
-  }, [state.result?.keywordResearch, updateState]);
+    updateState({ editKeywords: getEditableKeywordSeed(), editingKeywords: true });
+  }, [getEditableKeywordSeed, updateState]);
+
+  const addSuggestedKeyword = useCallback((raw: string) => {
+    const trimmed = raw.replace(/^\+\s*/, '').trim().toLowerCase();
+    if (!trimmed) return;
+
+    const base = state.editingKeywords ? state.editKeywords : getEditableKeywordSeed();
+    if (base.length >= FREE_KEYWORD_LIMIT) {
+      toast.error(`Maks ${FREE_KEYWORD_LIMIT} nøkkelord`);
+      return;
+    }
+    if (base.includes(trimmed)) {
+      if (!state.editingKeywords) {
+        updateState({ editingKeywords: true, editKeywords: base });
+      }
+      toast.info('Nøkkelordet er allerede lagt til');
+      return;
+    }
+    updateState({
+      editingKeywords: true,
+      editKeywords: [...base, trimmed],
+      editKeywordInput: '',
+    });
+  }, [state.editingKeywords, state.editKeywords, getEditableKeywordSeed, FREE_KEYWORD_LIMIT, updateState]);
+
+  const suggestKeywordsForTab = useCallback(async () => {
+    const targetUrl = state.companyUrl || state.url;
+    if (!targetUrl) {
+      toast.error('Ingen URL funnet for analysen');
+      return;
+    }
+
+    updateState({ suggestingKeywords: true });
+    try {
+      const response = await fetch('/api/suggest-keywords', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: targetUrl,
+          count: Math.min(state.suggestedKeywordCount, FREE_KEYWORD_LIMIT),
+        }),
+      });
+
+      if (!response.ok) throw new Error('Kunne ikke hente forslag');
+
+      const data = await response.json();
+      if (data.keywords && Array.isArray(data.keywords)) {
+        const normalized: string[] = data.keywords.map((k: unknown) => String(k).toLowerCase().trim());
+        const merged = [...new Set([...getEditableKeywordSeed(), ...normalized])].slice(0, FREE_KEYWORD_LIMIT);
+        updateState({
+          editingKeywords: true,
+          editKeywords: merged,
+          editKeywordInput: '',
+        });
+        toast.success('Forslag lagt til – trykk «Oppdater analyse» for å hente søkedata');
+      } else {
+        toast.error('Fikk uventet format fra AI');
+      }
+    } catch {
+      toast.error('Kunne ikke hente forslag til nøkkelord');
+    } finally {
+      updateState({ suggestingKeywords: false });
+    }
+  }, [state.companyUrl, state.url, state.suggestedKeywordCount, getEditableKeywordSeed, FREE_KEYWORD_LIMIT, updateState]);
 
   const addEditKeyword = useCallback(() => {
     const trimmed = state.editKeywordInput.trim().toLowerCase();
     if (!trimmed) return;
     if (state.editKeywords.length >= FREE_KEYWORD_LIMIT) {
-      toast.error(`Maks ${FREE_KEYWORD_LIMIT} nøkkelord i gratis-versjonen`);
+      toast.error(`Maks ${FREE_KEYWORD_LIMIT} nøkkelord`);
       return;
     }
     if (state.editKeywords.includes(trimmed)) {
@@ -1388,8 +1477,10 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
   }, [updateState]);
 
   const updateKeywordAnalysis = useCallback(async () => {
-    if (!isPremium && state.remainingKeywordUpdates <= 0) {
-      toast.error('Du har brukt opp dine gratis oppdateringer for nøkkelord');
+    if (!hasUnlimitedAnalyses && state.remainingAnalyses <= 0) {
+      toast.error('Du har brukt opp månedskvoten for analyser', {
+        description: 'Oppdatering av nøkkelord teller som én analyse.',
+      });
       return;
     }
     if (state.editKeywords.length === 0) {
@@ -1404,14 +1495,27 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         body: JSON.stringify({
           keywords: state.editKeywords,
           url: state.companyUrl || state.url,
+          analysisId: state.currentAnalysisId,
         }),
       });
-      if (!response.ok) throw new Error('Kunne ikke oppdatere nøkkelordanalyse');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        if (errorData?.limitReached) {
+          updateState({ remainingAnalyses: 0 });
+          toast.error(errorData.error || 'Du har brukt opp månedskvoten for analyser');
+          return;
+        }
+        throw new Error(errorData?.error || 'Kunne ikke oppdatere nøkkelordanalyse');
+      }
       const data = await response.json();
       if (state.result && data.keywordResearch) {
+        const nextRemaining =
+          typeof data.remainingAnalyses === 'number'
+            ? data.remainingAnalyses
+            : Math.max(0, state.remainingAnalyses - 1);
         updateState({
           result: { ...state.result, keywordResearch: data.keywordResearch },
-          remainingKeywordUpdates: state.remainingKeywordUpdates - 1,
+          remainingAnalyses: nextRemaining,
           editingKeywords: false,
           editKeywords: [],
         });
@@ -1419,10 +1523,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           const supabase = createClient();
           await supabase
             .from('analyses')
-            .update({
-              keyword_research: data.keywordResearch,
-              remaining_keyword_updates: state.remainingKeywordUpdates - 1,
-            })
+            .update({ keyword_research: data.keywordResearch })
             .eq('id', state.currentAnalysisId);
         }
         toast.success('Nøkkelordanalyse oppdatert!');
@@ -1432,7 +1533,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     } finally {
       updateState({ updatingKeywords: false });
     }
-  }, [state.result, state.editKeywords, state.companyUrl, state.url, state.currentAnalysisId, state.remainingKeywordUpdates, isPremium, updateState]);
+  }, [state.result, state.editKeywords, state.companyUrl, state.url, state.currentAnalysisId, state.remainingAnalyses, hasUnlimitedAnalyses, updateState]);
 
   // Retry PageSpeed analysis for the current analysis
   const retryPageSpeed = useCallback(async () => {
@@ -1544,6 +1645,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     cancelEditingCompetitors,
     updateCompetitorAnalysis,
     startEditingKeywords,
+    addSuggestedKeyword,
+    suggestKeywordsForTab,
     addEditKeyword,
     removeEditKeyword,
     cancelEditingKeywords,
