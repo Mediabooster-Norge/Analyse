@@ -8,6 +8,8 @@ export { TabNavigation } from './tab-navigation';
 export { DashboardEmptyState } from './empty-state';
 export { AISuggestionDialog } from './ai-suggestion-dialog';
 export { AnalysisDialog, ANALYSIS_STEPS } from './analysis-dialog';
+export { AnalysisShareDialog } from './analysis-share-dialog';
+export type { AnalysisShareTarget } from './analysis-share-dialog';
 export type { AnalysisStepConfig } from './analysis-dialog';
 export { ScoreTrendChart } from './score-trend-chart';
 export { SocialPreview } from './social-preview';

@@ -32,7 +32,7 @@ import {
   ChevronDown,
   Eye,
   Lock,
-  FileDown,
+  Share2,
 } from 'lucide-react';
 
 // Extracted components
@@ -50,16 +50,17 @@ import {
   DashboardEmptyState,
   AISuggestionDialog,
   AnalysisDialog,
+  AnalysisShareDialog,
   ANALYSIS_STEPS,
 } from '@/components/features/dashboard';
-import { downloadAnalysisReportPdf } from '@/components/features/dashboard/analysis-report-pdf';
+import type { AnalysisShareTarget } from '@/components/features/dashboard';
 import { OverviewTab, CompetitorsTab, KeywordsTab, AiTab, AiVisibilityTab, ArticlesTab, SocialTab } from '@/components/features/dashboard/tabs';
 
 function DashboardPageContent() {
   const searchParams = useSearchParams();
   const showNewDialog = searchParams.get('new') === 'true';
   const analysisIdFromUrl = searchParams.get('analysisId');
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [shareTarget, setShareTarget] = useState<AnalysisShareTarget | null>(null);
 
   const dashboard = useDashboard({ analysisIdFromUrl, showNewDialog });
   const {
@@ -292,21 +293,6 @@ function DashboardPageContent() {
             competitorProgress={competitorProgress}
             isSubpageMode={!!subpageUrl}
           />
-          {result && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="rounded-xl text-xs shrink-0 w-full sm:w-auto text-neutral-400 cursor-not-allowed"
-              disabled
-            >
-              <FileDown className="h-3.5 w-3.5 mr-1.5" />
-              Last ned rapport (PDF)
-              <span className="ml-1.5 px-1.5 py-0.5 rounded bg-neutral-100 text-neutral-500 text-[10px] font-medium">
-                Kommer snart
-              </span>
-            </Button>
-          )}
         </div>
       </div>
 
@@ -547,7 +533,7 @@ function DashboardPageContent() {
           })()}
 
           {/* Hvilken side som er analysert – synlig på alle faner */}
-          <div className="flex items-center gap-2 py-2 px-0">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 py-2 px-0">
             <Globe className="h-4 w-4 text-neutral-400 shrink-0" />
             <span className="text-xs text-neutral-500 truncate min-w-0">Analysert:</span>
             <a
@@ -559,6 +545,18 @@ function DashboardPageContent() {
               {url}
             </a>
             <ExternalLink className="h-3 w-3 text-neutral-400 shrink-0" />
+            {currentAnalysisId && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 rounded-lg border-neutral-200 hover:bg-neutral-50 text-xs ml-auto sm:ml-0"
+                onClick={() => setShareTarget({ id: currentAnalysisId, url })}
+              >
+                <Share2 className="h-3.5 w-3.5 mr-1.5" />
+                Del analyse
+              </Button>
+            )}
           </div>
 
           {/* Tab Navigation – sticky på desktop så faner er alltid synlige ved scroll */}
@@ -740,6 +738,13 @@ function DashboardPageContent() {
         aiSuggestion={aiSuggestion}
         loadingSuggestion={loadingSuggestion}
         websiteUrl={companyUrl}
+      />
+
+      <AnalysisShareDialog
+        target={shareTarget}
+        onOpenChange={(open) => {
+          if (!open) setShareTarget(null);
+        }}
       />
     </div>
   );
