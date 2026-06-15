@@ -450,7 +450,7 @@ export function OverviewTab({
         <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6 border-b border-neutral-100">
           <h3 className="font-semibold text-neutral-900 text-sm max-[400px]:text-xs min-[401px]:text-base">Detaljert gjennomgang</h3>
         </div>
-        <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6 space-y-3 max-[400px]:space-y-3 sm:space-y-4">
+        <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6 space-y-7 max-[400px]:space-y-5 sm:space-y-8">
           {/* Social preview – øverst */}
           <div>
             <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5 flex items-center gap-2">

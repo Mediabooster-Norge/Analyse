@@ -84,18 +84,24 @@ async function mapWithConcurrency<T, R>(
 /** Bygger en case-insensitiv ordgrense-regex for et navn (unngår delstreng-falske-positive). */
 function buildNameRegex(name: string): RegExp | null {
   const trimmed = name.trim();
-  if (trimmed.length <= 3) return null;
+  // Korte merkenavn (TRY, M51) må støttes – ordgrenser hindrer treff i f.eks. «country».
+  if (trimmed.length < 2) return null;
   const escaped = trimmed.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return new RegExp(`(^|[^\\p{L}\\p{N}])${escaped}([^\\p{L}\\p{N}]|$)`, 'iu');
 }
 
-/** Hoveddel av domenet uten TLD, f.eks. «iteo» fra iteo.com – brukes når AI nevner merkenavn, ikke domene. */
+/** Hoveddel av domenet uten TLD, f.eks. «iteo» fra iteo.com eller «try» fra try.no. */
 function getDomainBrand(domain: string): string | null {
   const host = domain.toLowerCase().replace(/^www\./, '');
   const parts = host.split('.').filter(Boolean);
   if (parts.length < 2) return null;
-  const sld = parts[parts.length - 2];
-  if (!sld || sld.length <= 3) return null;
+  // try.no → try; iteo.com → iteo (ikke «co» fra example.co.uk)
+  const sld = parts.length === 2 ? parts[0] : parts[parts.length - 2];
+  if (!sld || sld.length < 2) return null;
+  if (parts.length > 2 && sld.length <= 2) {
+    const fallback = parts[0];
+    return fallback && fallback.length >= 2 ? fallback : null;
+  }
   return sld;
 }
 
@@ -112,7 +118,7 @@ function buildVisibilityMatchTerms(domain: string, companyName?: string): string
   if (rawName) {
     terms.add(rawName.toLowerCase());
     const firstToken = rawName.split(/[\s|–—-]+/)[0]?.trim().toLowerCase();
-    if (firstToken && firstToken.length > 3) terms.add(firstToken);
+    if (firstToken && firstToken.length >= 2) terms.add(firstToken);
   }
 
   return [...terms];
