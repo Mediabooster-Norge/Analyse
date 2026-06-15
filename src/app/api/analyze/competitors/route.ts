@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { analyzeCompetitorsOnly } from '@/lib/analyzers';
 import { getPremiumStatusServer } from '@/lib/premium-server';
+import { verifyAnalysisOwnership } from '@/lib/analysis-ownership';
+import { mergeCompetitorResults } from '@/lib/utils/competitor-merge';
 import {
   checkMonthlyAnalysisQuota,
   recordAnalysisQuotaEvent,
@@ -14,6 +16,8 @@ interface CompetitorAnalyzeRequest {
   mainUrl: string;
   competitorUrls: string[];
   existingCompetitors?: string[];
+  /** Full ønsket rekkefølge av konkurrent-URLer etter redigering */
+  competitorEditUrls?: string[];
   analysisId?: string;
 }
 
@@ -27,7 +31,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = (await request.json()) as CompetitorAnalyzeRequest;
-    const { competitorUrls = [], analysisId } = body;
+    const { competitorUrls = [], competitorEditUrls = [], analysisId } = body;
 
     if (competitorUrls.length === 0) {
       return NextResponse.json({ error: 'No new competitors to analyze' }, { status: 400 });
@@ -66,7 +70,63 @@ export async function POST(request: NextRequest) {
     }
 
     // Run competitor analysis only
-    const competitors = await analyzeCompetitorsOnly(validUrls);
+    const newlyAnalyzed = await analyzeCompetitorsOnly(validUrls);
+
+    let persistedCompetitors = newlyAnalyzed;
+
+    if (analysisId) {
+      const ownsAnalysis = await verifyAnalysisOwnership(supabase, user.id, analysisId);
+      if (!ownsAnalysis) {
+        return NextResponse.json({ error: 'Analysen finnes ikke eller du har ikke tilgang.' }, { status: 404 });
+      }
+
+      const { data: analysisRow, error: fetchError } = await supabase
+        .from('analyses')
+        .select('competitor_results')
+        .eq('id', analysisId)
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (fetchError || !analysisRow) {
+        console.error('Competitor analysis fetch error:', fetchError);
+        return NextResponse.json(
+          { error: 'Kunne ikke hente eksisterende konkurrentdata.' },
+          { status: 500 }
+        );
+      }
+
+      const existing = Array.isArray(analysisRow.competitor_results)
+        ? (analysisRow.competitor_results as Array<{ url: string; results?: unknown }>)
+        : [];
+
+      const editUrls =
+        competitorEditUrls.length > 0
+          ? competitorEditUrls
+          : [
+              ...existing.map((c) => c.url),
+              ...newlyAnalyzed.map((c) => c.url),
+            ];
+
+      persistedCompetitors = mergeCompetitorResults(
+        existing,
+        editUrls,
+        newlyAnalyzed
+      ) as typeof newlyAnalyzed;
+
+      const { error: saveError } = await supabase
+        .from('analyses')
+        .update({ competitor_results: persistedCompetitors })
+        .eq('id', analysisId)
+        .eq('user_id', user.id);
+
+      if (saveError) {
+        console.error('Competitor analysis save error:', saveError);
+        return NextResponse.json(
+          { error: 'Kunne ikke lagre konkurrentanalyse. Prøv igjen.' },
+          { status: 500 }
+        );
+      }
+    }
 
     await recordAnalysisQuotaEvent(supabase, user.id, analysisId, 'competitor_update');
 
@@ -75,7 +135,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      competitors,
+      competitors: persistedCompetitors,
       remainingAnalyses,
       monthlyLimit: quota.limit,
     });

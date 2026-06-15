@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import { getPremiumStatusServer } from '@/lib/premium-server';
 import { getKeywordLimit } from '@/lib/constants/premium';
 import { generateKeywordResearchForList } from '@/lib/utils/keyword-research';
+import { verifyAnalysisOwnership } from '@/lib/analysis-ownership';
 import {
   checkMonthlyAnalysisQuota,
   recordAnalysisQuotaEvent,
@@ -60,6 +61,27 @@ export async function POST(request: NextRequest) {
 
     if (!keywordResult || keywordResult.keywords.length === 0) {
       return NextResponse.json({ error: 'Failed to generate keyword research' }, { status: 500 });
+    }
+
+    if (analysisId) {
+      const ownsAnalysis = await verifyAnalysisOwnership(supabase, user.id, analysisId);
+      if (!ownsAnalysis) {
+        return NextResponse.json({ error: 'Analysen finnes ikke eller du har ikke tilgang.' }, { status: 404 });
+      }
+
+      const { error: saveError } = await supabase
+        .from('analyses')
+        .update({ keyword_research: keywordResult.keywords })
+        .eq('id', analysisId)
+        .eq('user_id', user.id);
+
+      if (saveError) {
+        console.error('Keyword research save error:', saveError);
+        return NextResponse.json(
+          { error: 'Kunne ikke lagre nøkkelordanalyse. Prøv igjen.' },
+          { status: 500 }
+        );
+      }
     }
 
     await recordAnalysisQuotaEvent(supabase, user.id, analysisId, 'keyword_update');

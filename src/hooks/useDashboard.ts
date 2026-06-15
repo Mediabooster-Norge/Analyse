@@ -1421,6 +1421,33 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       toast.error('Ingen endringer å oppdatere');
       return;
     }
+
+    // Kun fjerning av konkurrenter – ingen ny analyse, ingen kvotebelastning
+    if (newCompetitors.length === 0) {
+      const updatedCompetitors =
+        state.result?.competitors?.filter((c) => state.editCompetitorUrls.includes(c.url)) || [];
+
+      if (state.currentAnalysisId) {
+        const supabase = createClient();
+        const { error: saveError } = await supabase
+          .from('analyses')
+          .update({ competitor_results: updatedCompetitors })
+          .eq('id', state.currentAnalysisId);
+        if (saveError) {
+          toast.error('Kunne ikke lagre konkurrentendringer – prøv igjen');
+          return;
+        }
+      }
+
+      updateState({
+        result: state.result ? { ...state.result, competitors: updatedCompetitors } : state.result,
+        editingCompetitors: false,
+        editCompetitorUrls: [],
+      });
+      toast.success('Konkurrenter oppdatert!');
+      return;
+    }
+
     updateState({ updatingCompetitors: true });
     try {
       const response = await fetch('/api/analyze/competitors', {
@@ -1430,6 +1457,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           mainUrl: state.companyUrl || state.url,
           competitorUrls: newCompetitors,
           existingCompetitors: state.editCompetitorUrls.filter((c) => currentCompetitors.includes(c)),
+          competitorEditUrls: state.editCompetitorUrls,
           analysisId: state.currentAnalysisId,
         }),
       });
@@ -1444,25 +1472,16 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       }
       const data = await response.json();
       if (state.result && data.competitors) {
-        const existingToKeep = state.result.competitors?.filter((c) => state.editCompetitorUrls.includes(c.url)) || [];
-        const updatedCompetitors = [...existingToKeep, ...data.competitors];
         const nextRemaining =
           typeof data.remainingAnalyses === 'number'
             ? data.remainingAnalyses
             : Math.max(0, state.remainingAnalyses - 1);
         updateState({
-          result: { ...state.result, competitors: updatedCompetitors },
+          result: { ...state.result, competitors: data.competitors },
           remainingAnalyses: nextRemaining,
           editingCompetitors: false,
           editCompetitorUrls: [],
         });
-        if (state.currentAnalysisId) {
-          const supabase = createClient();
-          await supabase
-            .from('analyses')
-            .update({ competitor_results: updatedCompetitors })
-            .eq('id', state.currentAnalysisId);
-        }
         toast.success('Konkurrentanalyse oppdatert!');
       }
     } catch (error) {
@@ -1605,17 +1624,6 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
 
       const keywordResearch = data.keywordResearch;
       const savedKeywords = keywordResearch.map((k: { keyword: string }) => k.keyword);
-
-      if (state.currentAnalysisId) {
-        const supabase = createClient();
-        const { error: saveError } = await supabase
-          .from('analyses')
-          .update({ keyword_research: keywordResearch })
-          .eq('id', state.currentAnalysisId);
-        if (saveError) {
-          throw new Error('Kunne ikke lagre nøkkelord – prøv igjen');
-        }
-      }
 
       const nextRemaining =
         typeof data.remainingAnalyses === 'number'

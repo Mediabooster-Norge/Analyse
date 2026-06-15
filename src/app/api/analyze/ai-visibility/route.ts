@@ -668,30 +668,56 @@ export async function POST(request: NextRequest) {
     const mainDomain = getDomainFromUrl(url);
     const cacheKey = buildCacheKey(mainDomain, normalizedKeywords);
 
-    /** Renser, beskriver og lagrer payload på analysen, og returnerer responsen. */
-    const respondWithPayload = async (raw: AIVisibilityPayload, remaining: number) => {
+    const buildResponsePayload = (raw: AIVisibilityPayload) => {
       const cleaned = cleanPayloadQueriesForDisplay(raw, mainDomain);
       const payload = buildPayloadWithDescription(cleaned);
       const checkedAt = new Date().toISOString();
-      if (analysisId && typeof analysisId === 'string') {
-        const { error: updateError } = await supabase
-          .from('analyses')
-          .update({ ai_visibility: { ...payload, checked_at: checkedAt } })
-          .eq('id', analysisId)
-          .eq('user_id', user.id);
-        if (updateError) console.error('AI visibility save to analysis:', updateError);
+      return { payload, checkedAt };
+    };
+
+    /** Lagrer på analysen når analysisId er satt. Kaster ved feil slik at kvote ikke belastes uten persistert data. */
+    const savePayloadToAnalysis = async (
+      payload: AIVisibilityPayload,
+      checkedAt: string
+    ): Promise<void> => {
+      if (!analysisId || typeof analysisId !== 'string') return;
+
+      const { error: updateError } = await supabase
+        .from('analyses')
+        .update({ ai_visibility: { ...payload, checked_at: checkedAt } })
+        .eq('id', analysisId)
+        .eq('user_id', user.id);
+
+      if (updateError) {
+        console.error('AI visibility save to analysis:', updateError);
+        throw new Error('SAVE_FAILED');
       }
-      return NextResponse.json({
+    };
+
+    const respondWithPayload = (
+      payload: AIVisibilityPayload,
+      checkedAt: string,
+      remaining: number
+    ) =>
+      NextResponse.json({
         ai_visibility: { ...payload, checked_at: checkedAt },
         remaining,
         limit,
       });
-    };
 
     // Cache-treff: server umiddelbart uten å belaste månedskvote (ingen ny kostnad).
     const cached = await getCachedPayload(supabase, cacheKey);
     if (cached && cached.details.queriesTested > 0) {
-      return respondWithPayload(cached, Math.max(0, limit - used));
+      const { payload, checkedAt } = buildResponsePayload(cached);
+      try {
+        await savePayloadToAnalysis(payload, checkedAt);
+      } catch {
+        return NextResponse.json(
+          { error: 'Kunne ikke lagre AI-synlighet på analysen. Prøv igjen.' },
+          { status: 500 }
+        );
+      }
+      return respondWithPayload(payload, checkedAt, Math.max(0, limit - used));
     }
 
     if (used >= limit) {
@@ -726,9 +752,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { payload, checkedAt } = buildResponsePayload(mainPayload);
+
+    try {
+      await savePayloadToAnalysis(payload, checkedAt);
+    } catch {
+      return NextResponse.json(
+        { error: 'Kunne ikke lagre AI-synlighet på analysen. Prøv igjen.' },
+        { status: 500 }
+      );
+    }
+
     await setCachedPayload(cacheKey, mainPayload);
 
-    // Belast kvote kun når vi faktisk har regnet ut et nytt resultat.
+    // Belast kvote kun etter vellykket lagring (unngår tap av sjekk uten persistert resultat).
     const { error: insertError } = await supabase
       .from('ai_visibility_checks')
       .insert({
@@ -738,9 +775,13 @@ export async function POST(request: NextRequest) {
 
     if (insertError) {
       console.error('ai_visibility_checks insert error:', insertError);
+      return NextResponse.json(
+        { error: 'Kunne ikke registrere AI-synlighetssjekk. Prøv igjen.' },
+        { status: 500 }
+      );
     }
 
-    return respondWithPayload(mainPayload, Math.max(0, limit - used - 1));
+    return respondWithPayload(payload, checkedAt, Math.max(0, limit - used - 1));
   } catch (error) {
     console.error('AI visibility check error:', error);
     return NextResponse.json(
