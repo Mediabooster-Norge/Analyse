@@ -10,6 +10,7 @@ import {
   hasKeywordsForAiVisibility,
   normalizeVisibilityKeyword,
 } from '@/lib/utils/visibility-keywords';
+import { clampScore } from '@/lib/utils/score-utils';
 import type {
   DashboardAnalysisResult,
   DashboardTab,
@@ -175,7 +176,7 @@ function mapAnalysisRowToResult(
 ): DashboardAnalysisResult {
   const mergedSecurityResults = analysis.security_results
     ? {
-        score: analysis.security_results.score ?? defaultSecurityResults.score,
+        score: clampScore(analysis.security_results.score ?? defaultSecurityResults.score),
         ssl: { ...defaultSecurityResults.ssl, ...(analysis.security_results.ssl || {}) },
         headers: { ...defaultSecurityResults.headers, ...(analysis.security_results.headers || {}) },
         observatory: { ...defaultSecurityResults.observatory, ...(analysis.security_results.observatory || {}) },
@@ -184,7 +185,7 @@ function mapAnalysisRowToResult(
 
   const mergedSeoResults = analysis.seo_results
     ? {
-        score: analysis.seo_results.score ?? defaultSeoResults.score,
+        score: clampScore(analysis.seo_results.score ?? defaultSeoResults.score),
         meta: {
           title: { ...defaultSeoResults.meta.title, ...(analysis.seo_results.meta?.title || {}) },
           description: { ...defaultSeoResults.meta.description, ...(analysis.seo_results.meta?.description || {}) },
@@ -202,16 +203,43 @@ function mapAnalysisRowToResult(
           internal: { ...defaultSeoResults.links.internal, ...(analysis.seo_results.links?.internal || {}) },
           external: { ...defaultSeoResults.links.external, ...(analysis.seo_results.links?.external || {}) },
         },
+        structuredData: analysis.seo_results.structuredData ?? undefined,
       }
     : defaultSeoResults;
 
+  const contentResults = analysis.content_results
+    ? { ...analysis.content_results, score: clampScore(analysis.content_results.score ?? 0) }
+    : { score: 0, wordCount: 0 };
+
+  const competitors: CompetitorAnalysis[] | undefined = Array.isArray(analysis.competitor_results)
+    ? analysis.competitor_results.map((competitor: CompetitorAnalysis) => {
+        const results = competitor.results;
+        if (!results) return competitor;
+        return {
+          ...competitor,
+          results: {
+            ...results,
+            overallScore: clampScore(results.overallScore ?? 0),
+            seoResults: { ...results.seoResults, score: clampScore(results.seoResults?.score ?? 0) },
+            contentResults: { ...results.contentResults, score: clampScore(results.contentResults?.score ?? 0) },
+            securityResults: { ...results.securityResults, score: clampScore(results.securityResults?.score ?? 0) },
+            pageSpeedResults: results.pageSpeedResults
+              ? { ...results.pageSpeedResults, performance: clampScore(results.pageSpeedResults.performance ?? 0) }
+              : results.pageSpeedResults,
+          },
+        };
+      })
+    : undefined;
+
   return {
     seoResults: mergedSeoResults,
-    contentResults: analysis.content_results || { score: 0, wordCount: 0 },
+    contentResults,
     securityResults: mergedSecurityResults,
-    pageSpeedResults: analysis.pagespeed_results || undefined,
-    overallScore: analysis.overall_score || 0,
-    competitors: analysis.competitor_results || undefined,
+    pageSpeedResults: analysis.pagespeed_results
+      ? { ...analysis.pagespeed_results, performance: clampScore(analysis.pagespeed_results.performance ?? 0) }
+      : undefined,
+    overallScore: clampScore(analysis.overall_score ?? 0),
+    competitors,
     aiSummary: analysis.ai_summary || undefined,
     keywordResearch: analysis.keyword_research || undefined,
     aiVisibility: analysis.ai_visibility || undefined,

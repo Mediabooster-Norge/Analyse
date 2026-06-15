@@ -49,6 +49,7 @@ import {
   Download,
   RefreshCw,
   Eye,
+  Boxes,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
@@ -323,6 +324,11 @@ export function OverviewTab({
           if (!result.seoResults.meta.ogTags.title) issues.push({ label: 'Open Graph', desc: 'Mangler OG-tittel', priority: 'low', category: 'seo' });
           if (!result.seoResults.meta.ogTags.description) issues.push({ label: 'Open Graph', desc: 'Mangler OG-beskrivelse', priority: 'low', category: 'seo' });
           if (!result.seoResults.meta.canonical) issues.push({ label: 'Canonical URL', desc: 'Mangler canonical tag', priority: 'medium', category: 'seo' });
+          if (result.seoResults.structuredData && !result.seoResults.structuredData.hasAny) {
+            issues.push({ label: 'Strukturert data', desc: 'Mangler Schema.org-markup', priority: 'medium', category: 'seo' });
+          } else if (result.seoResults.structuredData && result.seoResults.structuredData.invalidJsonLdCount > 0 && result.seoResults.structuredData.types.length === 0) {
+            issues.push({ label: 'Strukturert data', desc: 'Ugyldig JSON-LD', priority: 'medium', category: 'seo' });
+          }
           if (result.contentResults.wordCount < 300) issues.push({ label: 'Innhold', desc: 'For lite tekst', priority: 'medium', category: 'content' });
           if (result.contentResults.readability && result.contentResults.readability.lixScore > 44) {
             // LIX levels: <25 very easy, 25-34 easy, 35-44 moderate, 45-54 difficult (faglitteratur), >55 very difficult
@@ -365,6 +371,7 @@ export function OverviewTab({
             'H2-overskrifter': 'h2-overskrifter',
             'Bilder': 'bilder-alt',
             'Open Graph': 'open-graph',
+            'Strukturert data': 'strukturert-data',
             'Canonical URL': 'seo',
             'Lesbarhet': 'lesbarhet',
             'Innhold': 'ordtelling',
@@ -594,6 +601,65 @@ export function OverviewTab({
                 onClick={() => fetchAISuggestion('Open Graph', result.seoResults.meta.ogTags.title ?? 'Mangler', result.seoResults.meta.ogTags.title ? 'good' : 'bad', !result.seoResults.meta.ogTags.title ? 'Mangler OG-tags for deling.' : undefined)}
               />
               </div>
+              {(() => {
+                const sd = result.seoResults.structuredData;
+                if (!sd) {
+                  return (
+                    <div data-metric="strukturert-data">
+                      <MetricCard
+                        readOnly={readOnly}
+                        icon={Boxes}
+                        title="Strukturert data"
+                        description="Ikke sjekket"
+                        value="—"
+                        recommendation="Kjør analysen på nytt"
+                        status="warning"
+                        onClick={() => fetchAISuggestion(
+                          'Strukturert data (Schema.org)',
+                          'Ikke sjekket',
+                          'warning',
+                          'Denne analysen ble kjørt før schema-sjekk ble lagt til. Kjør analysen på nytt for å se om siden har Schema.org-markup (JSON-LD).'
+                        )}
+                      />
+                    </div>
+                  );
+                }
+                const status: 'good' | 'warning' | 'bad' = !sd.hasAny
+                  ? 'bad'
+                  : sd.issues.length > 0
+                    ? 'warning'
+                    : 'good';
+                const description = sd.hasAny
+                  ? (sd.types.length > 0 ? `${sd.types.length} type${sd.types.length > 1 ? 'r' : ''} funnet` : 'Funnet')
+                  : 'Mangler';
+                const value = sd.hasAny
+                  ? (sd.types.length > 0 ? sd.types.slice(0, 4).join(', ') + (sd.types.length > 4 ? '…' : '') : 'Ukjent type')
+                  : '—';
+                const recommendation = !sd.hasAny
+                  ? 'Legg til Schema.org (JSON-LD)'
+                  : sd.issues.length > 0
+                    ? 'Forbedre eksisterende markup'
+                    : 'Bra for søk og AI-synlighet';
+                const issueText = !sd.hasAny
+                  ? 'Siden mangler strukturert data (Schema.org). Legg til JSON-LD, f.eks. Organization eller LocalBusiness, så søkemotorer og AI bedre forstår bedriften.'
+                  : sd.issues.length > 0
+                    ? `Funnet: ${sd.types.join(', ') || 'ukjent type'}. Problemer: ${sd.issues.join('; ')}. ${sd.recommendations.join(' ')}`
+                    : undefined;
+                return (
+                  <div data-metric="strukturert-data">
+                    <MetricCard
+                      readOnly={readOnly}
+                      icon={Boxes}
+                      title="Strukturert data"
+                      description={description}
+                      value={value}
+                      recommendation={recommendation}
+                      status={status}
+                      onClick={() => fetchAISuggestion('Strukturert data (Schema.org)', sd.hasAny ? (sd.types.join(', ') || 'Ukjent type') : 'Mangler', status, issueText)}
+                    />
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

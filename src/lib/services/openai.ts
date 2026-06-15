@@ -81,6 +81,7 @@ Svar ALLTID i gyldig JSON-format som matcher den forespurte strukturen.`;
 - Bilder uten alt-tekst: ${data.seoResults.images.withoutAlt} av ${data.seoResults.images.total}
 - Interne lenker: ${data.seoResults.links.internal.count}
 - Eksterne lenker: ${data.seoResults.links.external.count}
+- Strukturert data (Schema.org): ${data.seoResults.structuredData.hasAny ? `Ja – typer: ${data.seoResults.structuredData.types.join(', ') || 'ukjent'}` : 'Mangler'}${data.seoResults.structuredData.issues.length > 0 ? ` (${data.seoResults.structuredData.issues.join('; ')})` : ''}
 
 ## Innholdsanalyse
 - Ordtelling: ${data.contentResults.wordCount}

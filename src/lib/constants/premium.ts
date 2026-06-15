@@ -43,9 +43,6 @@ export const PREMIUM_MONTHLY_ANALYSIS_LIMIT = 30;
 /** Unlimited monthly analyses (Mediabooster team emails) */
 export const UNLIMITED_MONTHLY_ANALYSIS_LIMIT = 999;
 
-/** First N registered users automatically receive premium (founding members) */
-export const FOUNDING_MEMBER_LIMIT = 100;
-
 export function isAllowlistedPremiumEmail(email: string | null | undefined): boolean {
   if (!email) return false;
   return PREMIUM_EMAILS.includes(email.toLowerCase());

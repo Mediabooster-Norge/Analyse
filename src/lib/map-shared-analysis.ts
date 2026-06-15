@@ -53,6 +53,7 @@ export function mapSharedAnalysisPayload(raw: SharedAnalysisPayload): DashboardA
         internal: { ...defaultSeoResults.links.internal, ...(seoRaw.links?.internal || {}) },
         external: { ...defaultSeoResults.links.external, ...(seoRaw.links?.external || {}) },
       },
+      structuredData: seoRaw.structuredData,
     },
     contentResults: {
       score: contentRaw.score ?? 0,

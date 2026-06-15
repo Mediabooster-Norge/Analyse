@@ -661,17 +661,19 @@ export function AiVisibilityTab({
             );
           }
 
-          const hasStructuredData = result.seoResults.meta.ogTags.title || result.seoResults.meta.ogTags.description;
+          const hasStructuredData = !!result.seoResults.structuredData?.hasAny;
+          const hasOpenGraph = !!(result.seoResults.meta.ogTags.title || result.seoResults.meta.ogTags.description);
           const hasGoodContent = result.contentResults.wordCount >= 300;
           const hasMetaDescription = !!result.seoResults.meta.description.content;
           const hasProperHeadings = result.seoResults.headings.h1.count === 1 && result.seoResults.headings.h2.count > 0;
           const hasAltTexts = result.seoResults.images.total === 0 || result.seoResults.images.withoutAlt === 0;
 
           const factors = [
+            { name: 'Strukturert data (Schema.org)', pass: hasStructuredData, tip: 'Legg til JSON-LD (f.eks. Organization) så AI forstår bedriften' },
             { name: 'Strukturert innhold', pass: hasProperHeadings, tip: 'Bruk tydelige overskrifter (H1, H2)' },
             { name: 'Meta-beskrivelse', pass: hasMetaDescription, tip: 'Legg til beskrivende meta-tekst' },
             { name: 'Innholdsmengde', pass: hasGoodContent, tip: 'Minimum 300 ord anbefales' },
-            { name: 'Open Graph data', pass: hasStructuredData, tip: 'Legg til OG-tags for deling' },
+            { name: 'Open Graph data', pass: hasOpenGraph, tip: 'Legg til OG-tags for deling' },
             { name: 'Bildetekster', pass: hasAltTexts, tip: 'Alt-tekst hjelper AI å forstå bilder' },
           ];
 

@@ -5,6 +5,7 @@ import { analyzeSecurity, analyzeSecurityQuick } from './security-analyzer';
 import { analyzePageSpeed } from '@/lib/services/pagespeed';
 import { estimatePerformanceFromScrape } from '@/lib/analyzers/quick-performance';
 import { generateAIAnalysis, generateKeywordResearch, KeywordData } from '@/lib/services/openai';
+import { clampScore } from '@/lib/utils/score-utils';
 import type { SEOResults, ContentResults, SecurityResults, AISummary, PageSpeedResults } from '@/types';
 
 // AI visibility runs exclusively through the standalone /api/analyze/ai-visibility endpoint.
@@ -23,14 +24,14 @@ export function calculateOverallScore(
   performanceScore?: number
 ): number {
   if (performanceScore !== undefined && performanceScore > 0) {
-    return Math.round(
+    return clampScore(
       seoScore * 0.35 +
       contentScore * 0.25 +
       securityScore * 0.25 +
       performanceScore * 0.15
     );
   }
-  return Math.round(seoScore * 0.4 + contentScore * 0.3 + securityScore * 0.3);
+  return clampScore(seoScore * 0.4 + contentScore * 0.3 + securityScore * 0.3);
 }
 
 /** Maximum number of competitor scrapes / analyses that run in parallel. */

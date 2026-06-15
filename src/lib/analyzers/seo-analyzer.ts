@@ -1,6 +1,7 @@
 import type { CheerioAPI } from 'cheerio';
-import type { SEOResults, MetaTagsAnalysis, HeadingsAnalysis, ImagesAnalysis, LinksAnalysis, MobileAnalysis, TechnicalSEOAnalysis } from '@/types';
+import type { SEOResults, MetaTagsAnalysis, HeadingsAnalysis, ImagesAnalysis, LinksAnalysis, MobileAnalysis, TechnicalSEOAnalysis, StructuredDataAnalysis } from '@/types';
 import { fetchRobotsTxt, fetchSitemap } from '@/lib/services/scraper';
+import { clampScore } from '@/lib/utils/score-utils';
 
 export async function analyzeSEO($: CheerioAPI, url: string): Promise<SEOResults> {
   const [meta, headings, images, links, mobile, technical] = await Promise.all([
@@ -12,6 +13,10 @@ export async function analyzeSEO($: CheerioAPI, url: string): Promise<SEOResults
     analyzeTechnicalSEO($, url),
   ]);
 
+  // Structured data is a synchronous, in-memory parse of the already-fetched HTML
+  // (no network calls), so it adds negligible time even with max competitors.
+  const structuredData = analyzeStructuredData($);
+
   // Calculate overall SEO score
   const scores = [
     calculateMetaScore(meta),
@@ -20,9 +25,10 @@ export async function analyzeSEO($: CheerioAPI, url: string): Promise<SEOResults
     calculateLinksScore(links),
     calculateMobileScore(mobile),
     calculateTechnicalScore(technical),
+    structuredData.score,
   ];
 
-  const score = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  const score = clampScore(scores.reduce((a, b) => a + b, 0) / scores.length);
 
   return {
     meta,
@@ -31,6 +37,7 @@ export async function analyzeSEO($: CheerioAPI, url: string): Promise<SEOResults
     links,
     mobile,
     technical,
+    structuredData,
     score,
   };
 }
@@ -119,6 +126,7 @@ function analyzeImages($: CheerioAPI, pageUrl: string): ImagesAnalysis {
   let withAlt = 0;
   let withoutAlt = 0;
   let withLazyLoading = 0;
+  let withLazyAmongDeferred = 0;
   const missingAltImages: string[] = [];
   const largeImages: string[] = [];
   const allImageUrls: string[] = [];
@@ -135,7 +143,7 @@ function analyzeImages($: CheerioAPI, pageUrl: string): ImagesAnalysis {
     }
   };
 
-  images.each((_, el) => {
+  images.each((index, el) => {
     const $img = $(el);
     const alt = $img.attr('alt');
     const rawSrc = $img.attr('src') || '';
@@ -171,6 +179,7 @@ function analyzeImages($: CheerioAPI, pageUrl: string): ImagesAnalysis {
 
     if (loading === 'lazy') {
       withLazyLoading++;
+      if (index >= 3) withLazyAmongDeferred++;
     }
 
     // Check for potentially large images (no lazy loading on images that aren't first few)
@@ -183,8 +192,9 @@ function analyzeImages($: CheerioAPI, pageUrl: string): ImagesAnalysis {
   let score = 100;
   if (total > 0) {
     const altRatio = withAlt / total;
-    const lazyRatio = total > 3 ? withLazyLoading / (total - 3) : 1; // First 3 images shouldn't be lazy
-    score = Math.round((altRatio * 70 + lazyRatio * 30));
+    const lazyEligible = Math.max(0, total - 3);
+    const lazyRatio = lazyEligible > 0 ? Math.min(1, withLazyAmongDeferred / lazyEligible) : 1;
+    score = clampScore(altRatio * 70 + lazyRatio * 30);
   }
 
   return {
@@ -304,6 +314,196 @@ async function analyzeTechnicalSEO($: CheerioAPI, url: string): Promise<Technica
   };
 }
 
+// ============================================================================
+// Structured data (Schema.org / JSON-LD / microdata / RDFa)
+// ============================================================================
+
+/** Guardrails so a pathological page can never blow the analysis time budget. */
+const SD_MAX_JSONLD_SCRIPTS = 30;
+const SD_MAX_SCRIPT_LENGTH = 100_000; // skip JSON-LD blobs larger than ~100KB
+const SD_MAX_NODES = 200;
+
+/** Schema.org types we recognize as meaningful for Norwegian SMB sites. */
+const SD_KNOWN_TYPES = new Set([
+  'Organization',
+  'LocalBusiness',
+  'Corporation',
+  'WebSite',
+  'WebPage',
+  'Article',
+  'BlogPosting',
+  'NewsArticle',
+  'Product',
+  'Service',
+  'Offer',
+  'FAQPage',
+  'BreadcrumbList',
+  'Event',
+  'Person',
+  'Review',
+  'AggregateRating',
+  'Recipe',
+  'VideoObject',
+  'ImageObject',
+  'SearchAction',
+]);
+
+/** Recommended (not strictly required) fields per type, used to flag gaps. */
+const SD_REQUIRED_FIELDS: Record<string, string[]> = {
+  Organization: ['name', 'url'],
+  Corporation: ['name', 'url'],
+  LocalBusiness: ['name', 'address', 'telephone'],
+  WebSite: ['name', 'url'],
+  WebPage: ['name'],
+  Article: ['headline', 'datePublished', 'author'],
+  BlogPosting: ['headline', 'datePublished', 'author'],
+  NewsArticle: ['headline', 'datePublished', 'author'],
+  Product: ['name'],
+  FAQPage: ['mainEntity'],
+  BreadcrumbList: ['itemListElement'],
+  Event: ['name', 'startDate'],
+  Person: ['name'],
+};
+
+/** Normalize a Schema.org @type (string or array) to a list of short type names. */
+function normalizeSchemaType(rawType: unknown): string[] {
+  const toShort = (t: string): string => {
+    const trimmed = t.trim();
+    // Handle full URLs like "https://schema.org/Organization"
+    const lastSegment = trimmed.split(/[/#]/).pop() ?? trimmed;
+    return lastSegment;
+  };
+  if (typeof rawType === 'string') return [toShort(rawType)];
+  if (Array.isArray(rawType)) {
+    return rawType.filter((t): t is string => typeof t === 'string').map(toShort);
+  }
+  return [];
+}
+
+/** Recursively collect JSON-LD nodes (handles @graph and nested arrays/objects). */
+function collectJsonLdNodes(value: unknown, out: Record<string, unknown>[], depth = 0): void {
+  if (out.length >= SD_MAX_NODES || depth > 6) return;
+  if (Array.isArray(value)) {
+    for (const item of value) collectJsonLdNodes(item, out, depth + 1);
+    return;
+  }
+  if (value && typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    if ('@graph' in obj) {
+      collectJsonLdNodes(obj['@graph'], out, depth + 1);
+    }
+    if ('@type' in obj) {
+      out.push(obj);
+    }
+  }
+}
+
+export function analyzeStructuredData($: CheerioAPI): StructuredDataAnalysis {
+  const blocks: StructuredDataAnalysis['blocks'] = [];
+  const formatsFound = new Set<StructuredDataAnalysis['formats'][number]>();
+  const typesFound = new Set<string>();
+  let invalidJsonLdCount = 0;
+
+  // --- JSON-LD (preferred format) ---
+  const scripts = $('script[type="application/ld+json"]');
+  scripts.slice(0, SD_MAX_JSONLD_SCRIPTS).each((_, el) => {
+    const raw = $(el).contents().text().trim();
+    if (!raw || raw.length > SD_MAX_SCRIPT_LENGTH) return;
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      invalidJsonLdCount++;
+      blocks.push({ type: 'Unknown', format: 'json-ld', valid: false, missingFields: [] });
+      return;
+    }
+
+    formatsFound.add('json-ld');
+    const nodes: Record<string, unknown>[] = [];
+    collectJsonLdNodes(parsed, nodes);
+
+    for (const node of nodes) {
+      const types = normalizeSchemaType(node['@type']);
+      const primaryType = types.find((t) => SD_KNOWN_TYPES.has(t)) ?? types[0] ?? 'Unknown';
+      if (SD_KNOWN_TYPES.has(primaryType)) typesFound.add(primaryType);
+
+      const required = SD_REQUIRED_FIELDS[primaryType] ?? [];
+      const missingFields = required.filter((field) => {
+        const v = node[field];
+        return v === undefined || v === null || (typeof v === 'string' && v.trim() === '');
+      });
+
+      blocks.push({ type: primaryType, format: 'json-ld', valid: true, missingFields });
+    }
+  });
+
+  // --- Microdata (lightweight detection, no deep field validation) ---
+  $('[itemscope][itemtype]').slice(0, SD_MAX_NODES).each((_, el) => {
+    const itemtype = $(el).attr('itemtype') || '';
+    const types = normalizeSchemaType(itemtype);
+    const primaryType = types.find((t) => SD_KNOWN_TYPES.has(t)) ?? types[0] ?? 'Unknown';
+    if (!primaryType) return;
+    formatsFound.add('microdata');
+    if (SD_KNOWN_TYPES.has(primaryType)) typesFound.add(primaryType);
+    blocks.push({ type: primaryType, format: 'microdata', valid: true, missingFields: [] });
+  });
+
+  // --- RDFa (lightweight detection) ---
+  $('[typeof]').slice(0, SD_MAX_NODES).each((_, el) => {
+    const typeofAttr = $(el).attr('typeof') || '';
+    const types = normalizeSchemaType(typeofAttr);
+    const primaryType = types.find((t) => SD_KNOWN_TYPES.has(t)) ?? types[0] ?? 'Unknown';
+    if (!primaryType) return;
+    formatsFound.add('rdfa');
+    if (SD_KNOWN_TYPES.has(primaryType)) typesFound.add(primaryType);
+    blocks.push({ type: primaryType, format: 'rdfa', valid: true, missingFields: [] });
+  });
+
+  const hasAny = blocks.length > 0;
+  const types = [...typesFound];
+  const hasValidBlock = blocks.some((b) => b.valid);
+  const hasKnownType = types.length > 0;
+
+  // --- Issues & recommendations ---
+  const issues: string[] = [];
+  const recommendations: string[] = [];
+
+  if (!hasAny) {
+    issues.push('Mangler strukturert data (Schema.org)');
+    recommendations.push('Legg til JSON-LD med Organization eller LocalBusiness (navn, adresse, kontaktinfo)');
+    recommendations.push('Legg til WebSite-markup slik at søkemotorer og AI forstår nettstedet');
+  } else {
+    if (invalidJsonLdCount > 0) {
+      issues.push(`${invalidJsonLdCount} JSON-LD-blokk${invalidJsonLdCount > 1 ? 'er' : ''} kunne ikke tolkes (ugyldig JSON)`);
+    }
+    const hasFoundation = types.some((t) =>
+      ['Organization', 'LocalBusiness', 'Corporation', 'WebSite'].includes(t)
+    );
+    if (!hasFoundation) {
+      recommendations.push('Legg til Organization/LocalBusiness for å beskrive bedriften');
+    }
+    for (const block of blocks) {
+      if (block.missingFields.length > 0) {
+        issues.push(`${block.type} mangler felt: ${block.missingFields.join(', ')}`);
+      }
+    }
+  }
+
+  const score = calculateStructuredDataScore({ hasAny, hasValidBlock, hasKnownType, blocks });
+
+  return {
+    hasAny,
+    formats: [...formatsFound],
+    types,
+    blocks,
+    invalidJsonLdCount,
+    issues,
+    recommendations,
+    score,
+  };
+}
+
 // Scoring functions
 function calculateMetaScore(meta: MetaTagsAnalysis): number {
   let score = 0;
@@ -334,7 +534,7 @@ function calculateMetaScore(meta: MetaTagsAnalysis): number {
   maxScore += 10;
   if (meta.robots !== 'noindex') score += 10;
 
-  return Math.round((score / maxScore) * 100);
+  return clampScore((score / maxScore) * 100);
 }
 
 function calculateHeadingsScore(headings: HeadingsAnalysis): number {
@@ -347,7 +547,7 @@ function calculateHeadingsScore(headings: HeadingsAnalysis): number {
 
   score -= headings.issues.length * 10;
 
-  return Math.max(0, score);
+  return clampScore(score);
 }
 
 function calculateLinksScore(links: LinksAnalysis): number {
@@ -357,7 +557,7 @@ function calculateLinksScore(links: LinksAnalysis): number {
   if (links.internal.count < 3) score -= 10;
   if (links.broken.count > 0) score -= links.broken.count * 10;
 
-  return Math.max(0, score);
+  return clampScore(score);
 }
 
 function calculateMobileScore(mobile: MobileAnalysis): number {
@@ -367,7 +567,7 @@ function calculateMobileScore(mobile: MobileAnalysis): number {
   if (!mobile.isResponsive) score -= 30;
   score -= mobile.issues.length * 10;
 
-  return Math.max(0, score);
+  return clampScore(score);
 }
 
 function calculateTechnicalScore(technical: TechnicalSEOAnalysis): number {
@@ -380,4 +580,32 @@ function calculateTechnicalScore(technical: TechnicalSEOAnalysis): number {
   else score += 10; // Not having hreflang is okay for single-language sites
 
   return score;
+}
+
+/**
+ * Structured data score:
+ *  - none                                   → 0
+ *  - present but only invalid JSON-LD       → 20
+ *  - valid structured data with a type      → 50
+ *  - + recognized/relevant Schema.org type  → +25
+ *  - + recommended fields complete          → +25
+ */
+function calculateStructuredDataScore(input: {
+  hasAny: boolean;
+  hasValidBlock: boolean;
+  hasKnownType: boolean;
+  blocks: { valid: boolean; missingFields: string[] }[];
+}): number {
+  if (!input.hasAny) return 0;
+  if (!input.hasValidBlock) return 20;
+
+  let score = 50;
+  if (input.hasKnownType) score += 25;
+
+  const validBlocks = input.blocks.filter((b) => b.valid);
+  const allFieldsComplete =
+    validBlocks.length > 0 && validBlocks.every((b) => b.missingFields.length === 0);
+  if (allFieldsComplete) score += 25;
+
+  return clampScore(score);
 }

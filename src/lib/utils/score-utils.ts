@@ -56,6 +56,11 @@ export function getScoreLabel(score: number): string {
   return 'Trenger forbedring';
 }
 
+/** Clamp analysis scores to the 0–100 range shown in the UI. */
+export function clampScore(score: number): number {
+  return Math.min(100, Math.max(0, Math.round(score)));
+}
+
 /**
  * Structured background/border/text/icon Tailwind classes for card areas.
  * Uses a 3-tier split (≥80 / ≥60 / <60) suited for larger UI surfaces.

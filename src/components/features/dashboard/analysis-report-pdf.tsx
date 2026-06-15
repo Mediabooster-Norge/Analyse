@@ -513,6 +513,19 @@ export function AnalysisReportPdf({ result, companyUrl, companyName }: AnalysisR
                   value={result.seoResults.meta.canonical ? 'OK' : 'Mangler'}
                   isGood={!!result.seoResults.meta.canonical}
                 />
+                {result.seoResults.structuredData && (
+                  <DetailRow
+                    label="Strukturert data"
+                    value={
+                      result.seoResults.structuredData.hasAny
+                        ? (result.seoResults.structuredData.types.length > 0
+                            ? result.seoResults.structuredData.types.slice(0, 3).join(', ')
+                            : 'Funnet')
+                        : 'Mangler'
+                    }
+                    isGood={result.seoResults.structuredData.hasAny && result.seoResults.structuredData.issues.length === 0}
+                  />
+                )}
               </View>
               <View style={styles.gridCol}>
                 <Text style={styles.sectionSubtitle}>Overskrifter & Media</Text>

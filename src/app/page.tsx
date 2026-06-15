@@ -30,6 +30,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { createClient } from '@/lib/supabase/client';
+import {
+  PREMIUM_MONTHLY_AI_VISIBILITY_LIMIT,
+  FREE_MONTHLY_ANALYSIS_LIMIT,
+  PREMIUM_MONTHLY_ANALYSIS_LIMIT,
+  FREE_KEYWORD_LIMIT,
+  PREMIUM_KEYWORD_LIMIT,
+} from '@/lib/constants/premium';
 import { User } from '@supabase/supabase-js';
 import {
   Search,
@@ -1713,8 +1720,9 @@ export default function LandingPage() {
               <p className="text-sm font-medium text-neutral-800 mb-3">Alt i Gratis, pluss:</p>
               <ul className="space-y-2 flex-1 text-sm text-neutral-700">
                 {[
-                  'Ubegrenset analyser per måned',
+                  `${PREMIUM_MONTHLY_ANALYSIS_LIMIT} analyser per måned`,
                   '30 AI-genererte artikler per måned',
+                  `${PREMIUM_MONTHLY_AI_VISIBILITY_LIMIT} AI-synlighetssjekker per måned`,
                   'Forslag til undersider',
                   'Prioritert support',
                 ].map((item, i) => (
@@ -1812,27 +1820,31 @@ export default function LandingPage() {
               {[
                 {
                   q: 'Er dette virkelig gratis?',
-                  a: 'Ja. Med gratis konto får du 5 analyser og 5 AI-genererte artikler per måned, samt full tilgang til SEO-, sikkerhets-, innholds- og hastighetsanalyse med AI-anbefalinger. Premium (69 kr/mnd) gir ubegrenset analyser og 30 AI-artikler per måned.',
+                  a: `Ja. Med gratis konto får du ${FREE_MONTHLY_ANALYSIS_LIMIT} analyser og 5 AI-genererte artikler per måned, samt full tilgang til SEO-, sikkerhets-, innholds- og hastighetsanalyse med AI-anbefalinger. Premium (69 kr/mnd) gir ${PREMIUM_MONTHLY_ANALYSIS_LIMIT} analyser og 30 AI-artikler per måned, flere konkurrenter og nøkkelord, ${PREMIUM_MONTHLY_AI_VISIBILITY_LIMIT} AI-synlighetssjekker per måned og forslag til undersider.`,
                 },
                 {
                   q: 'Hva analyserer dere?',
-                  a: 'Vi sjekker SEO (sidetittel, meta-beskrivelse, H1/H2, bilder med alt-tekst, Open Graph), sikkerhet (SSL, HSTS, CSP m.m.), innhold (ordtelling, lesbarhet LIX) og hastighet (PageSpeed, LCP, CLS). Du får konkrete forbedringsforslag og kan sammenligne med konkurrenter og se AI-estimerte nøkkelord.',
+                  a: 'Vi sjekker SEO (sidetittel, meta-beskrivelse, H1/H2, bilder med alt-tekst, Open Graph), sikkerhet (SSL, HSTS, CSP m.m.), innhold (ordtelling, lesbarhet LIX) og hastighet (PageSpeed, LCP, CLS). Du får konkrete forbedringsforslag og kan sammenligne med konkurrenter og se AI-estimerte nøkkelord. Med Premium får du også AI-synlighetsrapport som viser hvordan AI-modeller kjenner og anbefaler bedriften din.',
                 },
                 {
                   q: 'Hva er grensen for gratis?',
-                  a: 'Gratis: 5 analyser og 5 AI-artikler per måned. Premium: ubegrenset analyser og 30 AI-artikler per måned for 69 kr/mnd.',
+                  a: `Gratis: ${FREE_MONTHLY_ANALYSIS_LIMIT} analyser og 5 AI-artikler per måned (opptil 2 konkurrenter og ${FREE_KEYWORD_LIMIT} nøkkelord per analyse). Premium: ${PREMIUM_MONTHLY_ANALYSIS_LIMIT} analyser og 30 AI-artikler per måned, opptil 5 konkurrenter og ${PREMIUM_KEYWORD_LIMIT} nøkkelord, pluss ${PREMIUM_MONTHLY_AI_VISIBILITY_LIMIT} AI-synlighetssjekker per måned – 69 kr/mnd.`,
                 },
                 {
                   q: 'Hva er nøkkelordanalysen?',
-                  a: 'Vi bruker AI til å estimere søkevolum, CPC og konkurranse for nøkkelord som passer til nettsiden din. Det hjelper deg å prioritere hvilke søkeord du bør satse på.',
+                  a: `Vi bruker AI til å estimere søkevolum, CPC og konkurranse for nøkkelord som passer til nettsiden din. Gratis-planen støtter opptil ${FREE_KEYWORD_LIMIT} nøkkelord per analyse, Premium opptil ${PREMIUM_KEYWORD_LIMIT}. Det hjelper deg å prioritere hvilke søkeord du bør satse på.`,
                 },
                 {
                   q: 'Kan jeg sammenligne med konkurrenter?',
-                  a: 'Ja. Du legger inn URL-er til konkurrentene, og vi sammenligner score på SEO, innhold, sikkerhet og hastighet så du ser hvordan du ligger an.',
+                  a: 'Ja. Du legger inn URL-er til konkurrentene (opptil 2 i gratis-planen, 5 med Premium), og vi sammenligner score på SEO, innhold, sikkerhet og hastighet så du ser hvordan du ligger an.',
                 },
                 {
                   q: 'Hva er AI-genererte artikler?',
                   a: 'Basert på analysen kan du få forslag til artikkelideer og la AI generere full artikkeltekst (med forslag til meta og bilde). Gratis har 5 artikler per måned, Premium har 30.',
+                },
+                {
+                  q: 'Hva er AI-synlighet?',
+                  a: `AI-synlighet sjekker hvordan AI-modeller (f.eks. ChatGPT) kjenner og anbefaler bedriften din på nøytrale bransjespørsmål – med live websøk. Funksjonen er kun tilgjengelig med Premium, med ${PREMIUM_MONTHLY_AI_VISIBILITY_LIMIT} sjekker per måned.`,
                 },
                 {
                   q: 'Hvor lang tid tar en analyse?',

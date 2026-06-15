@@ -9,8 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { createClient } from '@/lib/supabase/client';
-import { Loader2, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
-import { FOUNDING_MEMBER_LIMIT } from '@/lib/constants/premium';
+import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -132,11 +131,8 @@ export default function RegisterPage() {
                 <p className="text-muted-foreground mb-4">
                   Vi har sendt en bekreftelseslenke til <strong>{formData.email}</strong>
                 </p>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Klikk på lenken i e-posten for å aktivere kontoen din, så kan du logge inn.
-                </p>
                 <p className="text-sm text-muted-foreground mb-4">
-                  Som en av de første {FOUNDING_MEMBER_LIMIT} brukerne får du Premium automatisk når kontoen er aktivert.
+                  Klikk på lenken i e-posten for å aktivere kontoen din, så kan du logge inn.
                 </p>
                 <Link href="/login">
                   <Button variant="outline">Gå til innlogging</Button>
@@ -158,7 +154,7 @@ export default function RegisterPage() {
       <CardHeader className="text-center">
         <CardTitle className="text-2xl">Opprett konto</CardTitle>
         <CardDescription>
-          De første {FOUNDING_MEMBER_LIMIT} brukerne får Premium gratis
+          Få tilgang til din nettside-analyse og anbefalinger
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -220,11 +216,6 @@ export default function RegisterPage() {
                 required
               />
             </div>
-          </div>
-
-          <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            <Sparkles className="h-4 w-4 shrink-0 mt-0.5" />
-            <p>De første {FOUNDING_MEMBER_LIMIT} som registrerer seg får Premium uten ekstra kostnad.</p>
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>

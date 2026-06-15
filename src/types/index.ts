@@ -81,6 +81,7 @@ export interface SEOResults {
   links: LinksAnalysis;
   mobile: MobileAnalysis;
   technical: TechnicalSEOAnalysis;
+  structuredData: StructuredDataAnalysis;
   score: number;
 }
 
@@ -167,6 +168,31 @@ export interface TechnicalSEOAnalysis {
   hasHttps: boolean;
   hasHreflang: boolean;
   hreflangTags: { lang: string; url: string }[];
+}
+
+export type StructuredDataFormat = 'json-ld' | 'microdata' | 'rdfa';
+
+export interface StructuredDataBlock {
+  /** Schema.org @type, e.g. 'Organization'. 'Unknown' when it could not be determined. */
+  type: string;
+  format: StructuredDataFormat;
+  /** True when the block parsed correctly (JSON-LD) or was detected (microdata/RDFa). */
+  valid: boolean;
+  /** Recommended fields that are missing for this type (only checked for known types). */
+  missingFields: string[];
+}
+
+export interface StructuredDataAnalysis {
+  hasAny: boolean;
+  formats: StructuredDataFormat[];
+  /** Distinct, recognized Schema.org types found across all blocks. */
+  types: string[];
+  blocks: StructuredDataBlock[];
+  /** Number of JSON-LD scripts that failed to parse. */
+  invalidJsonLdCount: number;
+  issues: string[];
+  recommendations: string[];
+  score: number;
 }
 
 export interface ContentResults {

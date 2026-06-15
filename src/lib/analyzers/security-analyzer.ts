@@ -1,6 +1,7 @@
 import type { SecurityResults, SecurityHeadersAnalysis } from '@/types';
 import { analyzeSSLDirect, getSSLGradeScore } from '@/lib/services/ssl-labs';
 import { analyzeSecurityHeadersSimple } from '@/lib/services/observatory';
+import { clampScore } from '@/lib/utils/score-utils';
 
 export async function analyzeSecurity(
   url: string,
@@ -18,7 +19,7 @@ export async function analyzeSecurity(
   const headersScore = headersAnalysis.score;
 
   // Weighted average: SSL 55%, Headers 45%
-  const score = Math.round(sslScore * 0.55 + headersScore * 0.45);
+  const score = clampScore(sslScore * 0.55 + headersScore * 0.45);
 
   return {
     ssl,
@@ -52,7 +53,7 @@ export async function analyzeSecurityQuick(
 
   // Quick score: If HTTPS, assume decent SSL (70) + headers contribution
   const sslScore = isHttps ? 70 : 0;
-  const score = Math.round(sslScore * 0.55 + headersAnalysis.score * 0.45);
+  const score = clampScore(sslScore * 0.55 + headersAnalysis.score * 0.45);
 
   return {
     ssl,

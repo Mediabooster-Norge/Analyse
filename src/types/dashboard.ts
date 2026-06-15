@@ -99,6 +99,15 @@ export interface DashboardAnalysisResult {
       internal: { count: number; urls?: string[] };
       external: { count: number };
     };
+    structuredData?: {
+      hasAny: boolean;
+      formats: Array<'json-ld' | 'microdata' | 'rdfa'>;
+      types: string[];
+      invalidJsonLdCount: number;
+      issues: string[];
+      recommendations: string[];
+      score: number;
+    };
   };
   contentResults: {
     score: number;
