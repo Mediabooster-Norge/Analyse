@@ -14,7 +14,7 @@ import {
 } from '@/lib/ai-visibility-models';
 import { normalizeVisibilityKeyword } from '@/lib/utils/visibility-keywords';
 
-export const maxDuration = 60; // 10 spørsmål parallelt (hybrid: gpt-5-mini + gpt-4o-mini)
+export const maxDuration = 300; // Samme som hovedanalysen – 10 websøk-spørsmål kan ta lang tid
 
 interface AIVisibilityRequest {
   /** Domene-URL som skal sjekkes (påkrevd) */
