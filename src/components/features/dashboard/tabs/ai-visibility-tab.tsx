@@ -27,6 +27,8 @@ import {
   Clock,
   Bell,
   Tag,
+  ChevronRight,
+  TrendingUp,
 } from 'lucide-react';
 import { RocketIcon } from '../rocket-icon';
 import {
@@ -39,6 +41,7 @@ import {
   VISIBILITY_KEYWORD_MAX_LENGTH,
 } from '@/lib/utils/visibility-keywords';
 import { AiVisibilityResponseBody } from '@/components/features/dashboard/ai-visibility-response';
+import { buildAiVisibilityImprovements } from '@/lib/utils/ai-visibility-improvements';
 
 const KEYWORD_CHIP_PREVIEW_COUNT = 7;
 
@@ -88,6 +91,12 @@ export interface AiVisibilityTabProps {
   setAiVisibilityKeyword: (keyword: string | null) => void;
   onCheckAiVisibility: (keywordOverride?: string) => Promise<void>;
   onGoToKeywords: () => void;
+  fetchAISuggestion?: (
+    element: string,
+    currentValue: string,
+    status: 'good' | 'warning' | 'bad',
+    issue?: string
+  ) => void;
 }
 
 export function AiVisibilityTab({
@@ -105,6 +114,7 @@ export function AiVisibilityTab({
   setAiVisibilityKeyword,
   onCheckAiVisibility,
   onGoToKeywords,
+  fetchAISuggestion,
 }: AiVisibilityTabProps) {
   const [checkMessageIndex, setCheckMessageIndex] = useState(0);
   const [customKeywordInput, setCustomKeywordInput] = useState('');
@@ -486,6 +496,8 @@ export function AiVisibilityTab({
                   : visData.level === 'low'
                     ? 'Lav AI-synlighet'
                     : 'Ikke synlig i AI-søk';
+            const improvements = buildAiVisibilityImprovements(visData, result);
+            const isHighLevel = visData.level === 'high';
 
             return (
               <div className="space-y-6">
@@ -500,6 +512,11 @@ export function AiVisibilityTab({
                             {visData.score}
                           </span>
                           <span className="text-sm text-neutral-400">/100</span>
+                          {visData.details.scoreStability && (
+                            <p className="text-[10px] text-neutral-500 mt-1">
+                              Stabilitet: {visData.details.scoreStability.minScore}–{visData.details.scoreStability.maxScore} / 100
+                            </p>
+                          )}
                         </div>
                       </div>
                       <div className="flex-1 min-w-0 text-center sm:text-left">
@@ -586,43 +603,79 @@ export function AiVisibilityTab({
                     )}
                   </div>
 
-                  {visData.recommendations.length > 0 && (
+                  {improvements.length > 0 && (
                     <div
-                      className={`lg:col-span-4 p-4 rounded-2xl border ${
-                        visData.level === 'high'
-                          ? 'bg-green-50 border-green-200'
-                          : 'bg-[#f5f3ff] border-[#ddd6fe]'
+                      className={`lg:col-span-4 rounded-2xl border p-3 sm:p-4 flex flex-col min-h-0 ${
+                        isHighLevel ? 'bg-green-50 border-green-200' : 'bg-white border-neutral-200'
                       }`}
                     >
-                      <h5
-                        className={`font-medium text-sm mb-3 flex items-center gap-2 ${
-                          visData.level === 'high' ? 'text-green-600' : 'text-[#6d28d9]'
-                        }`}
-                      >
-                        <RocketIcon className="w-4 h-4" />
-                        {visData.level === 'high' ? 'Tips for å holde deg på topp' : 'Forbedringer'}
-                      </h5>
-                      <ul className="space-y-2">
-                        {visData.recommendations.map((rec, i) => (
-                          <li
-                            key={i}
-                            className={`text-xs flex items-start gap-2 ${
-                              visData.level === 'high' ? 'text-green-600' : 'text-[#6d28d9]'
-                            }`}
-                          >
-                            <span
-                              className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-[10px] font-medium mt-0.5 ${
-                                visData.level === 'high'
-                                  ? 'bg-green-100 text-green-600'
-                                  : 'bg-[#ddd6fe] text-[#6d28d9]'
+                      <div className="flex items-center justify-between gap-2 mb-2">
+                        <h5
+                          className={`font-semibold text-xs sm:text-sm flex items-center gap-1.5 ${
+                            isHighLevel ? 'text-green-700' : 'text-neutral-900'
+                          }`}
+                        >
+                          <TrendingUp className={`h-3.5 w-3.5 ${isHighLevel ? 'text-green-600' : 'text-amber-700'}`} />
+                          {isHighLevel ? 'Tips for å holde deg på topp' : 'Forbedringer'}
+                        </h5>
+                        <span className="text-[10px] text-neutral-400 shrink-0">
+                          {improvements.length} tiltak
+                        </span>
+                      </div>
+                      {fetchAISuggestion && (
+                        <p className="text-[10px] text-neutral-400 mb-2 flex items-center gap-1">
+                          <RocketIcon className="w-3 h-3" />
+                          Klikk et tiltak for konkret AI-forslag
+                        </p>
+                      )}
+                      <div className="flex flex-col gap-1.5 max-h-[280px] overflow-y-auto pr-0.5">
+                        {improvements.map((item) => {
+                          const clickable = !!fetchAISuggestion;
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              onClick={
+                                clickable
+                                  ? () =>
+                                      fetchAISuggestion!(
+                                        item.label,
+                                        item.desc,
+                                        item.status,
+                                        `AI-synlighet: ${item.issue}`
+                                      )
+                                  : undefined
+                              }
+                              disabled={!clickable}
+                              className={`inline-flex items-center gap-1.5 p-2 rounded-lg text-left w-full transition-colors ${
+                                clickable
+                                  ? 'bg-neutral-50 hover:bg-neutral-100 cursor-pointer group'
+                                  : 'bg-neutral-50 cursor-not-allowed opacity-70'
                               }`}
                             >
-                              {i + 1}
-                            </span>
-                            <span>{rec}</span>
-                          </li>
-                        ))}
-                      </ul>
+                              <div
+                                className={`w-1.5 h-1.5 rounded-full shrink-0 ${
+                                  item.priority === 'high'
+                                    ? 'bg-red-400'
+                                    : item.priority === 'medium'
+                                      ? 'bg-amber-400'
+                                      : 'bg-green-600'
+                                }`}
+                              />
+                              <span className="font-medium text-[10px] sm:text-xs text-neutral-900 shrink-0">
+                                {item.label}
+                              </span>
+                              <span className="text-neutral-300 text-[10px] shrink-0">·</span>
+                              <span className="text-[10px] sm:text-xs text-neutral-500 min-w-0 truncate flex-1">
+                                {item.desc}
+                              </span>
+                              {clickable && (
+                                <ChevronRight className="w-3 h-3 text-neutral-400 group-hover:text-neutral-600 shrink-0 transition-colors" />
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>

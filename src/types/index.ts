@@ -348,6 +348,13 @@ export interface AIVisibilityData {
     webSearchCount?: number;
     /** Antall spørsmål som falt tilbake til modellkunnskap (telles ikke i hovedscore) */
     estimatedCount?: number;
+    /** Stabilitet (min/max/median) basert på flere dommerkørsler */
+    scoreStability?: {
+      runs: number;
+      minScore: number;
+      maxScore: number;
+      medianScore: number;
+    };
     /** Konkurrenter AI nevnte i nøytrale spørsmål der bedriften ikke ble funnet */
     competitorsMentioned?: string[];
     /** Kort innsikt utledet fra de nøytrale spørsmålene */

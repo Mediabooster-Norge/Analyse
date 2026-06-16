@@ -52,4 +52,11 @@ assert.ok(compactNamed.includes('Mediabooster'), 'beholder substans');
 assert.ok(!compactNamed.includes('Hva trenger du'), 'fjerner avsluttende spørsmål');
 assert.ok(compactNamed.length <= 450, 'respekterer maks lengde for navngitte');
 
+const jaPrefixedQuestion = `Mediabooster er et etablert byrå i Oslo.
+
+Ja – Noe mer du lurer på?`;
+
+const compactJaQuestion = compactAiVisibilityResponse(jaPrefixedQuestion, 'named');
+assert.ok(!compactJaQuestion.includes('lurer på'), 'fjerner avsluttende spørsmål selv med ja-prefiks');
+
 console.log('ai-visibility-response.test.ts: OK');

@@ -85,14 +85,14 @@ export function compactAiVisibilityResponse(
 
     const filteredLines = lines
       .map((line) => line.replace(/^ja[ \u2013\u2014,-]+\s*/i, ''))
-      .filter((line) => {
-      if (SKIP_LINE_PATTERNS.some((p) => p.test(line))) return false;
-      if (line.startsWith('## ') && /kilder|sources|referanser|mer info/i.test(line)) return false;
-      if (line.endsWith('?') && keptParagraphs.length > 0 && lines.indexOf(line) === lines.length - 1) {
-        return false;
-      }
-      return true;
-    });
+      .filter((line, index) => {
+        if (SKIP_LINE_PATTERNS.some((p) => p.test(line))) return false;
+        if (line.startsWith('## ') && /kilder|sources|referanser|mer info/i.test(line)) return false;
+        if (line.endsWith('?') && keptParagraphs.length > 0 && index === lines.length - 1) {
+          return false;
+        }
+        return true;
+      });
 
     if (filteredLines.length > 0) {
       keptParagraphs.push(filteredLines.join('\n'));

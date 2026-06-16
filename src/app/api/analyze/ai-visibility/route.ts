@@ -47,6 +47,12 @@ const QUERY_CONCURRENCY = 4;
 /** Lav temperatur for mer reproduserbar score mellom kjøringer. */
 const QUERY_TEMPERATURE = 0.2;
 
+/**
+ * Vi ønsker en mer stabil score uten å måtte gjenta alle websøk-spørringene flere ganger.
+ * Derfor kjører vi dommer-/klassifiseringssteg 3 ganger og velger median basert på total score.
+ */
+const AI_VISIBILITY_JUDGE_RUNS = 3;
+
 /** Instruksjon til modellen ved websøk – ikke vist til bruker. */
 const VISIBILITY_DEVELOPER_INSTRUCTION =
   'Du tester AI-synlighet for norske bedrifter. Svar kort og presist på norsk. Ingen innledning («Her er noen forslag»), ingen oppfølgingsspørsmål til brukeren, ingen URL-er eller kildelister.';
@@ -84,6 +90,13 @@ type AIVisibilityPayload = {
     timesMentioned: number;
     webSearchCount?: number;
     estimatedCount?: number;
+    /** Stabilitet (min/max/median) basert på flere dommerkjøringer (uten å gjenta alle websøk). */
+    scoreStability?: {
+      runs: number;
+      minScore: number;
+      maxScore: number;
+      medianScore: number;
+    };
     competitorsMentioned?: string[];
     insight?: string;
     queries: Array<{
@@ -313,8 +326,8 @@ async function runOneVisibilityCheck(
         const response = await openai.responses.create({
           model: queryModel,
           tools: [AI_VISIBILITY_WEB_SEARCH_TOOL],
-          // Tving websøk på nøytrale og oppdagelsesspørsmål.
-          tool_choice: spec.type === 'named' ? 'auto' : 'required',
+          // Tving websøk på alle spørsmålstyper (for å være mer ChatGPT-lignende).
+          tool_choice: 'required',
           max_output_tokens: maxOutputTokensForQueryType(spec.type),
           input: [
             { role: 'developer', content: VISIBILITY_DEVELOPER_INSTRUCTION },
@@ -383,57 +396,108 @@ async function runOneVisibilityCheck(
     }
   );
 
-  const judgedResults = await mapWithConcurrency<QueryResult, QueryResult>(
-    queryResults.filter((r) => !r.error && r.judgmentResponse.trim()),
-    QUERY_CONCURRENCY,
-    async (result) => {
-      const judgment = await resolveVisibilityJudgment({
-        response: result.judgmentResponse,
-        queryType: result.type as VisibilityQueryType,
-        companyName: displayName,
-        domain,
-        keyword: k,
-        question: result.modelQuestion,
-        matchTerms,
-        notFoundPhrases,
-      });
-      const flags = judgmentToFlags(judgment);
-      return { ...result, known: flags.known, uncertain: flags.uncertain };
-    }
-  );
+  const judgeCandidates = queryResults.filter((r) => !r.error && r.judgmentResponse.trim());
 
-  const judgedByQuery = new Map(judgedResults.map((r) => [r.query, r]));
-  const finalResults = queryResults.map((r) => judgedByQuery.get(r.query) ?? r);
+  type JudgeRun = {
+    score: number;
+    recommendationScore: number | undefined;
+    knowledgeScore: number | undefined;
+    discoveryScore: number | undefined;
+    citedCount: number;
+    uncertainCount: number;
+    webSearchCount: number;
+    estimatedCount: number;
+    source: 'web_search' | 'model_knowledge';
+    validCount: number;
+    scorable: QueryResult[];
+    scorePool: QueryResult[];
+    finalResults: QueryResult[];
+  };
 
-  const valid = finalResults.filter((r) => !r.error);
-  const scorable = valid.filter((r) => r.usedWebSearch);
-  const scorePool = scorable.length > 0 ? scorable : valid;
+  const judgeRuns: JudgeRun[] = [];
+  for (let judgeRunIndex = 0; judgeRunIndex < AI_VISIBILITY_JUDGE_RUNS; judgeRunIndex++) {
+    const judgedResults = await mapWithConcurrency<QueryResult, QueryResult>(
+      judgeCandidates,
+      QUERY_CONCURRENCY,
+      async (result) => {
+        const judgment = await resolveVisibilityJudgment({
+          response: result.judgmentResponse,
+          queryType: result.type as VisibilityQueryType,
+          companyName: displayName,
+          domain,
+          keyword: k,
+          question: result.modelQuestion,
+          matchTerms,
+          notFoundPhrases,
+        });
+        const flags = judgmentToFlags(judgment);
+        return { ...result, known: flags.known, uncertain: flags.uncertain };
+      }
+    );
 
-  const totalWeight = scorePool.reduce((sum, r) => sum + r.weight, 0);
-  const earnedWeight = scorePool.reduce((sum, r) => sum + (r.known ? r.weight : 0), 0);
-  const score = totalWeight > 0 ? Math.round((earnedWeight / totalWeight) * 100) : 0;
+    const judgedByQuery = new Map(judgedResults.map((r) => [r.query, r]));
+    const finalResults = queryResults.map((r) => judgedByQuery.get(r.query) ?? r);
 
-  const unpromptedScorable = scorable.filter((r) => r.type === 'unprompted');
-  const namedScorable = scorable.filter((r) => r.type === 'named');
-  const discoveryScorable = scorable.filter((r) => r.type === 'discovery');
-  const recommendationScore = calcWeightedScorePercent(unpromptedScorable);
-  const knowledgeScore = calcWeightedScorePercent(namedScorable);
-  const discoveryScore = calcWeightedScorePercent(discoveryScorable);
+    const valid = finalResults.filter((r) => !r.error);
+    const scorable = valid.filter((r) => r.usedWebSearch);
+    const scorePool = scorable.length > 0 ? scorable : valid;
 
-  const citedCount = scorePool.filter((r) => r.known).length;
-  const uncertainCount = scorePool.filter((r) => r.uncertain).length;
-  const webSearchCount = valid.filter((r) => r.usedWebSearch).length;
-  const estimatedCount = valid.filter((r) => !r.usedWebSearch).length;
-  // source = web_search kun når flertallet av gyldige spørringer faktisk brukte live søk.
-  const source: 'web_search' | 'model_knowledge' =
-    valid.length > 0 && webSearchCount >= valid.length / 2 ? 'web_search' : 'model_knowledge';
+    const totalWeight = scorePool.reduce((sum, r) => sum + r.weight, 0);
+    const earnedWeight = scorePool.reduce((sum, r) => sum + (r.known ? r.weight : 0), 0);
+    const score = totalWeight > 0 ? Math.round((earnedWeight / totalWeight) * 100) : 0;
+
+    const unpromptedScorable = scorable.filter((r) => r.type === 'unprompted');
+    const namedScorable = scorable.filter((r) => r.type === 'named');
+    const discoveryScorable = scorable.filter((r) => r.type === 'discovery');
+    const recommendationScore = calcWeightedScorePercent(unpromptedScorable);
+    const knowledgeScore = calcWeightedScorePercent(namedScorable);
+    const discoveryScore = calcWeightedScorePercent(discoveryScorable);
+
+    const citedCount = scorePool.filter((r) => r.known).length;
+    const uncertainCount = scorePool.filter((r) => r.uncertain).length;
+    const webSearchCount = valid.filter((r) => r.usedWebSearch).length;
+    const estimatedCount = valid.filter((r) => !r.usedWebSearch).length;
+
+    // source = web_search kun når flertallet av gyldige spørringer faktisk brukte live søk.
+    const source: 'web_search' | 'model_knowledge' =
+      valid.length > 0 && webSearchCount >= valid.length / 2 ? 'web_search' : 'model_knowledge';
+
+    judgeRuns.push({
+      score,
+      recommendationScore,
+      knowledgeScore,
+      discoveryScore,
+      citedCount,
+      uncertainCount,
+      webSearchCount,
+      estimatedCount,
+      source,
+      validCount: valid.length,
+      scorable,
+      scorePool,
+      finalResults,
+    });
+  }
+
+  const scores = judgeRuns.map((r) => r.score).slice().sort((a, b) => a - b);
+  const medianScore = scores[Math.floor(scores.length / 2)] ?? 0;
+  const minScore = Math.min(...scores);
+  const maxScore = Math.max(...scores);
+
+  const medianRun =
+    judgeRuns.find((r) => r.score === medianScore) ??
+    judgeRuns.slice().sort((a, b) => a.score - b.score)[Math.floor(judgeRuns.length / 2)] ??
+    judgeRuns[0];
+
+  const { score, recommendationScore, knowledgeScore, discoveryScore } = medianRun;
 
   // Konkurrent-innsikt: hva anbefalte AI i de nøytrale spørsmålene der bedriften IKKE dukket opp?
   let competitorsMentioned: string[] | undefined;
   let insight: string | undefined;
-  const unpromptedMisses = scorePool
+  const unpromptedMisses = medianRun.scorePool
     .filter((r) => r.type === 'unprompted' && !r.known && r.judgmentResponse)
     .map((r) => r.judgmentResponse);
+
   if (unpromptedMisses.length > 0) {
     const extracted = await extractCompetitorInsight(unpromptedMisses, name, k);
     if (extracted) {
@@ -444,6 +508,7 @@ async function runOneVisibilityCheck(
 
   let level: 'high' | 'medium' | 'low' | 'none';
   let description: string;
+
   if (score >= 70) {
     level = 'high';
     description = 'AI anbefaler bedriften på nøytrale spørsmål og kjenner den godt.';
@@ -480,14 +545,20 @@ async function runOneVisibilityCheck(
     ...(knowledgeScore !== undefined ? { knowledgeScore } : {}),
     ...(discoveryScore !== undefined ? { discoveryScore } : {}),
     details: {
-      queriesTested: scorePool.length,
-      timesCited: citedCount,
-      timesMentioned: uncertainCount,
-      webSearchCount,
-      estimatedCount,
+      queriesTested: medianRun.scorePool.length,
+      timesCited: medianRun.citedCount,
+      timesMentioned: medianRun.uncertainCount,
+      webSearchCount: medianRun.webSearchCount,
+      estimatedCount: medianRun.estimatedCount,
+      scoreStability: {
+        runs: AI_VISIBILITY_JUDGE_RUNS,
+        minScore,
+        maxScore,
+        medianScore,
+      },
       ...(competitorsMentioned ? { competitorsMentioned } : {}),
       ...(insight ? { insight } : {}),
-      queries: finalResults.map((r) => ({
+      queries: medianRun.finalResults.map((r) => ({
         query: r.query,
         cited: r.known,
         mentioned: r.uncertain,
@@ -495,20 +566,21 @@ async function runOneVisibilityCheck(
         type: r.type,
         usedWebSearch: r.usedWebSearch,
         estimated: !r.usedWebSearch && !r.error,
-        scored: scorable.length > 0 ? r.usedWebSearch && !r.error : !r.error,
+        scored: medianRun.scorable.length > 0 ? r.usedWebSearch && !r.error : !r.error,
       })),
     },
     recommendations: [
-      estimatedCount > 0 &&
+      medianRun.scorable.length > 0 &&
+        medianRun.estimatedCount > 0 &&
         'Noen svar ble estimert uten live websøk og telles ikke i hovedscore – kjør sjekken på nytt for fullstendig bilde.',
       score < 70 && 'Publiser mer innhold som svarer på vanlige spørsmål i din bransje',
       score < 50 && 'Øk online tilstedeværelse gjennom PR, artikler og bransjekataloger',
-      citedCount === 0 && 'Skap autoritativt innhold som etablerer bedriften som en kjent ekspert',
+      medianRun.citedCount === 0 && 'Skap autoritativt innhold som etablerer bedriften som en kjent ekspert',
       competitorsMentioned &&
         competitorsMentioned.length > 0 &&
         `AI anbefaler i dag andre aktører (f.eks. ${competitorsMentioned.slice(0, 3).join(', ')}) på nøytrale spørsmål – jobb med omtale og innhold for å bli nevnt`,
     ].filter(Boolean) as string[],
-    source: valid.length > 0 ? source : undefined,
+    source: medianRun.validCount > 0 ? medianRun.source : undefined,
     modelProfile,
     ...(hasKeyword ? { focusKeyword: rawKeyword } : {}),
   };
@@ -753,7 +825,8 @@ export async function POST(request: NextRequest) {
 
     // Cache-treff: server umiddelbart uten å belaste månedskvote (ingen ny kostnad).
     const cached = await getCachedPayload(supabase, cacheKey);
-    if (cached && cached.details.queriesTested > 0) {
+    const hasCompatibleStability = cached?.details.scoreStability?.runs === AI_VISIBILITY_JUDGE_RUNS;
+    if (cached && cached.details.queriesTested > 0 && hasCompatibleStability) {
       const { payload, checkedAt } = buildResponsePayload(cached);
       try {
         await savePayloadToAnalysis(payload, checkedAt);

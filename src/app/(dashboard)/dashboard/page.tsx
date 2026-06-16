@@ -671,6 +671,7 @@ function DashboardPageContent() {
               setAiVisibilityKeyword={setAiVisibilityKeyword}
               onCheckAiVisibility={checkAiVisibility}
               onGoToKeywords={() => setActiveTab('keywords')}
+              fetchAISuggestion={fetchAISuggestion}
             />
           )}
 
