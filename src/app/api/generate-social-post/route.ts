@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 import { getPremiumStatusServer } from '@/lib/premium-server';
-import { fetchFeaturedImage } from '@/lib/services/unsplash';
 import type { SocialPlatform } from '@/types/dashboard';
 
 const openai = new OpenAI({
@@ -137,10 +136,6 @@ export async function POST(request: NextRequest) {
         hashtags: existingPost.hashtags ?? [],
         cta: undefined,
         featuredImageSuggestion: existingPost.featured_image_suggestion ?? undefined,
-        featuredImageUrl: existingPost.featured_image_url ?? undefined,
-        featuredImageDownloadUrl: undefined,
-        featuredImageAttribution: existingPost.featured_image_attribution ?? undefined,
-        featuredImageProfileUrl: undefined,
         remaining,
         limit,
       });
@@ -189,8 +184,7 @@ Returner ALLTID gyldig JSON med nøklene:
 - "content": selve innlegget (uten hashtags), på norsk
 - "hashtags": array av ${config.hashtagCount} norske eller relevante hashtags uten #
 - "cta": oppfordring til handling (én kort setning), eller tom streng "" hvis ikke relevant
-- "featuredImageSuggestion": kort norsk beskrivelse av et passende bilde (f.eks. "Person som jobber på laptop i kontor")
-- "featuredImageSearchQuery": 2–4 engelske søkeord til stock-bilde (f.eks. "laptop office work")`,
+- "featuredImageSuggestion": kort norsk beskrivelse av et passende bilde (f.eks. "Person som jobber på laptop i kontor")`,
         },
         {
           role: 'user',
@@ -200,7 +194,7 @@ Postide: ${title.trim()}
 
 Begrunnelse: ${(rationale ?? '').trim() || 'Ingen.'}
 
-Skriv ett ferdig innlegg for ${platformNorm} (lengde: ${length}, tone: ${tone}, målgruppe: ${audience}). Returner KUN gyldig JSON med nøklene: content, hashtags, cta, featuredImageSuggestion, featuredImageSearchQuery. Ingen annen tekst.`,
+Skriv ett ferdig innlegg for ${platformNorm} (lengde: ${length}, tone: ${tone}, målgruppe: ${audience}). Returner KUN gyldig JSON med nøklene: content, hashtags, cta, featuredImageSuggestion. Ingen annen tekst.`,
         },
       ],
       max_completion_tokens: 4000,
@@ -237,16 +231,13 @@ Skriv ett ferdig innlegg for ${platformNorm} (lengde: ${length}, tone: ${tone}, 
     let hashtags: string[];
     let cta: string | undefined;
     let featuredImageSuggestion: string | undefined;
-    let featuredImageSearchQuery: string | undefined;
     try {
       const parsed = JSON.parse(jsonStr) as {
         content?: string;
         hashtags?: string[];
         cta?: string;
         featuredImageSuggestion?: string;
-        featuredImageSearchQuery?: string;
         featured_image_suggestion?: string;
-        featured_image_search_query?: string;
       };
       content = typeof parsed.content === 'string' ? parsed.content.trim() : '';
       if (!content) throw new Error('Mangler content');
@@ -255,9 +246,7 @@ Skriv ett ferdig innlegg for ${platformNorm} (lengde: ${length}, tone: ${tone}, 
         : [];
       cta = typeof parsed.cta === 'string' ? parsed.cta.trim() : undefined;
       const imgSuggestion = parsed.featuredImageSuggestion ?? parsed.featured_image_suggestion;
-      const imgSearch = parsed.featuredImageSearchQuery ?? parsed.featured_image_search_query;
       featuredImageSuggestion = typeof imgSuggestion === 'string' ? imgSuggestion.trim() : undefined;
-      featuredImageSearchQuery = typeof imgSearch === 'string' ? imgSearch.trim() : undefined;
     } catch (parseErr) {
       console.error('generate-social-post: parse error', parseErr);
       console.error('generate-social-post: raw (first 600 chars)', raw.slice(0, 600));
@@ -265,21 +254,6 @@ Skriv ett ferdig innlegg for ${platformNorm} (lengde: ${length}, tone: ${tone}, 
         { error: 'Kunne ikke tolke innleggsdata', code: 'parse_error' },
         { status: 500 }
       );
-    }
-
-    let featuredImageUrl: string | undefined;
-    let featuredImageDownloadUrl: string | undefined;
-    let featuredImageAttribution: string | undefined;
-    let featuredImageProfileUrl: string | undefined;
-    const imageQuery = featuredImageSearchQuery || featuredImageSuggestion;
-    if (imageQuery) {
-      const unsplash = await fetchFeaturedImage(imageQuery);
-      if (unsplash) {
-        featuredImageUrl = unsplash.url;
-        featuredImageDownloadUrl = unsplash.downloadUrl;
-        featuredImageAttribution = unsplash.attribution;
-        featuredImageProfileUrl = unsplash.profileUrl;
-      }
     }
 
     const { error: insertError } = await supabase
@@ -306,8 +280,8 @@ Skriv ett ferdig innlegg for ${platformNorm} (lengde: ${length}, tone: ${tone}, 
         website_url: websiteUrl?.trim() || null,
         website_name: websiteName?.trim() || companyName?.trim() || null,
         featured_image_suggestion: featuredImageSuggestion || null,
-        featured_image_url: featuredImageUrl || null,
-        featured_image_attribution: featuredImageAttribution || null,
+        featured_image_url: null,
+        featured_image_attribution: null,
       })
       .select('id')
       .single();
@@ -346,10 +320,6 @@ Skriv ett ferdig innlegg for ${platformNorm} (lengde: ${length}, tone: ${tone}, 
       hashtags,
       cta: cta || undefined,
       featuredImageSuggestion: featuredImageSuggestion || undefined,
-      featuredImageUrl: featuredImageUrl || undefined,
-      featuredImageDownloadUrl: featuredImageDownloadUrl || undefined,
-      featuredImageAttribution: featuredImageAttribution || undefined,
-      featuredImageProfileUrl: featuredImageProfileUrl || undefined,
       remaining,
       limit,
     });

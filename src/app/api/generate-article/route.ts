@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { createClient } from '@/lib/supabase/server';
 import { getPremiumStatusServer } from '@/lib/premium-server';
-import { fetchFeaturedImage } from '@/lib/services/unsplash';
 
 export const maxDuration = 60;
 
@@ -143,8 +142,7 @@ Returner et JSON-objekt med nøyaktig disse nøklene (alle strenger):
 - "article": Hele artikkelen i markdown. FØLG STRUKTURKRAVENE NØYAKTIG. Skriv utfyllende og detaljert. IKKE avslutt før alle strukturkrav er oppfylt og ordmålet er nådd. Vi er i år ${currentYear}. Ingen plassholdere.
 - "metaTitle": Forslått SEO-tittel (ca. 50–60 tegn).
 - "metaDescription": Forslått meta-beskrivelse (ca. 150–160 tegn, leservennlig og oppsummerende).
-- "featuredImageSuggestion": Kort brukervennlig beskrivelse av bildet på norsk (f.eks. "Bilde av gruppe som diskuterer AI-løsninger i kontor"). Vises til bruker.
-- "featuredImageSearchQuery": 2–4 engelske søkeord for stock-bilde (Unsplash), som matcher artikkelens tema. Kun engelsk, f.eks. "AI team meeting office".`,
+- "featuredImageSuggestion": Kort brukervennlig beskrivelse av et passende bilde på norsk (f.eks. "Bilde av gruppe som diskuterer AI-løsninger i kontor").`,
         },
         {
           role: 'user',
@@ -154,7 +152,7 @@ Tittel på artikkelen: ${title.trim()}
 
 Begrunnelse/mål med artikkelen: ${(rationale ?? '').trim() || 'Ingen begrunnelse oppgitt.'}
 
-Returner JSON med article, metaTitle, metaDescription, featuredImageSuggestion og featuredImageSearchQuery.`,
+Returner JSON med article, metaTitle, metaDescription og featuredImageSuggestion.`,
         },
       ],
       max_completion_tokens: selectedLength.tokens,
@@ -170,9 +168,8 @@ Returner JSON med article, metaTitle, metaDescription, featuredImageSuggestion o
               metaTitle: { type: 'string' },
               metaDescription: { type: 'string' },
               featuredImageSuggestion: { type: 'string' },
-              featuredImageSearchQuery: { type: 'string' },
             },
-            required: ['article', 'metaTitle', 'metaDescription', 'featuredImageSuggestion', 'featuredImageSearchQuery'],
+            required: ['article', 'metaTitle', 'metaDescription', 'featuredImageSuggestion'],
             additionalProperties: false,
           },
         },
@@ -202,14 +199,12 @@ Returner JSON med article, metaTitle, metaDescription, featuredImageSuggestion o
     let metaTitle: string | undefined;
     let metaDescription: string | undefined;
     let featuredImageSuggestion: string | undefined;
-    let featuredImageSearchQuery: string | undefined;
     try {
       const parsed = JSON.parse(raw) as {
         article?: string;
         metaTitle?: string;
         metaDescription?: string;
         featuredImageSuggestion?: string;
-        featuredImageSearchQuery?: string;
       };
       article = typeof parsed.article === 'string' ? parsed.article.trim() : '';
       if (!article) throw new Error('Mangler article');
@@ -220,27 +215,11 @@ Returner JSON med article, metaTitle, metaDescription, featuredImageSuggestion o
       metaTitle = typeof parsed.metaTitle === 'string' ? parsed.metaTitle.trim() : undefined;
       metaDescription = typeof parsed.metaDescription === 'string' ? parsed.metaDescription.trim() : undefined;
       featuredImageSuggestion = typeof parsed.featuredImageSuggestion === 'string' ? parsed.featuredImageSuggestion.trim() : undefined;
-      featuredImageSearchQuery = typeof parsed.featuredImageSearchQuery === 'string' ? parsed.featuredImageSearchQuery.trim() : undefined;
     } catch {
       return NextResponse.json(
         { error: 'Kunne ikke tolke artikkeldata' },
         { status: 500 }
       );
-    }
-
-    let featuredImageUrl: string | undefined;
-    let featuredImageDownloadUrl: string | undefined;
-    let featuredImageAttribution: string | undefined;
-    let featuredImageProfileUrl: string | undefined;
-    const imageQuery = featuredImageSearchQuery || featuredImageSuggestion;
-    if (imageQuery) {
-      const unsplash = await fetchFeaturedImage(imageQuery);
-      if (unsplash) {
-        featuredImageUrl = unsplash.url;
-        featuredImageDownloadUrl = unsplash.downloadUrl;
-        featuredImageAttribution = unsplash.attribution;
-        featuredImageProfileUrl = unsplash.profileUrl;
-      }
     }
 
     const { error: insertError } = await supabase
@@ -266,8 +245,8 @@ Returner JSON med article, metaTitle, metaDescription, featuredImageSuggestion o
         meta_title: metaTitle || null,
         meta_description: metaDescription || null,
         featured_image_suggestion: featuredImageSuggestion || null,
-        featured_image_url: featuredImageUrl || null,
-        featured_image_attribution: featuredImageAttribution || null,
+        featured_image_url: null,
+        featured_image_attribution: null,
         article_length: length || 'medium',
         article_tone: tone || 'professional',
         article_audience: audience || 'general',
@@ -290,10 +269,6 @@ Returner JSON med article, metaTitle, metaDescription, featuredImageSuggestion o
       metaTitle: metaTitle || undefined,
       metaDescription: metaDescription || undefined,
       featuredImageSuggestion: featuredImageSuggestion || undefined,
-      featuredImageUrl: featuredImageUrl || undefined,
-      featuredImageDownloadUrl: featuredImageDownloadUrl || undefined,
-      featuredImageAttribution: featuredImageAttribution || undefined,
-      featuredImageProfileUrl: featuredImageProfileUrl || undefined,
       articleLength: length || 'medium',
       articleTone: tone || 'professional',
       articleAudience: audience || 'general',

@@ -24,8 +24,6 @@ import {
   PenLine,
   Loader2,
   Clock,
-  Download,
-  RefreshCw,
 } from 'lucide-react';
 import { RocketIcon } from '../rocket-icon';
 import { toast } from 'sonner';
@@ -107,7 +105,6 @@ export function SocialTab({
 }: SocialTabProps) {
   const [suggestionMessageIndex, setSuggestionMessageIndex] = useState(0);
   const [generatingMessageIndex, setGeneratingMessageIndex] = useState(0);
-  const [regeneratingImage, setRegeneratingImage] = useState(false);
   const [selectedLength, setSelectedLength] = useState<SocialPostLength>('medium');
   const [selectedTone, setSelectedTone] = useState<SocialPostTone>('professional');
   const [selectedAudience, setSelectedAudience] = useState<SocialPostAudience>('general');
@@ -153,60 +150,6 @@ export function SocialTab({
     );
   };
 
-  const regenerateImage = async () => {
-    if (!generatedSocialPostResult?.featuredImageSuggestion) {
-      toast.error('Ingen bildesøk tilgjengelig');
-      return;
-    }
-    if (!generatedSocialPostResult.postId) {
-      toast.error('Lagre innlegget først for å kunne oppdatere forsidebilde.');
-      return;
-    }
-    const postId = generatedSocialPostResult.postId;
-    setRegeneratingImage(true);
-    try {
-      const res = await fetch('/api/regenerate-image', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          searchQuery: generatedSocialPostResult.featuredImageSuggestion,
-          postId,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        toast.error(data.error || 'Kunne ikke hente nytt bilde');
-        return;
-      }
-      const patchRes = await fetch(`/api/generated-social-posts/${postId}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          featured_image_url: data.featuredImageUrl,
-          featured_image_attribution: data.featuredImageAttribution,
-        }),
-      });
-      if (!patchRes.ok) {
-        const patchBody = await patchRes.json().catch(() => ({}));
-        toast.error(patchBody.error || 'Bilde ble ikke lagret. Prøv igjen.');
-        return;
-      }
-      setGeneratedSocialPost({
-        ...generatedSocialPostResult,
-        ...(data.featuredImageUrl != null ? { featuredImageUrl: data.featuredImageUrl } : {}),
-        ...(data.featuredImageDownloadUrl != null ? { featuredImageDownloadUrl: data.featuredImageDownloadUrl } : {}),
-        ...(data.featuredImageAttribution != null ? { featuredImageAttribution: data.featuredImageAttribution } : {}),
-        ...(data.featuredImageProfileUrl != null ? { featuredImageProfileUrl: data.featuredImageProfileUrl } : {}),
-      });
-      toast.success('Nytt bilde lagret');
-    } catch {
-      toast.error('Kunne ikke hente nytt bilde');
-    } finally {
-      setRegeneratingImage(false);
-    }
-  };
 
   return (
     <>
@@ -452,64 +395,6 @@ export function SocialTab({
                   Kopier
                 </Button>
               </div>
-              {/* Bilde øverst */}
-              {(generatedSocialPostResult.featuredImageUrl || generatedSocialPostResult.featuredImageSuggestion) && (
-                <div className="rounded-lg border border-neutral-200 bg-white overflow-hidden">
-                  {generatedSocialPostResult.featuredImageSuggestion && (
-                    <p className="text-[11px] text-neutral-600 px-3 py-2 border-b border-neutral-100">
-                      Forslag til bilde: {generatedSocialPostResult.featuredImageSuggestion}
-                    </p>
-                  )}
-                  {generatedSocialPostResult.featuredImageUrl ? (
-                    <>
-                      <div className="max-h-[200px] flex items-center justify-center bg-neutral-100">
-                        <img
-                          src={generatedSocialPostResult.featuredImageUrl}
-                          alt="Forslag til innleggsbilde"
-                          className="w-full h-auto max-h-[200px] object-contain"
-                        />
-                      </div>
-                      <div className="px-3 py-2 flex flex-wrap items-center justify-between gap-2 bg-neutral-50 border-t border-neutral-100">
-                        {generatedSocialPostResult.featuredImageAttribution && (
-                          <a
-                            href="https://unsplash.com/?utm_source=analyseverktyy&utm_medium=referral"
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-[11px] text-neutral-600 hover:underline"
-                          >
-                            {generatedSocialPostResult.featuredImageAttribution}
-                          </a>
-                        )}
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={regenerateImage}
-                              disabled={regeneratingImage}
-                              className="inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-900 cursor-pointer disabled:opacity-50"
-                            >
-                              <RefreshCw className={`h-3 w-3 ${regeneratingImage ? 'animate-spin' : ''}`} />
-                              {regeneratingImage ? 'Henter...' : 'Generer nytt bilde'}
-                            </button>
-                            {generatedSocialPostResult.featuredImageDownloadUrl && (
-                              <a
-                                href={generatedSocialPostResult.featuredImageDownloadUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-[11px] text-neutral-600 hover:text-neutral-900"
-                              >
-                                <Download className="h-3 w-3" />
-                                Last ned
-                              </a>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-neutral-400">Maks 3 nye bilder per time.</p>
-                        </div>
-                      </div>
-                    </>
-                  ) : null}
-                </div>
-              )}
               <div className="rounded-lg bg-white border border-neutral-200 p-4 text-sm text-neutral-800 whitespace-pre-wrap">
                 {generatedSocialPostResult.content}
                 {generatedSocialPostResult.cta && (
@@ -568,80 +453,6 @@ export function SocialTab({
                 </div>
               </DialogHeader>
               <div className="flex-1 overflow-y-auto px-6 py-5 min-h-0 space-y-4">
-                {/* Bilde øverst */}
-                {(generatedSocialPostResult.featuredImageUrl || generatedSocialPostResult.featuredImageSuggestion) && (
-                  <div className="rounded-xl border border-neutral-200 bg-white overflow-hidden">
-                    {generatedSocialPostResult.featuredImageSuggestion && (
-                      <p className="text-[11px] text-neutral-600 px-3 py-2 border-b border-neutral-100">
-                        Forslag til bilde: {generatedSocialPostResult.featuredImageSuggestion}
-                      </p>
-                    )}
-                    {generatedSocialPostResult.featuredImageUrl ? (
-                      <>
-                        <div className="max-h-[220px] flex items-center justify-center bg-neutral-100">
-                          <img
-                            src={generatedSocialPostResult.featuredImageUrl}
-                            alt="Forslag til innleggsbilde"
-                            className="w-full h-auto max-h-[220px] object-contain"
-                          />
-                        </div>
-                        <div className="px-3 py-2 flex flex-wrap items-center justify-between gap-2 bg-neutral-50 border-t border-neutral-100">
-                          {generatedSocialPostResult.featuredImageAttribution && (
-                            <a
-                              href="https://unsplash.com/?utm_source=analyseverktyy&utm_medium=referral"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-[11px] text-neutral-600 hover:underline"
-                            >
-                              {generatedSocialPostResult.featuredImageAttribution}
-                            </a>
-                          )}
-                          <div className="flex flex-col gap-1">
-                            <div className="flex items-center gap-3">
-                              <button
-                                type="button"
-                                onClick={regenerateImage}
-                                disabled={regeneratingImage}
-                                className="inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer disabled:opacity-50"
-                              >
-                                <RefreshCw className={`h-3 w-3 ${regeneratingImage ? 'animate-spin' : ''}`} />
-                                {regeneratingImage ? 'Henter nytt bilde...' : 'Generer nytt bilde'}
-                              </button>
-                              {generatedSocialPostResult.featuredImageDownloadUrl && (
-                                <a
-                                  href={generatedSocialPostResult.featuredImageDownloadUrl}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="inline-flex items-center gap-1 text-[11px] text-neutral-600 hover:text-neutral-900"
-                                >
-                                  <Download className="h-3 w-3" />
-                                  Last ned
-                                </a>
-                              )}
-                            </div>
-                            <p className="text-[11px] text-neutral-400">Maks 3 nye bilder per time.</p>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="px-3 py-2 flex flex-col gap-1">
-                        <div className="flex items-start gap-2">
-                          <p className="text-xs text-neutral-600">{generatedSocialPostResult.featuredImageSuggestion}</p>
-                          <button
-                            type="button"
-                            onClick={regenerateImage}
-                            disabled={regeneratingImage}
-                            className="text-[11px] text-neutral-500 hover:text-neutral-900 cursor-pointer disabled:opacity-50"
-                          >
-                            {regeneratingImage ? 'Henter...' : 'Hent bilde'}
-                          </button>
-                        </div>
-                        <p className="text-[11px] text-neutral-400">Maks 3 nye bilder per time.</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {/* Innhold under bildet */}
                 <div className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4">
                   <p className="text-sm text-neutral-800 whitespace-pre-wrap leading-relaxed">
                     {generatedSocialPostResult.content}

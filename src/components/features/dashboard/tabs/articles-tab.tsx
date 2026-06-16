@@ -16,8 +16,6 @@ import {
   Copy,
   PenLine,
   Loader2,
-  Download,
-  RefreshCw,
 } from 'lucide-react';
 import { RocketIcon } from '../rocket-icon';
 import ReactMarkdown from 'react-markdown';
@@ -98,7 +96,6 @@ export function ArticlesTab({
   const [selectedTone, setSelectedTone] = useState<ArticleTone>('professional');
   const [selectedAudience, setSelectedAudience] = useState<ArticleAudience>('general');
   const [usedSettings, setUsedSettings] = useState<{ length: ArticleLength; tone: ArticleTone; audience: ArticleAudience } | null>(null);
-  const [regeneratingImage, setRegeneratingImage] = useState(false);
   const [articleGenElapsed, setArticleGenElapsed] = useState(0);
 
   // Timer for article generation
@@ -134,16 +131,21 @@ export function ArticlesTab({
     return () => clearInterval(interval);
   }, [generatingArticleIndex]);
 
+  const copyToClipboard = (text: string, successMessage: string) => {
+    navigator.clipboard.writeText(text).then(
+      () => toast.success(successMessage),
+      () => toast.error('Kunne ikke kopiere')
+    );
+  };
+
   const copyTitle = (title: string) => {
-    navigator.clipboard.writeText(title);
-    toast.success('Tittel kopiert');
+    copyToClipboard(title, 'Tittel kopiert');
   };
 
   const copyArticle = () => {
     if (!generatedArticleResult?.article) return;
     const text = `# ${generatedArticleResult.title}\n\n${generatedArticleResult.article}`;
-    navigator.clipboard.writeText(text);
-    toast.success('Artikkel kopiert');
+    copyToClipboard(text, 'Artikkel kopiert');
   };
 
   const handleGenerateArticle = (
@@ -154,59 +156,6 @@ export function ArticlesTab({
     fetchGenerateArticle(suggestion, index, { length: selectedLength, tone: selectedTone, audience: selectedAudience });
   };
 
-  const regenerateImage = async () => {
-    if (!generatedArticleResult) return;
-    if (!generatedArticleResult.articleId) {
-      toast.error('Lagre artikkelen først for å kunne oppdatere forsidebilde.');
-      return;
-    }
-    const searchQuery = generatedArticleResult.featuredImageSuggestion;
-    if (!searchQuery) {
-      toast.error('Ingen bildesøk tilgjengelig');
-      return;
-    }
-    const articleId = generatedArticleResult.articleId;
-
-    setRegeneratingImage(true);
-    try {
-      const response = await fetch('/api/regenerate-image', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ searchQuery, articleId }),
-      });
-      const data = await response.json();
-      if (!response.ok) {
-        toast.error(data.error || 'Kunne ikke hente nytt bilde');
-        return;
-      }
-      const saveResponse = await fetch(`/api/generated-articles/${articleId}`, {
-        method: 'PATCH',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          featured_image_url: data.featuredImageUrl,
-          featured_image_attribution: data.featuredImageAttribution,
-        }),
-      });
-      if (!saveResponse.ok) {
-        const patchBody = await saveResponse.json().catch(() => ({}));
-        toast.error(patchBody.error || 'Bilde ble ikke lagret. Prøv igjen.');
-        return;
-      }
-      setGeneratedArticle({
-        ...generatedArticleResult,
-        featuredImageUrl: data.featuredImageUrl,
-        featuredImageAttribution: data.featuredImageAttribution,
-        featuredImageProfileUrl: data.featuredImageProfileUrl,
-      });
-      toast.success('Nytt bilde lagret');
-    } catch {
-      toast.error('Kunne ikke hente nytt bilde');
-    } finally {
-      setRegeneratingImage(false);
-    }
-  };
 
   return (
     <>
@@ -523,93 +472,64 @@ export function ArticlesTab({
             {generatedArticleResult && (
               <>
                 <section className="rounded-xl border border-neutral-200 bg-neutral-50/80 p-4 sm:p-5">
-                  <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-3">Artikkel og bilde</h2>
-                  <h3 className="text-lg font-semibold text-neutral-900 mb-4">{generatedArticleResult.title}</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                    {/* Venstre: forslått featured image */}
-                    {(generatedArticleResult.featuredImageUrl || generatedArticleResult.featuredImageSuggestion) && (
-                      <div className="space-y-2 min-w-0">
-                        {generatedArticleResult.featuredImageSuggestion && (
-                          <p className="text-[11px] text-neutral-600">
-                            <span className="font-medium text-neutral-700">Forslag til fremhevet bilde:</span>{' '}
-                            {generatedArticleResult.featuredImageSuggestion}
-                          </p>
+                  <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-3">Artikkel</h2>
+                  <div className="flex items-start justify-between gap-2 mb-4">
+                    <h3 className="text-lg font-semibold text-neutral-900">{generatedArticleResult.title}</h3>
+                    <button
+                      type="button"
+                      onClick={() => copyTitle(generatedArticleResult.title ?? '')}
+                      className="shrink-0 inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-800 transition-colors cursor-pointer"
+                      title="Kopier tittel"
+                    >
+                      <Copy className="h-3 w-3" />
+                      Kopier
+                    </button>
+                  </div>
+                  {(generatedArticleResult.metaTitle || generatedArticleResult.metaDescription) && (
+                    <div className="space-y-3 pt-3 border-t border-neutral-200">
+                      <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500">SEO og deling</h2>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {generatedArticleResult.metaTitle && (
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="text-xs font-medium text-neutral-600">Meta-tittel</label>
+                              <button
+                                type="button"
+                                onClick={() => copyToClipboard(generatedArticleResult.metaTitle ?? '', 'Meta-tittel kopiert')}
+                                className="inline-flex items-center gap-1 text-[11px] text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
+                                title="Kopier meta-tittel"
+                              >
+                                <Copy className="h-3 w-3" />
+                                Kopier
+                              </button>
+                            </div>
+                            <p className="text-sm text-neutral-800 truncate" title={generatedArticleResult.metaTitle}>
+                              {generatedArticleResult.metaTitle}
+                            </p>
+                          </div>
                         )}
-                        {generatedArticleResult.featuredImageUrl && (
-                          <div className="rounded-lg overflow-hidden border border-neutral-200 bg-white">
-                            <div className="max-h-[200px] flex items-center justify-center bg-neutral-100">
-                              <img
-                                src={generatedArticleResult.featuredImageUrl}
-                                alt="Forslag til fremhevet bilde"
-                                className="w-full h-auto max-h-[200px] object-contain"
-                              />
+                        {generatedArticleResult.metaDescription && (
+                          <div className="flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between gap-2">
+                              <label className="text-xs font-medium text-neutral-600">Meta-beskrivelse</label>
+                              <button
+                                type="button"
+                                onClick={() => copyToClipboard(generatedArticleResult.metaDescription ?? '', 'Meta-beskrivelse kopiert')}
+                                className="inline-flex items-center gap-1 text-[11px] text-neutral-400 hover:text-neutral-700 transition-colors cursor-pointer"
+                                title="Kopier meta-beskrivelse"
+                              >
+                                <Copy className="h-3 w-3" />
+                                Kopier
+                              </button>
                             </div>
-                            <div className="px-3 py-2 flex flex-wrap items-center justify-between gap-2 bg-neutral-50 border-t border-neutral-100">
-                              {generatedArticleResult.featuredImageAttribution && (
-                                <a
-                                  href={generatedArticleResult.featuredImageProfileUrl ?? 'https://unsplash.com/?utm_source=analyseverktyy&utm_medium=referral'}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-[11px] text-neutral-600 hover:underline"
-                                >
-                                  {generatedArticleResult.featuredImageAttribution}
-                                </a>
-                              )}
-                              <div className="flex flex-col gap-1">
-                                <div className="flex items-center gap-3">
-                                  <button
-                                    type="button"
-                                    onClick={regenerateImage}
-                                    disabled={regeneratingImage || !generatedArticleResult.articleId}
-                                    title={!generatedArticleResult.articleId ? 'Lagre artikkelen først for å kunne oppdatere forsidebilde' : undefined}
-                                    className="inline-flex items-center gap-1 text-[11px] text-neutral-500 hover:text-neutral-900 transition-colors cursor-pointer disabled:opacity-50"
-                                  >
-                                    <RefreshCw className={`h-3 w-3 ${regeneratingImage ? 'animate-spin' : ''}`} />
-                                    {regeneratingImage ? 'Henter nytt bilde...' : 'Ikke fornøyd? Generer et nytt bilde'}
-                                  </button>
-                                  <a
-                                    href={generatedArticleResult.featuredImageUrl}
-                                    download={`featured-image-${generatedArticleResult.title?.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase() || 'article'}.jpg`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center gap-1 text-[11px] text-neutral-600 hover:text-neutral-900 transition-colors cursor-pointer"
-                                  >
-                                    <Download className="h-3 w-3" />
-                                    Last ned
-                                  </a>
-                                </div>
-                                <p className="text-[11px] text-neutral-400">Maks 3 nye bilder per time.</p>
-                              </div>
-                            </div>
+                            <p className="text-sm text-neutral-700 line-clamp-3" title={generatedArticleResult.metaDescription}>
+                              {generatedArticleResult.metaDescription}
+                            </p>
                           </div>
                         )}
                       </div>
-                    )}
-                    {/* Høyre: SEO og deling */}
-                    {(generatedArticleResult.metaTitle || generatedArticleResult.metaDescription) && (
-                      <div className="min-w-0">
-                        <h2 className="text-xs font-semibold uppercase tracking-wider text-neutral-500 mb-3">SEO og deling</h2>
-                        <div className="space-y-3">
-                          {generatedArticleResult.metaTitle && (
-                            <div className="flex flex-col gap-1.5">
-                              <label className="text-xs font-medium text-neutral-600">Meta-tittel</label>
-                              <p className="text-sm text-neutral-800 truncate" title={generatedArticleResult.metaTitle}>
-                                {generatedArticleResult.metaTitle}
-                              </p>
-                            </div>
-                          )}
-                          {generatedArticleResult.metaDescription && (
-                            <div className="flex flex-col gap-1.5">
-                              <label className="text-xs font-medium text-neutral-600">Meta-beskrivelse</label>
-                              <p className="text-sm text-neutral-700 line-clamp-3" title={generatedArticleResult.metaDescription}>
-                                {generatedArticleResult.metaDescription}
-                              </p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </section>
 
                 {/* Artikkeltekst */}

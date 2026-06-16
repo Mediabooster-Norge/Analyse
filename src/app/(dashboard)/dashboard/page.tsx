@@ -389,7 +389,34 @@ function DashboardPageContent() {
       {/* Results or Empty State */}
       {result ? (
         <>
-          {/* Analyser en annen side – øverst over fanene (kun Premium) */}
+          {/* Hvilken side som er analysert – synlig på alle faner */}
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 py-2 px-0">
+            <Globe className="h-4 w-4 text-neutral-400 shrink-0" />
+            <span className="text-xs text-neutral-500 truncate min-w-0">Analysert:</span>
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-neutral-700 hover:text-neutral-900 truncate min-w-0 underline decoration-neutral-300 hover:decoration-neutral-500"
+            >
+              {url}
+            </a>
+            <ExternalLink className="h-3 w-3 text-neutral-400 shrink-0" />
+            {currentAnalysisId && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-7 rounded-lg border-neutral-200 hover:bg-neutral-50 text-xs ml-auto sm:ml-0"
+                onClick={() => setShareTarget({ id: currentAnalysisId, url })}
+              >
+                <Share2 className="h-3.5 w-3.5 mr-1.5" />
+                Del analyse
+              </Button>
+            )}
+          </div>
+
+          {/* Analyser en annen side – over fanene (kun Premium) */}
           {isPremium && (() => {
             const normalizePathForCompare = (path: string): string => {
               try {
@@ -531,33 +558,6 @@ function DashboardPageContent() {
               </Accordion>
             );
           })()}
-
-          {/* Hvilken side som er analysert – synlig på alle faner */}
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 py-2 px-0">
-            <Globe className="h-4 w-4 text-neutral-400 shrink-0" />
-            <span className="text-xs text-neutral-500 truncate min-w-0">Analysert:</span>
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-neutral-700 hover:text-neutral-900 truncate min-w-0 underline decoration-neutral-300 hover:decoration-neutral-500"
-            >
-              {url}
-            </a>
-            <ExternalLink className="h-3 w-3 text-neutral-400 shrink-0" />
-            {currentAnalysisId && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="h-7 rounded-lg border-neutral-200 hover:bg-neutral-50 text-xs ml-auto sm:ml-0"
-                onClick={() => setShareTarget({ id: currentAnalysisId, url })}
-              >
-                <Share2 className="h-3.5 w-3.5 mr-1.5" />
-                Del analyse
-              </Button>
-            )}
-          </div>
 
           {/* Tab Navigation – sticky på desktop så faner er alltid synlige ved scroll */}
           <div className="sticky top-0 z-10 pt-1 pb-2 mb-4 bg-[#FAFAFA] md:pt-2">
