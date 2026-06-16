@@ -241,15 +241,8 @@ export interface GeneratedArticleResult {
   article: string;
   metaTitle?: string;
   metaDescription?: string;
+  /** Tekstforslag til bilde (lagres i DB, vises ikke i UI foreløpig) */
   featuredImageSuggestion?: string;
-  /** Preview image URL from Unsplash (e.g. regular size) */
-  featuredImageUrl?: string;
-  /** Full-size image URL for download (only in fresh response) */
-  featuredImageDownloadUrl?: string;
-  /** e.g. "Photo by Name on Unsplash" for attribution */
-  featuredImageAttribution?: string;
-  /** Photographer profile URL for attribution link (only in fresh response, not stored) */
-  featuredImageProfileUrl?: string;
   /** Article length setting: short, medium, long */
   articleLength?: string;
   /** Article tone setting: professional, casual, educational */
@@ -292,9 +285,6 @@ export interface GeneratedSocialPostResult {
   content: string;
   hashtags: string[];
   cta?: string;
+  /** Tekstforslag til bilde (lagres i DB, vises ikke i UI foreløpig) */
   featuredImageSuggestion?: string;
-  featuredImageUrl?: string;
-  featuredImageDownloadUrl?: string;
-  featuredImageAttribution?: string;
-  featuredImageProfileUrl?: string;
 }

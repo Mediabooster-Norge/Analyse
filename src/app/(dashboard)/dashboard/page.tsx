@@ -389,7 +389,7 @@ function DashboardPageContent() {
       {/* Results or Empty State */}
       {result ? (
         <>
-          {/* Hvilken side som er analysert – synlig på alle faner */}
+          {/* Analysert URL – synlig for alle brukere, over premium-accordion */}
           <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 py-2 px-0">
             <Globe className="h-4 w-4 text-neutral-400 shrink-0" />
             <span className="text-xs text-neutral-500 truncate min-w-0">Analysert:</span>

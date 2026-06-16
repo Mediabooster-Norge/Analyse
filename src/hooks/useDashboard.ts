@@ -1188,10 +1188,6 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             metaTitle: data.metaTitle,
             metaDescription: data.metaDescription,
             featuredImageSuggestion: data.featuredImageSuggestion,
-            featuredImageUrl: data.featuredImageUrl,
-            featuredImageDownloadUrl: data.featuredImageDownloadUrl,
-            featuredImageAttribution: data.featuredImageAttribution,
-            featuredImageProfileUrl: data.featuredImageProfileUrl,
           },
           remainingArticleGenerations: data.remaining ?? state.remainingArticleGenerations - 1,
         });
@@ -1328,10 +1324,6 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             hashtags: data.hashtags ?? [],
             cta: data.cta,
             featuredImageSuggestion: data.featuredImageSuggestion,
-            featuredImageUrl: data.featuredImageUrl,
-            featuredImageDownloadUrl: data.featuredImageDownloadUrl,
-            featuredImageAttribution: data.featuredImageAttribution,
-            featuredImageProfileUrl: data.featuredImageProfileUrl,
           },
           remainingArticleGenerations: data.remaining ?? state.remainingArticleGenerations - 1,
         });
