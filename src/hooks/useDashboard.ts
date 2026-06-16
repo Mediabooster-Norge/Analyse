@@ -7,8 +7,8 @@ import { toast } from 'sonner';
 import {
   getVisibilityKeywordOptions,
   getDefaultAiVisibilityKeyword,
-  hasKeywordsForAiVisibility,
-  normalizeVisibilityKeyword,
+  resolveVisibilityKeywordSelection,
+  isValidVisibilityKeyword,
 } from '@/lib/utils/visibility-keywords';
 import { clampScore } from '@/lib/utils/score-utils';
 import type {
@@ -658,28 +658,32 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     [updateState]
   );
 
-  const checkAiVisibility = useCallback(async () => {
+  const checkAiVisibility = useCallback(async (keywordOverride?: string) => {
     if (!isPremium) {
       toast.error('AI-synlighet er en Premium-funksjon');
       return;
     }
-    if (!hasKeywordsForAiVisibility(state.result)) {
-      toast.error('Legg til nøkkelord først', {
-        description: 'Gå til SEO / Nøkkelord, legg til nøkkelord og trykk «Oppdater analyse».',
+    const keywordOptions = getVisibilityKeywordOptions(state.result);
+    const focusKeyword = resolveVisibilityKeywordSelection(
+      keywordOverride ?? state.aiVisibilityKeyword,
+      keywordOptions
+    );
+    if (!focusKeyword) {
+      toast.error('Skriv inn et bransjenøkkelord', {
+        description:
+          'Velg fra analysen eller skriv eget under AI-synlighet, f.eks. «webløsninger og marketing».',
+      });
+      return;
+    }
+    if (!isValidVisibilityKeyword(focusKeyword)) {
+      toast.error('Ugyldig nøkkelord', {
+        description: 'Bruk 2–80 tegn som beskriver hva bedriften tilbyr.',
       });
       return;
     }
 
     updateState({ checkingAiVisibility: true });
     try {
-      const keywordOptions = getVisibilityKeywordOptions(state.result);
-      const normalizedSelection = state.aiVisibilityKeyword
-        ? normalizeVisibilityKeyword(state.aiVisibilityKeyword)
-        : '';
-      const focusKeyword =
-        normalizedSelection && keywordOptions.includes(normalizedSelection)
-          ? normalizedSelection
-          : keywordOptions[0];
 
       const body: Record<string, unknown> = {
         url: state.companyUrl || state.url,

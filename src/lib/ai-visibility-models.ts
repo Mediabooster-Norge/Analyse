@@ -3,16 +3,33 @@ export type AiVisibilityModelMode = 'auto' | 'hybrid' | 'premium' | 'mini';
 
 export type AiVisibilityModelProfile = 'hybrid' | 'premium' | 'mini';
 
-const UNPROMPTED_QUERY_MODEL = 'gpt-5-mini';
-const NAMED_QUERY_MODEL = 'gpt-4o-mini';
+/** Nøytrale/anbefalingsspørsmål – gpt-4o + websøk er tilstrekkelig (testet mot 5.2). */
+const UNPROMPTED_QUERY_MODEL = 'gpt-4o';
+/** Navngitte og oppdagelsesspørsmål. */
+const NAMED_QUERY_MODEL = 'gpt-4o';
+/** Premium: samme modell på alle spørsmål. */
+const PREMIUM_QUERY_MODEL = 'gpt-4o';
+/** Budsjettprofil (mini). */
+const MINI_QUERY_MODEL = 'gpt-4o-mini';
 const INSIGHT_MODEL = 'gpt-5-nano';
+
+export function getUnpromptedQueryModel(): string {
+  return UNPROMPTED_QUERY_MODEL;
+}
+
+export function getNamedQueryModel(): string {
+  return NAMED_QUERY_MODEL;
+}
 
 export const AI_VISIBILITY_WEB_SEARCH_TOOL = {
   type: 'web_search' as const,
+  /** Mer søkekontekst – bedre for lokale/bransje-anbefalinger. */
+  search_context_size: 'high' as const,
   user_location: {
     type: 'approximate' as const,
     country: 'NO',
-    region: 'Norway',
+    region: 'Oslo',
+    city: 'Oslo',
     timezone: 'Europe/Oslo',
   },
 };
@@ -31,18 +48,19 @@ export function resolveModelProfile(mode: AiVisibilityModelMode): AiVisibilityMo
 }
 
 export function resolveQueryModel(
-  queryType: 'unprompted' | 'named',
+  queryType: 'unprompted' | 'named' | 'discovery',
   mode: AiVisibilityModelMode = getAiVisibilityModelMode()
 ): string {
   const profile = resolveModelProfile(mode === 'auto' ? 'hybrid' : mode);
 
   switch (profile) {
     case 'premium':
-      return UNPROMPTED_QUERY_MODEL;
+      return PREMIUM_QUERY_MODEL;
     case 'mini':
-      return NAMED_QUERY_MODEL;
+      return MINI_QUERY_MODEL;
     case 'hybrid':
     default:
+      // Discovery bruker samme modell som named (søker etter bedriftens domene).
       return queryType === 'unprompted' ? UNPROMPTED_QUERY_MODEL : NAMED_QUERY_MODEL;
   }
 }
@@ -83,9 +101,9 @@ export function formatVisibilityTestLabel(
 
   const profile = modelProfile ?? 'hybrid';
   const modelText: Record<AiVisibilityModelProfile, string> = {
-    hybrid: 'OpenAI (gpt-5-mini på nøytrale spørsmål, gpt-4o-mini på navngitte)',
-    premium: 'OpenAI gpt-5-mini',
-    mini: 'OpenAI gpt-4o-mini',
+    hybrid: `OpenAI ${UNPROMPTED_QUERY_MODEL}`,
+    premium: `OpenAI ${PREMIUM_QUERY_MODEL}`,
+    mini: `OpenAI ${MINI_QUERY_MODEL}`,
   };
 
   if (source === 'web_search') {

@@ -17,6 +17,9 @@ const VISIBILITY_COMPOUND_REPLACEMENTS: Array<[RegExp, string]> = [
   [/\bui\s*design\b/gi, 'uidesign'],
 ];
 
+export const VISIBILITY_KEYWORD_MIN_LENGTH = 2;
+export const VISIBILITY_KEYWORD_MAX_LENGTH = 80;
+
 /** Normaliserer nøkkelord for AI-synlighet (cache, spørsmål, deduplisering i UI). */
 export function normalizeVisibilityKeyword(keyword: string): string {
   let k = keyword.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -46,8 +49,23 @@ export function getVisibilityKeywordOptions(result: DashboardAnalysisResult | nu
   return options;
 }
 
+export function isValidVisibilityKeyword(keyword: string): boolean {
+  const k = normalizeVisibilityKeyword(keyword);
+  return k.length >= VISIBILITY_KEYWORD_MIN_LENGTH && k.length <= VISIBILITY_KEYWORD_MAX_LENGTH;
+}
+
 export function hasKeywordsForAiVisibility(result: DashboardAnalysisResult | null): boolean {
   return getVisibilityKeywordOptions(result).length > 0;
+}
+
+/** Velger aktivt nøkkelord: lagret/custom først, ellers første fra analysen. */
+export function resolveVisibilityKeywordSelection(
+  selection: string | null | undefined,
+  options: string[]
+): string | null {
+  const normalized = selection ? normalizeVisibilityKeyword(selection) : '';
+  if (normalized && isValidVisibilityKeyword(normalized)) return normalized;
+  return options[0] ?? null;
 }
 
 /** Standardvalg ved innlasting av analyse (siste brukte nøkkelord fra lagret sjekk). */
@@ -55,12 +73,9 @@ export function getDefaultAiVisibilityKeyword(
   result: DashboardAnalysisResult | null
 ): string | null {
   const options = getVisibilityKeywordOptions(result);
-  if (options.length === 0) return null;
-
   const saved = normalizeVisibilityKeyword(result?.aiVisibility?.focusKeyword ?? '');
-  if (saved && options.includes(saved)) return saved;
-
-  return options[0];
+  if (saved && isValidVisibilityKeyword(saved)) return saved;
+  return options[0] ?? null;
 }
 
 /**

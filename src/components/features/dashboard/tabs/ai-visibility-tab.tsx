@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import * as VisuallyHidden from '@radix-ui/react-visually-hidden';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   Dialog,
   DialogContent,
@@ -33,8 +34,13 @@ import {
   hasKeywordsForAiVisibility,
   resolveAiVisibilityData,
   normalizeVisibilityKeyword,
+  resolveVisibilityKeywordSelection,
+  isValidVisibilityKeyword,
+  VISIBILITY_KEYWORD_MAX_LENGTH,
 } from '@/lib/utils/visibility-keywords';
-import { formatVisibilityTestLabel } from '@/lib/ai-visibility-models';
+import { AiVisibilityResponseBody } from '@/components/features/dashboard/ai-visibility-response';
+
+const KEYWORD_CHIP_PREVIEW_COUNT = 7;
 
 function getHostname(url: string): string {
   try {
@@ -55,87 +61,6 @@ function cleanQueryForDisplay(rawQuery: string, domain: string): string {
     .replace(/^Søk:\s*/i, '')
     .replaceAll(` (${domain})`, '')
     .trim();
-}
-
-/** Fjerner (domene.no)-lignende parenteser fra AI-svar for ryddigere visning. */
-function cleanAiResponseForDisplay(text: string): string {
-  return text
-    .replace(/\s*\([a-z0-9][a-z0-9.-]*\.[a-z]{2,}\)(\.)?\s*/gi, (_, period) => (period ? '. ' : ' '))
-    .replace(/\s{2,}/g, ' ')
-    .trim();
-}
-
-type TextSegment = { type: 'text'; content: string };
-type LinkSegment = { type: 'link'; content: string; href: string };
-
-function shortUrlDisplay(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch {
-    return url.length > 40 ? url.slice(0, 37) + '…' : url;
-  }
-}
-
-function formatAiResponseSegments(text: string): Array<TextSegment | LinkSegment> {
-  const segments: Array<TextSegment | LinkSegment> = [];
-
-  function addTextWithRawUrls(rest: string) {
-    const urlRegex = /https?:\/\/[^\s)\]"]+/g;
-    let last = 0;
-    let match;
-    while ((match = urlRegex.exec(rest)) !== null) {
-      if (match.index > last) {
-        segments.push({ type: 'text', content: rest.slice(last, match.index) });
-      }
-      const href = match[0].replace(/[.,;:!?)\]]+$/, '');
-      segments.push({ type: 'link', content: shortUrlDisplay(href), href });
-      last = urlRegex.lastIndex;
-    }
-    if (last < rest.length) {
-      segments.push({ type: 'text', content: rest.slice(last) });
-    }
-  }
-
-  const mdLinkRegex = /\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g;
-  let lastEnd = 0;
-  let m;
-  while ((m = mdLinkRegex.exec(text)) !== null) {
-    if (m.index > lastEnd) {
-      addTextWithRawUrls(text.slice(lastEnd, m.index));
-    }
-    segments.push({ type: 'link', content: m[1], href: m[2] });
-    lastEnd = mdLinkRegex.lastIndex;
-  }
-  if (lastEnd < text.length) {
-    addTextWithRawUrls(text.slice(lastEnd));
-  }
-  if (segments.length === 0 && text) {
-    segments.push({ type: 'text', content: text });
-  }
-  return segments;
-}
-
-function AiResponseText({ text, className }: { text: string; className?: string }) {
-  const segments = formatAiResponseSegments(text);
-  return (
-    <p className={className}>
-      {segments.map((seg, i) =>
-        seg.type === 'text' ? (
-          <React.Fragment key={i}>{seg.content}</React.Fragment>
-        ) : (
-          <a
-            key={i}
-            href={seg.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-neutral-900 hover:text-neutral-800 hover:underline break-all"
-          >
-            {seg.content}
-          </a>
-        )
-      )}
-    </p>
-  );
 }
 
 const AI_VISIBILITY_ENABLED = true;
@@ -161,7 +86,7 @@ export interface AiVisibilityTabProps {
   aiVisibilityElapsedTime: number;
   aiVisibilityKeyword: string | null;
   setAiVisibilityKeyword: (keyword: string | null) => void;
-  onCheckAiVisibility: () => Promise<void>;
+  onCheckAiVisibility: (keywordOverride?: string) => Promise<void>;
   onGoToKeywords: () => void;
 }
 
@@ -182,12 +107,47 @@ export function AiVisibilityTab({
   onGoToKeywords,
 }: AiVisibilityTabProps) {
   const [checkMessageIndex, setCheckMessageIndex] = useState(0);
+  const [customKeywordInput, setCustomKeywordInput] = useState('');
+  const [showAllKeywords, setShowAllKeywords] = useState(false);
   const keywordOptions = getVisibilityKeywordOptions(result);
   const hasKeywords = hasKeywordsForAiVisibility(result);
-  const selectedKeyword =
-    aiVisibilityKeyword && keywordOptions.includes(aiVisibilityKeyword)
-      ? aiVisibilityKeyword
-      : keywordOptions[0] ?? null;
+  const selectedKeyword = resolveVisibilityKeywordSelection(aiVisibilityKeyword, keywordOptions);
+  const isCustomKeyword =
+    !!selectedKeyword && !keywordOptions.includes(selectedKeyword);
+  const canApplyCustomKeyword = isValidVisibilityKeyword(customKeywordInput);
+  const customInputTooShort =
+    customKeywordInput.trim().length > 0 && !canApplyCustomKeyword;
+  const visibleKeywordOptions = showAllKeywords
+    ? keywordOptions
+    : keywordOptions.slice(0, KEYWORD_CHIP_PREVIEW_COUNT);
+  const hiddenKeywordCount = Math.max(0, keywordOptions.length - KEYWORD_CHIP_PREVIEW_COUNT);
+  const keywordOptionsKey = keywordOptions.join('\0');
+
+  const applyCustomKeyword = () => {
+    const normalized = normalizeVisibilityKeyword(customKeywordInput);
+    if (!isValidVisibilityKeyword(normalized)) return;
+    setAiVisibilityKeyword(normalized);
+    setCustomKeywordInput(normalized);
+  };
+
+  const selectAnalysisKeyword = (keyword: string) => {
+    setAiVisibilityKeyword(keyword);
+    setCustomKeywordInput('');
+  };
+
+  // Synk input kun når valgt nøkkelord endres utenfra (f.eks. ved innlasting) – ikke på hver render.
+  useEffect(() => {
+    const stored = aiVisibilityKeyword ? normalizeVisibilityKeyword(aiVisibilityKeyword) : '';
+    if (!stored || !isValidVisibilityKeyword(stored)) {
+      setCustomKeywordInput('');
+      return;
+    }
+    if (!keywordOptions.includes(stored)) {
+      setCustomKeywordInput(stored);
+    } else {
+      setCustomKeywordInput('');
+    }
+  }, [aiVisibilityKeyword, keywordOptionsKey]);
 
   useEffect(() => {
     if (!checkingAiVisibility) return;
@@ -320,22 +280,131 @@ export function AiVisibilityTab({
       </Dialog>
 
     <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
-      <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 border-b border-neutral-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-xs sm:text-sm font-medium mb-1.5">
-            <Eye className="h-3.5 w-3.5 text-neutral-600" />
-            AI-synlighet
-          </h3>
-          <p className="text-[10px] sm:text-sm text-neutral-500">
-            Tester om OpenAI ChatGPT kjenner til og anbefaler bedriften din (live websøk, Norge).
+      <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 border-b border-neutral-100">
+        <h3 className="inline-flex items-center gap-1.5 px-2 py-1.5 rounded-full bg-neutral-100 text-neutral-900 text-xs sm:text-sm font-medium mb-1.5">
+          <Eye className="h-3.5 w-3.5 text-neutral-600" />
+          AI-synlighet
+        </h3>
+          <p className="text-[10px] sm:text-sm text-neutral-500 leading-relaxed">
+            Tester OpenAI via API med live websøk (Norge, gpt-4o). ChatGPT-appen kan gi rikere svar (kart, lister) – andre AI-verktøy kan også gi andre resultater.
           </p>
-        </div>
-        {isPremium && (
-          <div className="shrink-0 flex flex-col items-end gap-1">
+      </div>
+
+      {isPremium && (
+        <div className="px-3 max-[400px]:px-2 min-[401px]:px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100 bg-white">
+          <p className="text-xs sm:text-sm font-medium text-neutral-900 mb-2">Bransjenøkkelord</p>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <Input
+              value={customKeywordInput}
+              onChange={(e) => setCustomKeywordInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && canApplyCustomKeyword) {
+                  e.preventDefault();
+                  applyCustomKeyword();
+                }
+              }}
+              disabled={checkingAiVisibility}
+              placeholder="f.eks. webløsninger og marketing"
+              maxLength={VISIBILITY_KEYWORD_MAX_LENGTH}
+              aria-invalid={customInputTooShort}
+              className={`h-9 rounded-lg bg-white text-sm flex-1 ${
+                isCustomKeyword ? 'border-neutral-900 ring-1 ring-neutral-900/20' : ''
+              }`}
+              aria-label="Bransjenøkkelord"
+            />
             <Button
-              onClick={onCheckAiVisibility}
-              disabled={checkingAiVisibility || !hasKeywords}
-              className="w-full sm:w-auto rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white disabled:opacity-70"
+              type="button"
+              onClick={applyCustomKeyword}
+              disabled={checkingAiVisibility || !canApplyCustomKeyword}
+              className="shrink-0 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white h-9"
+            >
+              Bruk nøkkelord
+            </Button>
+          </div>
+          {customInputTooShort && (
+            <p className="text-[10px] text-amber-700 mt-1.5">Bruk minst 2 tegn.</p>
+          )}
+
+          {hasKeywords && (
+            <div className="mt-4 pt-4 border-t border-neutral-100">
+              <p className="text-[10px] sm:text-xs font-medium text-neutral-500 mb-2">
+                Forslag fra SEO-analysen
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {visibleKeywordOptions.map((keyword) => {
+                  const active = keyword === selectedKeyword && !isCustomKeyword;
+                  return (
+                    <button
+                      key={keyword}
+                      type="button"
+                      onClick={() => selectAnalysisKeyword(keyword)}
+                      disabled={checkingAiVisibility}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                        active
+                          ? 'bg-neutral-200 text-neutral-900 border-neutral-300'
+                          : 'bg-neutral-50 text-neutral-600 border-neutral-200 hover:border-neutral-300 hover:text-neutral-800'
+                      } disabled:opacity-50`}
+                    >
+                      <Tag className="h-3 w-3 shrink-0 opacity-60" />
+                      {keyword}
+                    </button>
+                  );
+                })}
+                {hiddenKeywordCount > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAllKeywords((prev) => !prev)}
+                    disabled={checkingAiVisibility}
+                    className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border border-dashed border-neutral-300 text-neutral-500 hover:text-neutral-800 hover:border-neutral-400 transition-colors disabled:opacity-50"
+                  >
+                    {showAllKeywords ? 'Vis færre' : `Vis ${hiddenKeywordCount} flere`}
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {!hasKeywords && (
+            <p className="text-[10px] text-neutral-400 mt-3">
+              Ingen forslag fra analysen ennå –{' '}
+              <button
+                type="button"
+                onClick={onGoToKeywords}
+                className="text-neutral-600 underline underline-offset-2 hover:text-neutral-900"
+              >
+                legg til under SEO / Nøkkelord
+              </button>
+              .
+            </p>
+          )}
+        </div>
+      )}
+
+      {isPremium && (
+        <div className="px-3 max-[400px]:px-2 min-[401px]:px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <p className="text-[10px] sm:text-xs text-neutral-500">
+            Ett nøkkelord om gangen. Bytt nøkkelord og kjør ny sjekk for å teste andre temaer.
+          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto sm:justify-end">
+            {selectedKeyword && (
+              <span
+                className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-medium min-w-0 ${
+                  isCustomKeyword
+                    ? 'bg-white border-neutral-900 text-neutral-900'
+                    : 'bg-white border-neutral-200 text-neutral-700'
+                }`}
+              >
+                <Tag className="h-3 w-3 shrink-0 opacity-70" />
+                <span className="truncate">{selectedKeyword}</span>
+                {isCustomKeyword && (
+                  <span className="text-[10px] font-normal text-neutral-400 shrink-0">eget</span>
+                )}
+              </span>
+            )}
+            <Button
+              onClick={() => void onCheckAiVisibility(selectedKeyword ?? undefined)}
+              disabled={checkingAiVisibility || !selectedKeyword}
+              className="w-full sm:w-auto shrink-0 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white disabled:opacity-70"
             >
               {checkingAiVisibility ? (
                 <>
@@ -349,62 +418,10 @@ export function AiVisibilityTab({
                 </>
               )}
             </Button>
-            {selectedKeyword && hasKeywords && (
-              <span className="text-[10px] sm:text-xs text-neutral-500 text-right">
-                Sjekker for: {selectedKeyword}
-              </span>
-            )}
           </div>
-        )}
-      </div>
-      {isPremium && !hasKeywords && (
-        <div className="px-3 max-[400px]:px-2 min-[401px]:px-4 sm:px-6 py-3 sm:py-4 border-b border-amber-100 bg-amber-50/80">
-          <p className="text-xs sm:text-sm text-amber-900 font-medium mb-1">Nøkkelord kreves</p>
-          <p className="text-[11px] sm:text-sm text-amber-800/90 mb-3">
-            AI-synlighetssjekken bruker nøkkelord fra analysen for å stille relevante spørsmål om bransjen din.
-            Legg til nøkkelord og oppdater analysen først.
-          </p>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={onGoToKeywords}
-            className="rounded-lg border-amber-200 bg-white hover:bg-amber-50 text-amber-900"
-          >
-            <Tag className="mr-1.5 h-3.5 w-3.5" />
-            Gå til SEO / Nøkkelord
-          </Button>
         </div>
       )}
-      {isPremium && hasKeywords && (
-        <div className="px-3 max-[400px]:px-2 min-[401px]:px-4 sm:px-6 pb-3 sm:pb-4 border-b border-neutral-100 bg-neutral-50/50">
-          <p className="text-[10px] sm:text-xs font-medium text-neutral-600 mb-2">Velg bransjenøkkelord for sjekken</p>
-          <div className="flex flex-wrap gap-1.5">
-            {keywordOptions.map((keyword) => {
-              const active = keyword === selectedKeyword;
-              return (
-                <button
-                  key={keyword}
-                  type="button"
-                  onClick={() => setAiVisibilityKeyword(keyword)}
-                  disabled={checkingAiVisibility}
-                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
-                    active
-                      ? 'bg-neutral-900 text-white border-neutral-900'
-                      : 'bg-white text-neutral-700 border-neutral-200 hover:border-neutral-400'
-                  } disabled:opacity-50`}
-                >
-                  <Tag className="h-3 w-3 shrink-0" />
-                  {keyword}
-                </button>
-              );
-            })}
-          </div>
-          <p className="text-[10px] text-neutral-400 mt-2">
-            Ett nøkkelord om gangen – bytt og kjør ny sjekk for å teste andre temaer (bruker én av månedens AI-synlighetssjekker).
-          </p>
-        </div>
-      )}
+
       <div className="p-3 max-[400px]:p-2 min-[401px]:p-4 sm:p-6 space-y-4 min-[401px]:space-y-6">
         {isPremium && checkingAiVisibility ? null : !isPremium ? (
           <div className="space-y-4 min-[401px]:space-y-6">
@@ -449,111 +466,157 @@ export function AiVisibilityTab({
           );
 
           if (visData) {
+            const levelColor =
+              visData.level === 'high'
+                ? 'text-green-600'
+                : visData.level === 'medium'
+                  ? 'text-amber-700'
+                  : 'text-red-600';
+            const levelBg =
+              visData.level === 'high'
+                ? 'bg-green-50'
+                : visData.level === 'medium'
+                  ? 'bg-amber-50'
+                  : 'bg-red-50';
+            const levelLabel =
+              visData.level === 'high'
+                ? 'God AI-synlighet'
+                : visData.level === 'medium'
+                  ? 'Moderat AI-synlighet'
+                  : visData.level === 'low'
+                    ? 'Lav AI-synlighet'
+                    : 'Ikke synlig i AI-søk';
+
             return (
-              <div className="grid lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-1 space-y-4">
-                  <div className="rounded-2xl border border-neutral-200 bg-white p-5 text-center">
-                    <div
-                      className={`w-28 h-28 mx-auto rounded-full flex items-center justify-center mb-3 ${
-                        visData.level === 'high'
-                          ? 'bg-green-50'
-                          : visData.level === 'medium'
-                            ? 'bg-amber-50'
-                            : 'bg-red-50'
-                      }`}
-                    >
-                      <div>
-                        <span
-                          className={`text-4xl font-bold ${
-                            visData.level === 'high'
-                              ? 'text-green-600'
-                              : visData.level === 'medium'
-                                ? 'text-amber-700'
-                                : 'text-red-600'
-                          }`}
-                        >
-                          {visData.score}
-                        </span>
-                        <span className="text-sm text-neutral-400">/100</span>
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                  <div className="lg:col-span-5 rounded-2xl border border-neutral-200 bg-white p-4 sm:p-5">
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-4">
+                      <div
+                        className={`w-24 h-24 sm:w-28 sm:h-28 mx-auto sm:mx-0 shrink-0 rounded-full flex items-center justify-center ${levelBg}`}
+                      >
+                        <div className="text-center">
+                          <span className={`text-3xl sm:text-4xl font-bold tabular-nums ${levelColor}`}>
+                            {visData.score}
+                          </span>
+                          <span className="text-sm text-neutral-400">/100</span>
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0 text-center sm:text-left">
+                        <h4 className={`font-semibold ${levelColor}`}>{levelLabel}</h4>
+                        <p className="text-sm text-neutral-500 mt-1 leading-relaxed">{visData.description}</p>
+                        {(visData.recommendationScore !== undefined || visData.knowledgeScore !== undefined || visData.discoveryScore !== undefined) && (
+                          <div className="grid grid-cols-3 gap-2 mt-3">
+                            {visData.recommendationScore !== undefined && (
+                              <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2">
+                                <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+                                  Anbefaling
+                                </p>
+                                <p className="text-lg font-bold text-neutral-900 tabular-nums">
+                                  {visData.recommendationScore}
+                                  <span className="text-xs font-normal text-neutral-400">/100</span>
+                                </p>
+                                <p className="text-[10px] text-neutral-500 mt-0.5">Uoppfordret</p>
+                              </div>
+                            )}
+                            {visData.knowledgeScore !== undefined && (
+                              <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2">
+                                <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+                                  Kjennskap
+                                </p>
+                                <p className="text-lg font-bold text-neutral-900 tabular-nums">
+                                  {visData.knowledgeScore}
+                                  <span className="text-xs font-normal text-neutral-400">/100</span>
+                                </p>
+                                <p className="text-[10px] text-neutral-500 mt-0.5">Navngitt</p>
+                              </div>
+                            )}
+                            {visData.discoveryScore !== undefined && (
+                              <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2">
+                                <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+                                  Oppdagelse
+                                </p>
+                                <p className="text-lg font-bold text-neutral-900 tabular-nums">
+                                  {visData.discoveryScore}
+                                  <span className="text-xs font-normal text-neutral-400">/100</span>
+                                </p>
+                                <p className="text-[10px] text-neutral-500 mt-0.5">Søkbar</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {visData.focusKeyword && (
+                          <span className="inline-flex items-center gap-1 mt-3 px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-600 text-xs font-medium">
+                            <Tag className="h-3 w-3" />
+                            {visData.focusKeyword}
+                          </span>
+                        )}
+                        {selectedKeyword &&
+                          visData.focusKeyword &&
+                          normalizeVisibilityKeyword(selectedKeyword) !==
+                            normalizeVisibilityKeyword(visData.focusKeyword) && (
+                            <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1.5 mt-3">
+                              Resultatet er for «{visData.focusKeyword}». Du har valgt «{selectedKeyword}» – kjør ny sjekk for å oppdatere.
+                            </p>
+                          )}
                       </div>
                     </div>
-                    <h4
-                      className={`font-semibold ${
-                        visData.level === 'high'
-                          ? 'text-green-600'
-                          : visData.level === 'medium'
-                            ? 'text-amber-700'
-                            : 'text-red-600'
-                      }`}
-                    >
-                      {visData.level === 'high'
-                        ? 'God AI-synlighet'
-                        : visData.level === 'medium'
-                          ? 'Moderat AI-synlighet'
-                          : visData.level === 'low'
-                            ? 'Lav AI-synlighet'
-                            : 'Ikke synlig i AI-søk'}
-                    </h4>
-                    <p className="text-sm text-neutral-500 mt-1 leading-relaxed">{visData.description}</p>
-                    {visData.focusKeyword && (
-                      <span className="inline-flex items-center gap-1 mt-3 px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-600 text-xs font-medium">
-                        <Tag className="h-3 w-3" />
-                        {visData.focusKeyword}
-                      </span>
-                    )}
-                    {selectedKeyword &&
-                      visData.focusKeyword &&
-                      normalizeVisibilityKeyword(selectedKeyword) !==
-                        normalizeVisibilityKeyword(visData.focusKeyword) && (
-                        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-2 py-1.5 mt-3 text-left">
-                          Resultatet er for «{visData.focusKeyword}». Du har valgt «{selectedKeyword}» – kjør ny sjekk for å oppdatere.
-                        </p>
-                      )}
                   </div>
 
-                  <div className="rounded-2xl border border-neutral-200 bg-white divide-y divide-neutral-100">
+                  <div className="lg:col-span-3 rounded-2xl border border-neutral-200 bg-white divide-y divide-neutral-100">
                     <div className="flex items-center justify-between px-4 py-3">
-                      <span className="text-sm text-neutral-600">Spørsmål stilt til AI</span>
+                      <span className="text-sm text-neutral-600">Spørsmål i score</span>
                       <span className="text-lg font-semibold text-neutral-900">{visData.details.queriesTested}</span>
                     </div>
                     <div className="flex items-center justify-between px-4 py-3">
-                      <span className="text-sm text-neutral-600">AI kjente bedriften</span>
+                      <span className="text-sm text-neutral-600">Positive treff</span>
                       <span className="text-lg font-semibold text-green-600">{visData.details.timesCited}</span>
                     </div>
                     <div className="flex items-center justify-between px-4 py-3">
                       <span className="text-sm text-neutral-600">Usikre treff</span>
                       <span className="text-lg font-semibold text-amber-700">{visData.details.timesMentioned}</span>
                     </div>
+                    {(visData.details.webSearchCount !== undefined || visData.details.estimatedCount !== undefined) && (
+                      <div className="flex items-center justify-between px-4 py-3">
+                        <span className="text-sm text-neutral-600">Live / estimert</span>
+                        <span className="text-sm font-semibold text-neutral-700 tabular-nums">
+                          {visData.details.webSearchCount ?? 0} / {visData.details.estimatedCount ?? 0}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
-                  {formatVisibilityTestLabel(visData.source, visData.modelProfile) && (
-                    <p className="text-[10px] text-neutral-400 text-center">
-                      {formatVisibilityTestLabel(visData.source, visData.modelProfile)}
-                    </p>
-                  )}
-
                   {visData.recommendations.length > 0 && (
-                    <div className={`p-4 rounded-xl border ${
-                      visData.level === 'high' 
-                        ? 'bg-green-50 border-green-200' 
-                        : 'bg-[#f5f3ff] border-[#ddd6fe]'
-                    }`}>
-                      <h5 className={`font-medium text-sm mb-3 flex items-center gap-2 ${
-                        visData.level === 'high' ? 'text-green-600' : 'text-[#6d28d9]'
-                      }`}>
+                    <div
+                      className={`lg:col-span-4 p-4 rounded-2xl border ${
+                        visData.level === 'high'
+                          ? 'bg-green-50 border-green-200'
+                          : 'bg-[#f5f3ff] border-[#ddd6fe]'
+                      }`}
+                    >
+                      <h5
+                        className={`font-medium text-sm mb-3 flex items-center gap-2 ${
+                          visData.level === 'high' ? 'text-green-600' : 'text-[#6d28d9]'
+                        }`}
+                      >
                         <RocketIcon className="w-4 h-4" />
                         {visData.level === 'high' ? 'Tips for å holde deg på topp' : 'Forbedringer'}
                       </h5>
                       <ul className="space-y-2">
                         {visData.recommendations.map((rec, i) => (
-                          <li key={i} className={`text-xs flex items-start gap-2 ${
-                            visData.level === 'high' ? 'text-green-600' : 'text-[#6d28d9]'
-                          }`}>
-                            <span className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-[10px] font-medium mt-0.5 ${
-                              visData.level === 'high' 
-                                ? 'bg-green-100 text-green-600' 
-                                : 'bg-[#ddd6fe] text-[#6d28d9]'
-                            }`}>
+                          <li
+                            key={i}
+                            className={`text-xs flex items-start gap-2 ${
+                              visData.level === 'high' ? 'text-green-600' : 'text-[#6d28d9]'
+                            }`}
+                          >
+                            <span
+                              className={`w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-[10px] font-medium mt-0.5 ${
+                                visData.level === 'high'
+                                  ? 'bg-green-100 text-green-600'
+                                  : 'bg-[#ddd6fe] text-[#6d28d9]'
+                              }`}
+                            >
                               {i + 1}
                             </span>
                             <span>{rec}</span>
@@ -564,11 +627,13 @@ export function AiVisibilityTab({
                   )}
                 </div>
 
-                <div className="lg:col-span-2">
+                <div>
                   {!result.keywordResearch?.length && (
                     <div className="mb-4 p-3 rounded-xl bg-neutral-50 border border-neutral-200">
                       <p className="text-xs text-neutral-600">
-                        Sjekken bruker generelle spørsmål fordi analysen ikke har nøkkelord. Legg til nøkkelord under <strong>Nøkkelord</strong>-fanen for mer relevante spørsmål.
+                        {isCustomKeyword
+                          ? 'Du tester med eget bransjenøkkelord. Legg til nøkkelord under Nøkkelord-fanen for flere forslag å velge mellom.'
+                          : 'Skriv et bransjenøkkelord over, eller legg til nøkkelord under Nøkkelord-fanen for forslag fra analysen.'}
                       </p>
                     </div>
                   )}
@@ -601,10 +666,10 @@ export function AiVisibilityTab({
                   <div className="mb-4">
                     <h4 className="font-medium text-neutral-900">AI-svar på spørsmål</h4>
                     <p className="text-xs text-neutral-500 mt-0.5">
-                      Nøytrale spørsmål nevner ikke bedriften – navngitte gjør det. Klikk for å åpne/lukke svar.
+                      Nøytrale spørsmål nevner ikke bedriften – navngitte gjør det. Estimerte svar telles ikke i hovedscore.
                     </p>
                   </div>
-                  <Accordion type="single" collapsible className="space-y-2">
+                  <Accordion type="single" collapsible className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {visData.details.queries.map((q, i) => (
                       <AccordionItem
                         key={i}
@@ -620,11 +685,28 @@ export function AiVisibilityTab({
                         <AccordionTrigger className="px-3 sm:px-4 py-3 hover:no-underline [&[data-state=open]]:border-b [&[data-state=open]]:border-neutral-200/80">
                           <div className="flex items-start justify-between gap-3 text-left w-full">
                             <div className="flex-1 min-w-0 pr-2">
-                              {q.type && (
-                                <span className="inline-block mb-1 text-[10px] px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-500 font-medium">
-                                  {q.type === 'unprompted' ? 'Nøytralt spørsmål' : 'Navngitt'}
-                                </span>
-                              )}
+                              <div className="flex flex-wrap items-center gap-1 mb-1">
+                                {q.type && (
+                                  <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-500 font-medium">
+                                    {q.type === 'unprompted' ? 'Nøytralt' : q.type === 'discovery' ? 'Oppdagelse' : 'Navngitt'}
+                                  </span>
+                                )}
+                                {q.estimated && (
+                                  <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-medium">
+                                    Estimert
+                                  </span>
+                                )}
+                                {q.usedWebSearch && (
+                                  <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-medium">
+                                    Live søk
+                                  </span>
+                                )}
+                                {q.scored === false && (
+                                  <span className="inline-block text-[10px] px-2 py-0.5 rounded-full bg-neutral-200 text-neutral-600 font-medium">
+                                    Ikke i score
+                                  </span>
+                                )}
+                              </div>
                               <p className="text-sm sm:text-base text-neutral-800 leading-snug break-words">
                                 {cleanQueryForDisplay(q.query, getHostname(companyUrl || url))}
                               </p>
@@ -644,10 +726,7 @@ export function AiVisibilityTab({
                               <p className="text-[10px] sm:text-xs font-medium uppercase tracking-wide text-neutral-500 mb-1.5">
                                 AI-svar
                               </p>
-                              <AiResponseText
-                                text={cleanAiResponseForDisplay(q.aiResponse)}
-                                className="text-sm sm:text-base text-neutral-700 leading-relaxed whitespace-pre-wrap break-words"
-                              />
+                              <AiVisibilityResponseBody text={q.aiResponse} />
                             </div>
                           ) : (
                             <p className="text-sm text-neutral-500">Ingen svar</p>

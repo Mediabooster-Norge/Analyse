@@ -332,12 +332,22 @@ export interface AIVisibilityData {
   score: number;
   level: 'high' | 'medium' | 'low' | 'none';
   description: string;
+  /** 0–100: anbefales uoppfordret på nøytrale bransjespørsmål (kun live websøk) */
+  recommendationScore?: number;
+  /** 0–100: kjennskap når bedriften navngis (kun live websøk) */
+  knowledgeScore?: number;
+  /** 0–100: finnbar og relevant ved direkte søk etter domene + nøkkelord */
+  discoveryScore?: number;
   details: {
     queriesTested: number;
     /** Antall spørsmål der bedriften ble funnet positivt (kjent/anbefalt) */
     timesCited: number;
-    /** Antall spørsmål der navnet dukket opp, men i usikker/negativ kontekst */
+    /** Antall spørsmål der svaret var tvetydig eller usikkert */
     timesMentioned: number;
+    /** Antall spørsmål som brukte live websøk */
+    webSearchCount?: number;
+    /** Antall spørsmål som falt tilbake til modellkunnskap (telles ikke i hovedscore) */
+    estimatedCount?: number;
     /** Konkurrenter AI nevnte i nøytrale spørsmål der bedriften ikke ble funnet */
     competitorsMentioned?: string[];
     /** Kort innsikt utledet fra de nøytrale spørsmålene */
@@ -347,8 +357,14 @@ export interface AIVisibilityData {
       cited: boolean;
       mentioned: boolean;
       aiResponse?: string;
-      /** 'unprompted' = nøytralt spørsmål uten bedriftsnavn, 'named' = navngitt */
-      type?: 'unprompted' | 'named';
+      /** 'unprompted' = nøytralt, 'named' = navngitt, 'discovery' = søk etter domene + nøkkelord */
+      type?: 'unprompted' | 'named' | 'discovery';
+      /** true når svaret kom fra live websøk */
+      usedWebSearch?: boolean;
+      /** true når websøk feilet og svaret er basert på modellkunnskap */
+      estimated?: boolean;
+      /** true når spørsmålet inngår i hovedscore */
+      scored?: boolean;
     }>;
   };
   recommendations: string[];
