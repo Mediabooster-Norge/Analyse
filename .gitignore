@@ -40,6 +40,7 @@ yarn-error.log*
 supabase/.temp/
 
 # security audit automation memory (must not be committed)
+MEMORIES.md
 *---flagged-vulnerabilities*.json
 *---new-findings*.json
 
