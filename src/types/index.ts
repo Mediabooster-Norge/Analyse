@@ -273,6 +273,34 @@ export interface PageSpeedResults {
   isEstimate?: boolean;
 }
 
+export type AccessibilityImpact = 'critical' | 'serious' | 'moderate' | 'minor';
+
+export interface AccessibilityAffectedElement {
+  selector?: string;
+  snippet?: string;
+  label?: string;
+  explanation?: string;
+}
+
+export interface AccessibilityIssue {
+  id: string;
+  title: string;
+  description: string;
+  impact: AccessibilityImpact;
+  wcagTags?: string[];
+  displayValue?: string;
+  /** Concrete DOM elements flagged by Lighthouse for this audit */
+  affectedElements?: AccessibilityAffectedElement[];
+}
+
+export interface AccessibilityResults {
+  score: number;
+  issues: AccessibilityIssue[];
+  passedCount: number;
+  failedCount: number;
+  checkedAt: string;
+}
+
 export interface CompetitorResults {
   competitors: {
     url: string;

@@ -3,8 +3,8 @@
 // ============================================================================
 
 // Import + re-export shared types so dashboard components can import from one place
-import type { AIVisibilityData, PageSpeedResults } from '@/types';
-export type { AIVisibilityData, PageSpeedResults };
+import type { AccessibilityResults, AIVisibilityData, PageSpeedResults } from '@/types';
+export type { AccessibilityResults, AIVisibilityData, PageSpeedResults };
 
 /**
  * AI Suggestion for individual SEO elements
@@ -179,6 +179,7 @@ export interface DashboardAnalysisResult {
     };
   };
   aiVisibility?: AIVisibilityData;
+  accessibility?: AccessibilityResults;
 }
 
 /**

@@ -1,26 +1,8 @@
 import type { PageSpeedResults } from '@/types';
 
-interface PageSpeedAPIResponse {
-  lighthouseResult: {
-    categories: {
-      performance: { score: number };
-      accessibility: { score: number };
-      'best-practices': { score: number };
-      seo: { score: number };
-    };
-    audits: {
-      'largest-contentful-paint': { numericValue: number };
-      'first-input-delay'?: { numericValue: number };
-      'max-potential-fid'?: { numericValue: number };
-      'cumulative-layout-shift': { numericValue: number };
-      'total-blocking-time': { numericValue: number };
-    };
-  };
-}
-
 // Cache for PageSpeed results (1 hour TTL)
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
-const pageSpeedCache = new Map<string, { results: PageSpeedResults; timestamp: number }>();
+const pageSpeedCache = new Map<string, { results: PageSpeedResults; lighthouse: unknown; timestamp: number }>();
 
 function getDomainFromUrl(url: string): string {
   try {
@@ -31,17 +13,17 @@ function getDomainFromUrl(url: string): string {
   }
 }
 
-function getCachedResults(domain: string): PageSpeedResults | null {
+function getCachedResults(domain: string): { results: PageSpeedResults; lighthouse: unknown } | null {
   const cached = pageSpeedCache.get(domain);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
     console.log(`[PageSpeed] Using cached results for ${domain} (${Math.round((Date.now() - cached.timestamp) / 1000 / 60)}min old)`);
-    return cached.results;
+    return { results: cached.results, lighthouse: cached.lighthouse };
   }
   return null;
 }
 
-function setCachedResults(domain: string, results: PageSpeedResults): void {
-  pageSpeedCache.set(domain, { results, timestamp: Date.now() });
+function setCachedResults(domain: string, results: PageSpeedResults, lighthouse: unknown): void {
+  pageSpeedCache.set(domain, { results, lighthouse, timestamp: Date.now() });
 }
 
 // Timeout wrapper for fetch
@@ -84,13 +66,50 @@ function releaseSlot(): void {
   if (next) next();
 }
 
-export async function analyzePageSpeed(url: string, options?: { timeout?: number; skipRateLimit?: boolean; skipCache?: boolean }): Promise<PageSpeedResults> {
+function mapLighthouseToResults(lighthouse: {
+  categories?: {
+    performance?: { score?: number | null };
+    accessibility?: { score?: number | null };
+    'best-practices'?: { score?: number | null };
+    seo?: { score?: number | null };
+  };
+  audits?: Record<string, { numericValue?: number }>;
+}): PageSpeedResults {
+  const performanceScore = lighthouse.categories?.performance?.score;
+  const accessibilityScore = lighthouse.categories?.accessibility?.score;
+  const bestPracticesScore = lighthouse.categories?.['best-practices']?.score;
+  const seoScore = lighthouse.categories?.seo?.score;
+
+  return {
+    performance: performanceScore != null ? Math.round(performanceScore * 100) : 0,
+    accessibility: accessibilityScore != null ? Math.round(accessibilityScore * 100) : 0,
+    bestPractices: bestPracticesScore != null ? Math.round(bestPracticesScore * 100) : 0,
+    seo: seoScore != null ? Math.round(seoScore * 100) : 0,
+    coreWebVitals: {
+      lcp: lighthouse.audits?.['largest-contentful-paint']?.numericValue || 0,
+      fid:
+        lighthouse.audits?.['max-potential-fid']?.numericValue ||
+        lighthouse.audits?.['total-blocking-time']?.numericValue ||
+        0,
+      cls: lighthouse.audits?.['cumulative-layout-shift']?.numericValue || 0,
+    },
+  };
+}
+
+export interface PageSpeedAnalysis {
+  results: PageSpeedResults;
+  lighthouse: unknown;
+}
+
+export async function analyzePageSpeedWithLighthouse(
+  url: string,
+  options?: { timeout?: number; skipRateLimit?: boolean; skipCache?: boolean }
+): Promise<PageSpeedAnalysis> {
   const apiKey = process.env.GOOGLE_PAGESPEED_API_KEY;
   const normalizedUrl = url.startsWith('http') ? url : `https://${url}`;
   const domain = getDomainFromUrl(normalizedUrl);
-  const timeout = options?.timeout ?? 45000; // 45 second default timeout (API can take 30-40s)
+  const timeout = options?.timeout ?? 45000;
 
-  // Check cache first (unless skipCache is true)
   if (!options?.skipCache) {
     const cached = getCachedResults(domain);
     if (cached) {
@@ -98,11 +117,9 @@ export async function analyzePageSpeed(url: string, options?: { timeout?: number
     }
   }
 
-  // Build API URL
   const apiUrl = new URL('https://www.googleapis.com/pagespeedonline/v5/runPagespeed');
   apiUrl.searchParams.set('url', normalizedUrl);
-  apiUrl.searchParams.set('strategy', 'desktop'); // Desktop gives more realistic scores
-  // Use append() for multiple category values (set() would overwrite)
+  apiUrl.searchParams.set('strategy', 'desktop');
   apiUrl.searchParams.append('category', 'performance');
   apiUrl.searchParams.append('category', 'accessibility');
   apiUrl.searchParams.append('category', 'best-practices');
@@ -112,7 +129,6 @@ export async function analyzePageSpeed(url: string, options?: { timeout?: number
     apiUrl.searchParams.set('key', apiKey);
   }
 
-  // Wait for available slot (rate limiting)
   if (!options?.skipRateLimit) {
     await waitForSlot();
   }
@@ -120,7 +136,7 @@ export async function analyzePageSpeed(url: string, options?: { timeout?: number
   try {
     console.log(`[PageSpeed] Starting analysis for ${normalizedUrl}...`);
     const startTime = Date.now();
-    
+
     const response = await fetchWithTimeout(apiUrl.toString(), timeout);
 
     if (!response.ok) {
@@ -140,29 +156,14 @@ export async function analyzePageSpeed(url: string, options?: { timeout?: number
     }
 
     const elapsed = Date.now() - startTime;
-    console.log(`[PageSpeed] Completed ${domain} in ${Math.round(elapsed/1000)}s - Performance: ${Math.round((data.lighthouseResult?.categories?.performance?.score || 0) * 100)}`);
-    
-    const performanceScore = lighthouse.categories?.performance?.score;
-    const accessibilityScore = lighthouse.categories?.accessibility?.score;
-    const bestPracticesScore = lighthouse.categories?.['best-practices']?.score;
-    const seoScore = lighthouse.categories?.seo?.score;
-    
-    const result = {
-      performance: performanceScore != null ? Math.round(performanceScore * 100) : 0,
-      accessibility: accessibilityScore != null ? Math.round(accessibilityScore * 100) : 0,
-      bestPractices: bestPracticesScore != null ? Math.round(bestPracticesScore * 100) : 0,
-      seo: seoScore != null ? Math.round(seoScore * 100) : 0,
-      coreWebVitals: {
-        lcp: lighthouse.audits?.['largest-contentful-paint']?.numericValue || 0,
-        fid: lighthouse.audits?.['max-potential-fid']?.numericValue || lighthouse.audits?.['total-blocking-time']?.numericValue || 0,
-        cls: lighthouse.audits?.['cumulative-layout-shift']?.numericValue || 0,
-      },
-    };
-    
-    // Cache successful results
-    setCachedResults(domain, result);
-    
-    return result;
+    console.log(
+      `[PageSpeed] Completed ${domain} in ${Math.round(elapsed / 1000)}s - Performance: ${Math.round((lighthouse.categories?.performance?.score || 0) * 100)}`
+    );
+
+    const result = mapLighthouseToResults(lighthouse);
+    setCachedResults(domain, result, lighthouse);
+
+    return { results: result, lighthouse };
   } catch (error) {
     if (error instanceof Error && error.name === 'AbortError') {
       console.error(`[PageSpeed] Timeout (${timeout}ms) for ${normalizedUrl}`);
@@ -177,18 +178,9 @@ export async function analyzePageSpeed(url: string, options?: { timeout?: number
   }
 }
 
-function getDefaultResults(): PageSpeedResults {
-  return {
-    performance: 0,
-    accessibility: 0,
-    bestPractices: 0,
-    seo: 0,
-    coreWebVitals: {
-      lcp: 0,
-      fid: 0,
-      cls: 0,
-    },
-  };
+export async function analyzePageSpeed(url: string, options?: { timeout?: number; skipRateLimit?: boolean; skipCache?: boolean }): Promise<PageSpeedResults> {
+  const { results } = await analyzePageSpeedWithLighthouse(url, options);
+  return results;
 }
 
 export function getPerformanceRating(score: number): string {

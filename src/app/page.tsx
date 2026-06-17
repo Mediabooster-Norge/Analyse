@@ -1723,6 +1723,7 @@ export default function LandingPage() {
                   `${PREMIUM_MONTHLY_ANALYSIS_LIMIT} analyser per måned`,
                   '30 AI-genererte artikler per måned',
                   `${PREMIUM_MONTHLY_AI_VISIBILITY_LIMIT} AI-synlighetssjekker per måned`,
+                  'Tilgjengelighetsanalyse (WCAG)',
                   'Forslag til undersider',
                   'Prioritert support',
                 ].map((item, i) => (
@@ -1824,7 +1825,7 @@ export default function LandingPage() {
                 },
                 {
                   q: 'Hva analyserer dere?',
-                  a: 'Vi sjekker SEO (sidetittel, meta-beskrivelse, H1/H2, bilder med alt-tekst, Open Graph), sikkerhet (SSL, HSTS, CSP m.m.), innhold (ordtelling, lesbarhet LIX) og hastighet (PageSpeed, LCP, CLS). Du får konkrete forbedringsforslag og kan sammenligne med konkurrenter og se AI-estimerte nøkkelord. Med Premium får du også AI-synlighetsrapport som viser hvordan AI-modeller kjenner og anbefaler bedriften din.',
+                  a: 'Vi sjekker SEO (sidetittel, meta-beskrivelse, H1/H2, bilder med alt-tekst, Open Graph), sikkerhet (SSL, HSTS, CSP m.m.), innhold (ordtelling, lesbarhet LIX) og hastighet (PageSpeed, LCP, CLS). Du får konkrete forbedringsforslag og kan sammenligne med konkurrenter og se AI-estimerte nøkkelord. Med Premium får du også AI-synlighetsrapport og detaljert WCAG-tilgjengelighetsanalyse.',
                 },
                 {
                   q: 'Hva er grensen for gratis?',

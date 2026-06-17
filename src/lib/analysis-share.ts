@@ -65,6 +65,7 @@ export async function getSharedAnalysisByToken(
   const { data: analysis } = await admin
     .from('analyses')
     .select(
+      // accessibility_results is premium-only and intentionally excluded from shared previews
       'id, website_url, website_name, overall_score, seo_results, content_results, security_results, pagespeed_results, keyword_research, competitor_results, ai_visibility, created_at'
     )
     .eq('id', share.analysis_id)

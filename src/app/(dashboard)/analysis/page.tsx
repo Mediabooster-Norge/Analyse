@@ -84,7 +84,7 @@ export default function AnalysisPage() {
     if (totalPages > 0 && page > totalPages) setPage(1);
   }, [analyses.length, totalPages, page]);
 
-  // Timer og steg 0–4 mens «Kjør på nytt» kjører; steg 5 settes når PageSpeed starter
+  // Timer og steg 0–3 mens «Kjør på nytt» kjører; steg 4–5 under PageSpeed
   useEffect(() => {
     if (!rerunningAnalysis) return;
     setRerunStep(0);
@@ -92,7 +92,7 @@ export default function AnalysisPage() {
     setRerunLoadingPageSpeed(false);
     const timeInterval = setInterval(() => setRerunElapsedTime((t) => t + 1), 1000);
     const stepInterval = setInterval(() => {
-      setRerunStep((s) => Math.min(s + 1, 4));
+      setRerunStep((s) => Math.min(s + 1, 3));
     }, 12000);
     return () => {
       clearInterval(timeInterval);
@@ -207,8 +207,11 @@ export default function AnalysisPage() {
       }
 
       const analysisId = data.analysisId as string | undefined;
-      setRerunStep(5);
+      setRerunStep(4);
       setRerunLoadingPageSpeed(true);
+      const accessibilityStepTimeout = setTimeout(() => {
+        setRerunStep((s) => Math.max(s, 5));
+      }, 12000);
       if (analysisId) {
         try {
           const speedRes = await fetch('/api/analyze/pagespeed', {
@@ -223,6 +226,7 @@ export default function AnalysisPage() {
           console.warn('PageSpeed-måling feilet ved rerun, analysen er lagret uten hastighet');
         }
       }
+      clearTimeout(accessibilityStepTimeout);
       setRerunLoadingPageSpeed(false);
       toast.success('Analysen er ferdig.');
       router.push(`/dashboard?analysisId=${analysisId ?? data.analysisId}`);
@@ -346,13 +350,13 @@ export default function AnalysisPage() {
 
   return (
     <div className="space-y-8">
-      {/* Modal «Kjør på nytt» – samme AnalysisDialog som dashboard, steg 6/6 inkludert */}
+      {/* Modal «Kjør på nytt» – samme AnalysisDialog som dashboard, steg 7/7 inkludert */}
       <AnalysisDialog
         open={!!rerunningAnalysis}
         onOpenChange={() => {}}
         trigger={<span className="hidden" aria-hidden />}
         analyzing={!!rerunningAnalysis}
-        analysisStep={rerunLoadingPageSpeed ? 5 : rerunStep}
+        analysisStep={rerunStep}
         analysisSteps={ANALYSIS_STEPS}
         elapsedTime={rerunElapsedTime}
         url={rerunningAnalysis?.url ?? ''}

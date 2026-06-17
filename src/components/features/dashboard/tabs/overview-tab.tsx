@@ -20,8 +20,17 @@ import type {
   ArticleSuggestion,
   GeneratedArticleResult,
   AIVisibilityData,
+  AccessibilityResults,
 } from '@/types/dashboard';
+import type { AccessibilityImpact } from '@/types';
 import { resolveAiVisibilityData } from '@/lib/utils/visibility-keywords';
+import {
+  buildAccessibilityIssueContext,
+  buildAccessibilityScoreContext,
+  formatAccessibilityImprovementDesc,
+  formatAccessibilityIssueRecommendation,
+  formatAccessibilityIssueValue,
+} from '@/lib/utils/accessibility-display';
 import {
   Search,
   TrendingUp,
@@ -50,6 +59,7 @@ import {
   RefreshCw,
   Eye,
   Boxes,
+  Accessibility,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
@@ -114,8 +124,32 @@ export interface OverviewTabProps {
   aiVisibilityResult?: AIVisibilityData | null;
   currentAnalysisId?: string | null;
   aiVisibilityAnalysisId?: string | null;
+  accessibilityResult?: AccessibilityResults | null;
   /** Readonly shared/preview view — disables AI interactions and upgrade prompts */
   readOnly?: boolean;
+}
+
+function accessibilityImpactToPriority(impact: AccessibilityImpact): 'high' | 'medium' | 'low' {
+  if (impact === 'critical' || impact === 'serious') return 'high';
+  if (impact === 'moderate') return 'medium';
+  return 'low';
+}
+
+function accessibilityImpactToStatus(impact: AccessibilityImpact): 'good' | 'warning' | 'bad' {
+  if (impact === 'critical' || impact === 'serious') return 'bad';
+  return 'warning';
+}
+
+function accessibilityScoreToStatus(score: number): 'good' | 'warning' | 'bad' {
+  if (score >= 90) return 'good';
+  if (score >= 50) return 'warning';
+  return 'bad';
+}
+
+function accessibilityScoreToValue(score: number): string {
+  if (score >= 90) return 'God tilgjengelighet';
+  if (score >= 50) return 'Trenger forbedring';
+  return 'Dårlig tilgjengelighet';
 }
 
 export function OverviewTab({
@@ -142,6 +176,7 @@ export function OverviewTab({
   aiVisibilityResult,
   currentAnalysisId = null,
   aiVisibilityAnalysisId = null,
+  accessibilityResult = null,
   readOnly = false,
 }: OverviewTabProps) {
   const aiVisibility =
@@ -151,6 +186,12 @@ export function OverviewTab({
       currentAnalysisId,
       aiVisibilityAnalysisId
     ) ?? null;
+  const accessibilityData = accessibilityResult ?? result.accessibility ?? null;
+  const accessibilityScore =
+    accessibilityData?.score ??
+    (result.pageSpeedResults?.accessibility && result.pageSpeedResults.accessibility > 0
+      ? result.pageSpeedResults.accessibility
+      : null);
   const copyTitle = (title: string) => {
     navigator.clipboard.writeText(title).then(
       () => toast.success('Tittel kopiert'),
@@ -196,10 +237,9 @@ export function OverviewTab({
     <>
       <SummaryCard score={result.overallScore} />
 
-      {/* Score Grid + Priority Improvements - Side by side */}
-      <div className="grid lg:grid-cols-3 gap-2 max-[400px]:gap-2 min-[401px]:gap-3 sm:gap-4">
-        {/* Score Grid Section - Takes 2 columns */}
-        <div className="lg:col-span-2 rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
+      {/* Poengoversikt + Forbedringer – hver sin full bredde-rad */}
+      <div className="space-y-2 max-[400px]:space-y-2 min-[401px]:space-y-3 sm:space-y-4">
+        <div className="rounded-2xl max-[400px]:rounded-xl border border-neutral-200 bg-white overflow-hidden min-w-0">
           <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-5 border-b border-neutral-100">
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 max-[400px]:gap-1">
               <div className="min-w-0">
@@ -215,7 +255,7 @@ export function OverviewTab({
             </div>
           </div>
           <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-5">
-            <div className={`grid grid-cols-3 ${AI_VISIBILITY_ENABLED ? 'sm:grid-cols-6' : 'sm:grid-cols-5'} gap-1 max-[400px]:gap-1 min-[401px]:gap-2 sm:gap-3 max-[400px]:scale-[0.85] max-[400px]:origin-center`}>
+            <div className={`grid grid-cols-3 sm:grid-cols-4 ${AI_VISIBILITY_ENABLED ? 'lg:grid-cols-7' : 'lg:grid-cols-6'} gap-1 max-[400px]:gap-1 min-[401px]:gap-2 sm:gap-3 max-[400px]:scale-[0.85] max-[400px]:origin-center`}>
               <div className="text-center min-w-0">
                 <ScoreRing score={result.overallScore} label="Totalt" size="md" showStatus title={`Samlet score: ${result.overallScore} – vektet gjennomsnitt av alle kategorier`} />
                 <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Samlet</p>
@@ -271,6 +311,63 @@ export function OverviewTab({
                   </>
                 )}
               </div>
+              <div className="text-center min-w-0">
+                {!isPremium && !readOnly ? (
+                  <>
+                    <div className="w-12 h-12 max-[400px]:w-10 max-[400px]:h-10 min-[401px]:w-14 min-[401px]:h-14 sm:w-16 sm:h-16 mx-auto rounded-full bg-neutral-100 border-2 border-neutral-200 flex items-center justify-center">
+                      <Accessibility className="w-5 h-5 max-[400px]:w-4 max-[400px]:h-4 min-[401px]:w-5 sm:w-6 sm:h-6 text-neutral-400" />
+                    </div>
+                    <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Tilgjengelighet</p>
+                    <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-neutral-100 text-[10px] font-medium text-neutral-500">
+                      <Lock className="h-2.5 w-2.5" />
+                      Premium
+                    </span>
+                  </>
+                ) : loadingPageSpeed ? (
+                  <>
+                    <div className="w-12 h-12 max-[400px]:w-10 max-[400px]:h-10 min-[401px]:w-14 min-[401px]:h-14 sm:w-16 sm:h-16 mx-auto rounded-full bg-neutral-100 border-2 border-neutral-200 flex items-center justify-center">
+                      <Loader2 className="w-5 h-5 max-[400px]:w-4 max-[400px]:h-4 min-[401px]:w-5 sm:w-6 sm:h-6 text-neutral-400 animate-spin" />
+                    </div>
+                    <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Tilgjengelighet</p>
+                    <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-[#f5f3ff] text-[#6d28d9] font-medium">
+                      Måler…
+                    </span>
+                  </>
+                ) : accessibilityScore != null && accessibilityScore > 0 ? (
+                  <>
+                    <ScoreRing
+                      score={accessibilityScore}
+                      label="WCAG"
+                      size="md"
+                      showStatus
+                      title={`Tilgjengelighet: ${accessibilityScore}/100 – Lighthouse WCAG-score`}
+                    />
+                    <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Tilgjengelighet</p>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-12 h-12 max-[400px]:w-10 max-[400px]:h-10 min-[401px]:w-14 min-[401px]:h-14 sm:w-16 sm:h-16 mx-auto rounded-full bg-neutral-100 border-2 border-neutral-200 flex items-center justify-center">
+                      <Accessibility className="w-5 h-5 max-[400px]:w-4 max-[400px]:h-4 min-[401px]:w-5 sm:w-6 sm:h-6 text-neutral-400" />
+                    </div>
+                    <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Tilgjengelighet</p>
+                    {retryPageSpeed ? (
+                      <button
+                        type="button"
+                        onClick={retryPageSpeed}
+                        className="inline-flex items-center gap-1 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium hover:bg-amber-100 transition-colors cursor-pointer"
+                        title="Kjør PageSpeed på nytt for å måle tilgjengelighet"
+                      >
+                        <RefreshCw className="w-2.5 h-2.5" />
+                        Mål på nytt
+                      </button>
+                    ) : (
+                      <span className="inline-flex items-center gap-0.5 mt-0.5 max-[400px]:text-[9px] min-[401px]:text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 font-medium">
+                        Ikke målt
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
               {AI_VISIBILITY_ENABLED && (
                 <div className="text-center min-w-0">
                   {aiVisibility != null ? (
@@ -313,7 +410,7 @@ export function OverviewTab({
           </div>
         </div>
 
-        {/* Priority Improvements - Takes 1 column */}
+        {/* Forbedringer – egen rad under poengoversikt */}
         {(() => {
           const issues: { label: string; desc: string; priority: 'high' | 'medium' | 'low'; category: string }[] = [];
           if (result.seoResults.headings.h1.count !== 1) issues.push({ label: 'H1-overskrift', desc: result.seoResults.headings.h1.count === 0 ? 'Mangler hovedoverskrift' : 'Flere hovedoverskrifter', priority: 'high', category: 'seo' });
@@ -364,6 +461,45 @@ export function OverviewTab({
               }
             }
           }
+          if (isPremium && accessibilityData) {
+            if (accessibilityData.issues.length > 0) {
+              for (const issue of accessibilityData.issues.slice(0, 5)) {
+                issues.push({
+                  label: 'Tilgjengelighet',
+                  desc: formatAccessibilityImprovementDesc(issue),
+                  priority: accessibilityImpactToPriority(issue.impact),
+                  category: 'accessibility',
+                });
+              }
+            } else if (accessibilityData.score < 100) {
+              issues.push({
+                label: 'Tilgjengelighet',
+                desc:
+                  accessibilityData.score < 50
+                    ? `Kritisk lav WCAG-score (${accessibilityData.score}/100)`
+                    : accessibilityData.score < 90
+                      ? `Kan forbedres (${accessibilityData.score}/100)`
+                      : `God score (${accessibilityData.score}/100) – kan forbedres mot 100`,
+                priority:
+                  accessibilityData.score < 50
+                    ? 'high'
+                    : accessibilityData.score < 90
+                      ? 'medium'
+                      : 'low',
+                category: 'accessibility',
+              });
+            }
+          } else if (isPremium && accessibilityScore != null && accessibilityScore < 100) {
+            issues.push({
+              label: 'Tilgjengelighet',
+              desc:
+                accessibilityScore < 90
+                  ? `Score ${accessibilityScore}/100 – detaljer etter PageSpeed-måling`
+                  : `God score (${accessibilityScore}/100) – kan forbedres mot 100`,
+              priority: accessibilityScore < 50 ? 'high' : accessibilityScore < 90 ? 'medium' : 'low',
+              category: 'accessibility',
+            });
+          }
           const issueToMetricId: Record<string, string> = {
             'Sidetittel': 'sidetittel',
             'Meta-beskrivelse': 'meta-beskrivelse',
@@ -381,6 +517,7 @@ export function OverviewTab({
             'Ytelse': 'ytelse',
             'LCP': 'lcp',
             'CLS': 'cls',
+            'Tilgjengelighet': 'tilgjengelighet',
           };
 
           return issues.length > 0 ? (
@@ -460,8 +597,8 @@ export function OverviewTab({
         <div className="p-2 max-[400px]:p-2 min-[401px]:p-3 sm:p-6 space-y-7 max-[400px]:space-y-5 sm:space-y-8">
           {/* Social preview – øverst */}
           <div>
-            <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-1.5 flex items-center gap-2">
-              <Share2 className="w-3.5 h-3.5" />
+            <h4 className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-1.5 flex items-center gap-2">
+              <Share2 className="w-4 h-4" />
               Slik ser lenken ut når den deles
             </h4>
             <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mb-3">Forhåndsvisning basert på sidetittel, meta og Open Graph</p>
@@ -501,8 +638,8 @@ export function OverviewTab({
 
           {/* SEO */}
           <div>
-            <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-              <Search className="w-3.5 h-3.5" />
+            <h4 className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Search className="w-4 h-4" />
               SEO
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
@@ -665,8 +802,8 @@ export function OverviewTab({
 
           {/* Content */}
           <div>
-            <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-              <FileText className="w-3.5 h-3.5" />
+            <h4 className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <FileText className="w-4 h-4" />
               Innhold
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
@@ -742,10 +879,115 @@ export function OverviewTab({
             </div>
           </div>
 
+          {/* Tilgjengelighet (WCAG) – Premium */}
+          <div data-metric="tilgjengelighet">
+            <h4 className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Accessibility className="w-4 h-4" />
+              Tilgjengelighet (WCAG)
+            </h4>
+            {!isPremium && !readOnly ? (
+              <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
+                  <Lock className="h-4 w-4 text-amber-700" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-amber-800">Tilgjengelighetsanalyse er en Premium-funksjon</p>
+                  <p className="text-xs text-neutral-600 mt-1">
+                    Med Premium får du WCAG-score i poengoversikten og oppsummerte forbedringsforslag.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
+                  <MetricCard
+                    readOnly={readOnly}
+                    icon={loadingPageSpeed ? Loader2 : Accessibility}
+                    title="Tilgjengelighet (WCAG)"
+                    description={
+                      loadingPageSpeed
+                        ? 'Måler…'
+                        : accessibilityScore != null
+                          ? `${accessibilityScore}/100`
+                          : 'Ikke målt'
+                    }
+                    value={
+                      loadingPageSpeed
+                        ? 'Måler tilgjengelighet…'
+                        : accessibilityScore != null
+                          ? accessibilityScoreToValue(accessibilityScore)
+                          : 'Måles ved neste analyse'
+                    }
+                    recommendation={
+                      loadingPageSpeed
+                        ? 'Vent…'
+                        : accessibilityData
+                          ? accessibilityData.issues.length > 0
+                            ? `${accessibilityData.failedCount} feilede sjekker`
+                            : accessibilityScore != null && accessibilityScore < 100
+                              ? 'Kan forbedres mot 100'
+                              : 'Utmerket'
+                          : accessibilityScore != null
+                            ? 'Oversikt fra PageSpeed'
+                            : 'Ikke tilgjengelig'
+                    }
+                    status={
+                      loadingPageSpeed
+                        ? 'warning'
+                        : accessibilityScore != null
+                          ? accessibilityScoreToStatus(accessibilityScore)
+                          : 'warning'
+                    }
+                    onClick={
+                      loadingPageSpeed || accessibilityScore == null
+                        ? undefined
+                        : () =>
+                            fetchAISuggestion(
+                              'Tilgjengelighet (WCAG)',
+                              `${accessibilityScore}/100`,
+                              accessibilityScoreToStatus(accessibilityScore),
+                              accessibilityData
+                                ? buildAccessibilityScoreContext(accessibilityData, url)
+                                : `Lighthouse tilgjengelighetsscore: ${accessibilityScore}/100. Ingen konkrete elementfeil i lagret rapport. URL: ${url}`
+                            )
+                    }
+                  />
+                  {!loadingPageSpeed &&
+                    accessibilityData?.issues.slice(0, 3).map((issue) => {
+                      const status = accessibilityImpactToStatus(issue.impact);
+                      const issueValue = formatAccessibilityIssueValue(issue);
+                      return (
+                        <div key={issue.id} data-metric={`a11y-${issue.id}`}>
+                          <MetricCard
+                            readOnly={readOnly}
+                            icon={Accessibility}
+                            title={issue.title}
+                            description={
+                              issue.displayValue ??
+                              `${issue.affectedElements?.length ?? 0} element${(issue.affectedElements?.length ?? 0) === 1 ? '' : 'er'}`
+                            }
+                            value={issueValue}
+                            recommendation={formatAccessibilityIssueRecommendation(issue)}
+                            status={status}
+                            onClick={() =>
+                              fetchAISuggestion(
+                                issue.title,
+                                issueValue,
+                                status,
+                                buildAccessibilityIssueContext(issue, url)
+                              )
+                            }
+                          />
+                        </div>
+                      );
+                    })}
+                </div>
+            )}
+          </div>
+
           {/* Security */}
           <div data-metric="sikkerhet">
-            <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-              <Shield className="w-3.5 h-3.5" />
+            <h4 className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+              <Shield className="w-4 h-4" />
               Sikkerhet
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3">
@@ -818,8 +1060,8 @@ export function OverviewTab({
 
           {/* Performance / Core Web Vitals */}
           <div data-metric="ytelse">
-            <h4 className="text-xs font-semibold text-neutral-500 uppercase tracking-wide mb-2 flex items-center gap-2">
-              <Zap className="w-3.5 h-3.5" />
+            <h4 className="text-sm font-semibold text-neutral-500 uppercase tracking-wide mb-2 flex items-center gap-2">
+              <Zap className="w-4 h-4" />
               Ytelse (Core Web Vitals)
             </h4>
             <div className="flex items-center justify-between mb-3">
@@ -870,7 +1112,7 @@ export function OverviewTab({
                   result.pageSpeedResults ? `${result.pageSpeedResults.performance}/100` : 'Ikke målt',
                   result.pageSpeedResults && result.pageSpeedResults.performance >= 90 ? 'good' : 'warning',
                   result.pageSpeedResults 
-                    ? `Performance score på ${result.pageSpeedResults.performance}. Accessibility: ${result.pageSpeedResults.accessibility}, Best Practices: ${result.pageSpeedResults.bestPractices}.`
+                    ? `Performance score på ${result.pageSpeedResults.performance}. Best Practices: ${result.pageSpeedResults.bestPractices}.`
                     : 'PageSpeed-analyse ikke tilgjengelig.'
                 )}
               />

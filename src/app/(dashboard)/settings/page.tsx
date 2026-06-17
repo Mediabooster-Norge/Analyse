@@ -76,6 +76,7 @@ export default function SettingsPage() {
     `Opptil ${planLimits.keywords} nøkkelord per analyse`,
     `${planLimits.articleGenerationsPerMonth} AI-artikler per måned`,
     `${displayAiVisibilityLimit} AI-synlighetssjekker per måned`,
+    'Tilgjengelighetsanalyse (WCAG)',
     'Foreslåtte undersider',
     'Prioritert support',
   ];

@@ -109,6 +109,7 @@ function DashboardPageContent() {
     setCompetitorSort,
     aiVisibilityResult,
     aiVisibilityAnalysisId,
+    accessibilityResult,
     currentAnalysisId,
     checkingAiVisibility,
     aiVisibilityElapsedTime,
@@ -596,6 +597,7 @@ function DashboardPageContent() {
               aiVisibilityResult={aiVisibilityResult}
               currentAnalysisId={currentAnalysisId}
               aiVisibilityAnalysisId={aiVisibilityAnalysisId}
+              accessibilityResult={accessibilityResult}
             />
           )}
 

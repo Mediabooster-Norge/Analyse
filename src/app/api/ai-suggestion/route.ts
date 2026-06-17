@@ -57,6 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     const statusText = status === 'good' ? 'bra' : status === 'warning' ? 'ok, men kan forbedres' : 'trenger forbedring';
+    const isAccessibilityAudit = Boolean(issue?.includes('Lighthouse-audit'));
     
     // Different prompts based on status
     const isOptimal = status === 'good' && !issue;
@@ -94,6 +95,30 @@ Svar i JSON-format med følgende struktur:
   ],
   "quickWin": "Ett konkret tiltak for å løfte fra bra til utmerket"
 }`
+      : isAccessibilityAudit
+      ? `Du er en ekspert på WCAG og nett-tilgjengelighet for norske bedrifter.
+Du får et Lighthouse-audit med KONKRETE elementer som faktisk feilet på siden.
+
+KRITISKE REGLER:
+- Fiks KUN elementene som er listet under «Påvirkede elementer». Ikke finn på andre elementer, sider eller problemer.
+- Bruk selector/HTML-snippet fra rapporten når du forklarer hva som skal endres.
+- «example» skal være en konkret kodeendring for det listede elementet – ikke et generisk eksempel fra en annen side.
+- Hvis ingen enkelt-elementer er listet, gi generell fiks kun for den namede sjekken – fortsatt uten å finne på spesifikke elementer.
+
+Svar i JSON-format med følgende struktur:
+{
+  "problem": "Kort beskrivelse av det faktiske problemet på de listede elementene",
+  "summary": "Hvorfor dette påvirker tilgjengelighet (1-2 setninger)",
+  "suggestions": [
+    {
+      "title": "Kort tittel",
+      "description": "Presis handling for listet element",
+      "priority": "høy" | "medium" | "lav",
+      "example": "Konkret HTML/ARIA/CSS-endring for listet snippet, eller null"
+    }
+  ],
+  "quickWin": "Raskeste reelle fiks for første listede element"
+}`
       : `Du er en ekspert på SEO og nettside-optimalisering for norske bedrifter.
 Gi konkrete, handlingsrettede forslag på norsk. Vær spesifikk og praktisk.
 
@@ -127,6 +152,17 @@ VIKTIG:
 - Men gi 2-3 KONKRETE tips for å gå fra "bra" til "utmerket"
 - Inkluder avanserte tips som skiller profesjonelle sider fra resten
 - Gi minst ett konkret eksempel`
+      : isAccessibilityAudit
+      ? `Gi tilgjengelighetsforslag basert på dette Lighthouse-funnet:
+
+Element/sjekk: ${element}
+Nåværende status: ${currentValue}
+Vurdering: ${statusText}
+${context?.url ? `Nettside: ${context.url}` : ''}
+
+${issue}
+
+VIKTIG: Alle forslag må gjelde kun elementene i audit-rapporten over. Ikke lag hypotetiske eksempler.`
       : `Gi forslag for å forbedre følgende element på en nettside:
 
 Element: ${element}

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { analyzePageSpeed } from '@/lib/services/pagespeed';
+import { analyzePageSpeedWithLighthouse } from '@/lib/services/pagespeed';
+import { parseAccessibilityAudits } from '@/lib/services/accessibility-audits';
+import { getPremiumStatusServer } from '@/lib/premium-server';
 import { calculateOverallScore } from '@/lib/analyzers';
+import type { AccessibilityResults, PageSpeedResults } from '@/types';
 
 export const maxDuration = 120; // PageSpeed API kan være treg – 2 min med Fluid Compute
 
@@ -16,6 +19,8 @@ export async function POST(request: NextRequest) {
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+
+    const premiumStatus = await getPremiumStatusServer(user);
 
     const body = (await request.json()) as PageSpeedRequest;
     const { analysisId } = body;
@@ -54,35 +59,53 @@ export async function POST(request: NextRequest) {
     if (domain) {
       const { data: cached } = await supabase
         .from('analyses')
-        .select('pagespeed_results')
+        .select('pagespeed_results, accessibility_results')
         .eq('user_id', user.id)
         .not('pagespeed_results', 'is', null)
         .gte('created_at', sevenDaysAgo)
         .ilike('website_url', `%${domain}%`)
-        .neq('id', analysisId) // don't re-use the current (empty) row
+        .neq('id', analysisId)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
 
       if (cached?.pagespeed_results) {
         console.log(`[PageSpeed] Using DB-cached results for ${domain}`);
-        const cachedResults = cached.pagespeed_results as import('@/types').PageSpeedResults;
+        const cachedResults = cached.pagespeed_results as PageSpeedResults;
+        const cachedAccessibility = premiumStatus.isPremium
+          ? (cached.accessibility_results as AccessibilityResults | null)
+          : null;
         const overallScore = calculateOverallScore(seoScore, contentScore, securityScore, cachedResults.performance);
+
+        const updatePayload: Record<string, unknown> = {
+          pagespeed_results: cachedResults,
+          overall_score: overallScore,
+        };
+        if (premiumStatus.isPremium && cachedAccessibility) {
+          updatePayload.accessibility_results = cachedAccessibility;
+        }
+
         await supabase
           .from('analyses')
-          .update({ pagespeed_results: cachedResults, overall_score: overallScore })
+          .update(updatePayload)
           .eq('id', analysisId)
           .eq('user_id', user.id);
-        return NextResponse.json({ success: true, pageSpeedResults: cachedResults, overallScore });
+
+        return NextResponse.json({
+          success: true,
+          pageSpeedResults: cachedResults,
+          accessibilityResults: cachedAccessibility ?? undefined,
+          overallScore,
+        });
       }
     }
 
-    const pageSpeedResults = await analyzePageSpeed(url, { timeout: PAGE_SPEED_MAX_MS }).catch((err) => {
+    const pageSpeedAnalysis = await analyzePageSpeedWithLighthouse(url, { timeout: PAGE_SPEED_MAX_MS }).catch((err) => {
       console.error('PageSpeed analysis failed or timed out:', err);
       return null;
     });
 
-    if (!pageSpeedResults) {
+    if (!pageSpeedAnalysis) {
       return NextResponse.json({
         success: true,
         pageSpeedResults: null,
@@ -90,15 +113,34 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    const { results: pageSpeedResults, lighthouse } = pageSpeedAnalysis;
     const overallScore = calculateOverallScore(seoScore, contentScore, securityScore, pageSpeedResults.performance);
+
+    let accessibilityResults: AccessibilityResults | undefined;
+    const updatePayload: Record<string, unknown> = {
+      pagespeed_results: pageSpeedResults,
+      overall_score: overallScore,
+    };
+
+    if (premiumStatus.isPremium && lighthouse) {
+      accessibilityResults = parseAccessibilityAudits(
+        lighthouse as Parameters<typeof parseAccessibilityAudits>[0]
+      );
+      updatePayload.accessibility_results = accessibilityResults;
+    }
 
     await supabase
       .from('analyses')
-      .update({ pagespeed_results: pageSpeedResults, overall_score: overallScore })
+      .update(updatePayload)
       .eq('id', analysisId)
       .eq('user_id', user.id);
 
-    return NextResponse.json({ success: true, pageSpeedResults, overallScore });
+    return NextResponse.json({
+      success: true,
+      pageSpeedResults,
+      accessibilityResults,
+      overallScore,
+    });
   } catch (error) {
     console.error('PageSpeed API error:', error);
     return NextResponse.json(

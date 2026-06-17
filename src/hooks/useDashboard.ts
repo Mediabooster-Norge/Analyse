@@ -20,6 +20,7 @@ import type {
   CompetitorSort,
   CompetitorAnalysis,
   AIVisibilityData,
+  AccessibilityResults,
   ArticleSuggestion,
   GeneratedArticleResult,
   SocialPostSuggestion,
@@ -94,6 +95,7 @@ interface DashboardState {
   checkingAiVisibility: boolean;
   /** Sekunder siden «Kjør sjekk» startet (for modal-timer) */
   aiVisibilityElapsedTime: number;
+  accessibilityResult: AccessibilityResults | null;
   suggestingKeywords: boolean;
   
   // AI Suggestions
@@ -243,6 +245,7 @@ function mapAnalysisRowToResult(
     aiSummary: analysis.ai_summary || undefined,
     keywordResearch: analysis.keyword_research || undefined,
     aiVisibility: analysis.ai_visibility || undefined,
+    accessibility: analysis.accessibility_results || undefined,
   };
 }
 
@@ -296,6 +299,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     aiVisibilityKeyword: null,
     checkingAiVisibility: false,
     aiVisibilityElapsedTime: 0,
+    accessibilityResult: null,
     suggestingKeywords: false,
     suggestionSheetOpen: false,
     selectedElement: null,
@@ -366,6 +370,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             aiVisibilityKeyword:
               data.aiVisibilityKeyword ??
               getDefaultAiVisibilityKeyword(data.result ?? null),
+            accessibilityResult: data.accessibilityResult ?? data.result?.accessibility ?? null,
             loading: data.result ? false : state.loading,
           });
         }
@@ -521,6 +526,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             aiVisibilityResult: mappedResult.aiVisibility ?? null,
             aiVisibilityAnalysisId: mappedResult.aiVisibility ? analysis.id : null,
             aiVisibilityKeyword: getDefaultAiVisibilityKeyword(mappedResult),
+            accessibilityResult: mappedResult.accessibility ?? null,
             // When opening fresh "new analysis" dialog, keep input fields empty.
             // Otherwise pre-fill from the loaded analysis.
             ...(showNewDialog
@@ -570,6 +576,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           aiVisibilityResult: state.aiVisibilityResult,
           aiVisibilityAnalysisId: state.aiVisibilityAnalysisId,
           aiVisibilityKeyword: state.aiVisibilityKeyword,
+          accessibilityResult: state.accessibilityResult,
           timestamp: Date.now(),
         };
         sessionStorage.setItem(cacheKey, JSON.stringify(cacheData));
@@ -583,6 +590,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       state.socialPostSuggestions, state.socialPostSuggestionsSavedAt, state.selectedSocialPlatform,
       state.currentAnalysisId, state.companyId,
       state.aiVisibilityResult, state.aiVisibilityAnalysisId, state.aiVisibilityKeyword,
+      state.accessibilityResult,
       state.loading, cacheKey]);
 
   // Timer for analysis
@@ -827,14 +835,14 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       aiVisibilityKeyword: null,
     });
 
-    const stepTimings = [5000, 8000, 12000, 8000, 12000];
+    const stepTimings = [5000, 8000, 12000, 8000];
     let currentStep = 0;
     
     const advanceStep = () => {
-      if (currentStep < 4) {
+      if (currentStep < 3) {
         currentStep++;
         updateState({ analysisStep: currentStep });
-        if (currentStep < 4) {
+        if (currentStep < 3) {
           setTimeout(advanceStep, stepTimings[currentStep]);
         }
       }
@@ -918,7 +926,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         loadingPageSpeed: willFetchPageSpeed,
         loadingCompetitors: willFetchCompetitors,
         competitorProgress: willFetchCompetitors ? { current: 0, total: competitorUrlsToFetch.length } : null,
-        analysisStep: willFetchPageSpeed || willFetchCompetitors ? 5 : state.analysisStep,
+        analysisStep: willFetchPageSpeed || willFetchCompetitors ? 4 : state.analysisStep,
         activeTab: 'overview',
         aiVisibilityResult: mappedResult?.aiVisibility ?? null,
         aiVisibilityAnalysisId: mappedResult?.aiVisibility && analysisId ? analysisId : null,
@@ -947,20 +955,31 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
 
       if (analysisId) {
         if (willFetchPageSpeed) {
+          const accessibilityStepTimeout = setTimeout(() => {
+            setState((prev) =>
+              prev.loadingPageSpeed && prev.analysisStep < 5
+                ? { ...prev, analysisStep: 5 }
+                : prev
+            );
+          }, 12000);
+
           fetch('/api/analyze/pagespeed', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ analysisId }),
           })
             .then((res) => (res.ok ? res.json() : Promise.reject(new Error('PageSpeed failed'))))
-            .then(({ pageSpeedResults, overallScore }) => {
+            .then(({ pageSpeedResults, accessibilityResults, overallScore }) => {
               setState((prev) => ({
                 ...prev,
                 loadingPageSpeed: false,
+                accessibilityResult: accessibilityResults ?? prev.accessibilityResult,
+                analysisStep: prev.loadingCompetitors ? 6 : prev.analysisStep,
                 result: prev.result
                   ? {
                       ...prev.result,
                       pageSpeedResults: pageSpeedResults ?? undefined,
+                      accessibility: accessibilityResults ?? prev.result.accessibility,
                       overallScore: overallScore ?? prev.result.overallScore,
                     }
                   : null,
@@ -972,14 +991,22 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
               });
             })
             .catch(() => {
-              setState((prev) => ({ ...prev, loadingPageSpeed: false }));
+              setState((prev) => ({
+                ...prev,
+                loadingPageSpeed: false,
+                analysisStep: prev.loadingCompetitors ? 6 : prev.analysisStep,
+              }));
               tryCloseDialog(() => {
                 if (!willFetchCompetitors) toastAfterDialogClosed('Analyse fullført (hastighet kunne ikke måles)');
               });
-            });
+            })
+            .finally(() => clearTimeout(accessibilityStepTimeout));
         }
 
         if (willFetchCompetitors) {
+          if (!willFetchPageSpeed) {
+            updateState({ analysisStep: 6 });
+          }
           (async () => {
             let competitors: CompetitorAnalysis[] = data.competitors ?? [];
             const failedCompetitorUrls: string[] = [];
@@ -1010,6 +1037,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
               ...prev,
               loadingCompetitors: false,
               competitorProgress: null,
+              analysisStep: 6,
             }));
             const msg = competitors.length > 0
               ? `Analyse fullført med hastighet og ${competitors.length} konkurrent${competitors.length > 1 ? 'er' : ''}!`
@@ -1694,15 +1722,17 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         throw new Error(errorData?.error || 'Hastighetstest feilet');
       }
 
-      const { pageSpeedResults, overallScore } = await response.json();
+      const { pageSpeedResults, accessibilityResults, overallScore } = await response.json();
 
       setState((prev) => ({
         ...prev,
         loadingPageSpeed: false,
+        accessibilityResult: accessibilityResults ?? prev.accessibilityResult,
         result: prev.result
           ? {
               ...prev.result,
               pageSpeedResults: pageSpeedResults ?? prev.result.pageSpeedResults,
+              accessibility: accessibilityResults ?? prev.result.accessibility,
               overallScore: overallScore ?? prev.result.overallScore,
             }
           : null,

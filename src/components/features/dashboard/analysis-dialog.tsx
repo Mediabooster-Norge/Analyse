@@ -101,15 +101,16 @@ export function AnalysisDialog({
   const showPageSpeedStep = analyzing && loadingPageSpeed && !loadingCompetitors;
   const showCompetitorsStep = analyzing && loadingCompetitors;
   const isMainAnalyzePhase = analyzing && !loadingPageSpeed && !loadingCompetitors;
-  /** Steg 6 (index 5) vises i samme modal under PageSpeed/konkurrenter – ikke egen «1/1»-visning. */
-  const effectiveStep = showPageSpeedStep || showCompetitorsStep ? analysisSteps.length - 1 : analysisStep;
+  const effectiveStep = showCompetitorsStep ? analysisSteps.length - 1 : analysisStep;
 
   const showStepLabel = showCompetitorsStep && competitorProgress
     ? `Analyserer konkurrent ${competitorProgress.current}`
     : showCompetitorsStep
       ? 'Henter konkurrenter'
       : showPageSpeedStep
-        ? 'Måler hastighet (PageSpeed)'
+        ? analysisStep >= 5
+          ? 'Sjekker tilgjengelighet (WCAG)'
+          : 'Måler hastighet (PageSpeed)'
         : analysisSteps[analysisStep]?.label;
   const showStepDesc = showCompetitorsStep && competitorProgress
     ? (competitorProgress.current < competitorProgress.total
@@ -118,7 +119,9 @@ export function AnalysisDialog({
     : showCompetitorsStep
       ? 'Laster inn konkurrentanalyser'
       : showPageSpeedStep
-        ? 'Henter ytelsesdata fra Google PageSpeed Insights'
+        ? analysisStep >= 5
+          ? 'Parser Lighthouse WCAG-funn og tilgjengelighetsscore'
+          : 'Henter ytelsesdata fra Google PageSpeed Insights'
         : isMainAnalyzePhase
           ? 'Vennligst vent'
           : analysisSteps[analysisStep]?.description;
@@ -184,15 +187,23 @@ export function AnalysisDialog({
                 </div>
               </div>
 
-              {/* Steps list – alle 6 steg inkl. hastighet/konkurrenter i samme modal */}
+              {/* Steps list – alle 7 steg inkl. hastighet, WCAG og konkurrenter */}
               <div className="rounded-xl border border-neutral-200 overflow-hidden bg-white">
                 <div className="divide-y divide-neutral-100">
                   {analysisSteps.map((step, index) => {
                     const StepIcon = step.icon;
                     const isComplete = index < effectiveStep;
                     const isCurrent = index === effectiveStep;
-                    const isStep6Current = index === analysisSteps.length - 1 && isCurrent;
-                    const label = isStep6Current && (showPageSpeedStep || showCompetitorsStep) ? showStepLabel : step.label;
+                    const isAsyncStepCurrent =
+                      isCurrent && (showPageSpeedStep || showCompetitorsStep);
+                    const label =
+                      isCurrent && showCompetitorsStep && index === analysisSteps.length - 1
+                        ? showStepLabel
+                        : isCurrent && showPageSpeedStep && index === 4
+                          ? 'Måler hastighet (PageSpeed)'
+                        : isCurrent && showPageSpeedStep && index === 5
+                          ? 'Sjekker tilgjengelighet (WCAG)'
+                          : step.label;
                     return (
                       <div
                         key={index}
@@ -213,7 +224,7 @@ export function AnalysisDialog({
                             <CheckCircle2 className="h-3.5 w-3.5 text-neutral-900" />
                           ) : isCurrent ? (
                             <>
-                              {isStep6Current && (showPageSpeedStep || showCompetitorsStep) ? (
+                              {isAsyncStepCurrent ? (
                                 <Loader2 className="h-3.5 w-3.5 text-neutral-700 animate-spin" />
                               ) : (
                                 <StepIcon className="h-3.5 w-3.5 text-neutral-700" />
