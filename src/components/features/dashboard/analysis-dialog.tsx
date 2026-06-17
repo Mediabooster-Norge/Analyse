@@ -18,11 +18,11 @@ import {
   Zap,
 } from 'lucide-react';
 import { RocketIcon } from './rocket-icon';
-import { ANALYSIS_STEPS } from './analysis-steps';
+import { ANALYSIS_STEPS, ANALYSIS_STEP_INDEX } from './analysis-steps';
 import type { AnalysisStepConfig } from './analysis-steps';
 
-export type { AnalysisStepConfig } from './analysis-steps';
-export { ANALYSIS_STEPS } from './analysis-steps';
+export type { AnalysisStepConfig, AnalysisStepId } from './analysis-steps';
+export { ANALYSIS_STEPS, ANALYSIS_STEP_INDEX, ANALYSIS_MAIN_PHASE_LAST_INDEX, getAnalysisStepIndex } from './analysis-steps';
 
 export interface AnalysisDialogProps {
   open: boolean;
@@ -101,14 +101,14 @@ export function AnalysisDialog({
   const showPageSpeedStep = analyzing && loadingPageSpeed && !loadingCompetitors;
   const showCompetitorsStep = analyzing && loadingCompetitors;
   const isMainAnalyzePhase = analyzing && !loadingPageSpeed && !loadingCompetitors;
-  const effectiveStep = showCompetitorsStep ? analysisSteps.length - 1 : analysisStep;
+  const effectiveStep = showCompetitorsStep ? ANALYSIS_STEP_INDEX.competitors : analysisStep;
 
   const showStepLabel = showCompetitorsStep && competitorProgress
     ? `Analyserer konkurrent ${competitorProgress.current}`
     : showCompetitorsStep
       ? 'Henter konkurrenter'
       : showPageSpeedStep
-        ? analysisStep >= 5
+        ? analysisStep >= ANALYSIS_STEP_INDEX.accessibility
           ? 'Sjekker tilgjengelighet (WCAG)'
           : 'Måler hastighet (PageSpeed)'
         : analysisSteps[analysisStep]?.label;
@@ -119,7 +119,7 @@ export function AnalysisDialog({
     : showCompetitorsStep
       ? 'Laster inn konkurrentanalyser'
       : showPageSpeedStep
-        ? analysisStep >= 5
+        ? analysisStep >= ANALYSIS_STEP_INDEX.accessibility
           ? 'Parser Lighthouse WCAG-funn og tilgjengelighetsscore'
           : 'Henter ytelsesdata fra Google PageSpeed Insights'
         : isMainAnalyzePhase
@@ -197,16 +197,16 @@ export function AnalysisDialog({
                     const isAsyncStepCurrent =
                       isCurrent && (showPageSpeedStep || showCompetitorsStep);
                     const label =
-                      isCurrent && showCompetitorsStep && index === analysisSteps.length - 1
+                      isCurrent && showCompetitorsStep && step.id === 'competitors'
                         ? showStepLabel
-                        : isCurrent && showPageSpeedStep && index === 4
+                        : isCurrent && showPageSpeedStep && step.id === 'pagespeed'
                           ? 'Måler hastighet (PageSpeed)'
-                        : isCurrent && showPageSpeedStep && index === 5
+                        : isCurrent && showPageSpeedStep && step.id === 'accessibility'
                           ? 'Sjekker tilgjengelighet (WCAG)'
                           : step.label;
                     return (
                       <div
-                        key={index}
+                        key={step.id}
                         className={`flex items-center gap-3 px-4 py-2.5 transition-all duration-300 ${
                           isCurrent ? 'bg-neutral-50 border-l-2 border-l-neutral-400 animate-pulse' : ''
                         }`}

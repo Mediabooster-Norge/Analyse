@@ -31,7 +31,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { getScoreBadge } from '@/lib/utils/score-utils';
 import { AnalysisDialog, AnalysisShareDialog } from '@/components/features/dashboard';
 import type { AnalysisShareTarget } from '@/components/features/dashboard';
-import { ANALYSIS_STEPS } from '@/components/features/dashboard/analysis-steps';
+import { ANALYSIS_STEPS, ANALYSIS_MAIN_PHASE_LAST_INDEX, ANALYSIS_STEP_INDEX } from '@/components/features/dashboard/analysis-steps';
 
 interface AnalysisRaw {
   id: string;
@@ -84,7 +84,7 @@ export default function AnalysisPage() {
     if (totalPages > 0 && page > totalPages) setPage(1);
   }, [analyses.length, totalPages, page]);
 
-  // Timer og steg 0–3 mens «Kjør på nytt» kjører; steg 4–5 under PageSpeed
+  // Timer og steg 0–report mens «Kjør på nytt» kjører; pagespeed–accessibility under PageSpeed
   useEffect(() => {
     if (!rerunningAnalysis) return;
     setRerunStep(0);
@@ -92,7 +92,7 @@ export default function AnalysisPage() {
     setRerunLoadingPageSpeed(false);
     const timeInterval = setInterval(() => setRerunElapsedTime((t) => t + 1), 1000);
     const stepInterval = setInterval(() => {
-      setRerunStep((s) => Math.min(s + 1, 3));
+      setRerunStep((s) => Math.min(s + 1, ANALYSIS_MAIN_PHASE_LAST_INDEX));
     }, 12000);
     return () => {
       clearInterval(timeInterval);
@@ -207,10 +207,10 @@ export default function AnalysisPage() {
       }
 
       const analysisId = data.analysisId as string | undefined;
-      setRerunStep(4);
+      setRerunStep(ANALYSIS_STEP_INDEX.pagespeed);
       setRerunLoadingPageSpeed(true);
       const accessibilityStepTimeout = setTimeout(() => {
-        setRerunStep((s) => Math.max(s, 5));
+        setRerunStep((s) => Math.max(s, ANALYSIS_STEP_INDEX.accessibility));
       }, 12000);
       if (analysisId) {
         try {

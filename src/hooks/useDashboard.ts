@@ -28,6 +28,7 @@ import type {
   SocialPlatform,
   GenerateSocialPostOptions,
 } from '@/types/dashboard';
+import { ANALYSIS_MAIN_PHASE_LAST_INDEX, ANALYSIS_STEP_INDEX } from '@/components/features/dashboard/analysis-steps';
 import { normalizeUrl } from '@/lib/utils/score-utils';
 
 interface UseDashboardOptions {
@@ -839,10 +840,10 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     let currentStep = 0;
     
     const advanceStep = () => {
-      if (currentStep < 3) {
+      if (currentStep < ANALYSIS_MAIN_PHASE_LAST_INDEX) {
         currentStep++;
         updateState({ analysisStep: currentStep });
-        if (currentStep < 3) {
+        if (currentStep < ANALYSIS_MAIN_PHASE_LAST_INDEX) {
           setTimeout(advanceStep, stepTimings[currentStep]);
         }
       }
@@ -926,7 +927,11 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         loadingPageSpeed: willFetchPageSpeed,
         loadingCompetitors: willFetchCompetitors,
         competitorProgress: willFetchCompetitors ? { current: 0, total: competitorUrlsToFetch.length } : null,
-        analysisStep: willFetchPageSpeed || willFetchCompetitors ? 4 : state.analysisStep,
+        analysisStep: willFetchPageSpeed
+          ? ANALYSIS_STEP_INDEX.pagespeed
+          : willFetchCompetitors
+            ? ANALYSIS_STEP_INDEX.competitors
+            : state.analysisStep,
         activeTab: 'overview',
         aiVisibilityResult: mappedResult?.aiVisibility ?? null,
         aiVisibilityAnalysisId: mappedResult?.aiVisibility && analysisId ? analysisId : null,
@@ -957,8 +962,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
         if (willFetchPageSpeed) {
           const accessibilityStepTimeout = setTimeout(() => {
             setState((prev) =>
-              prev.loadingPageSpeed && prev.analysisStep < 5
-                ? { ...prev, analysisStep: 5 }
+              prev.loadingPageSpeed && prev.analysisStep < ANALYSIS_STEP_INDEX.accessibility
+                ? { ...prev, analysisStep: ANALYSIS_STEP_INDEX.accessibility }
                 : prev
             );
           }, 12000);
@@ -974,7 +979,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
                 ...prev,
                 loadingPageSpeed: false,
                 accessibilityResult: accessibilityResults ?? prev.accessibilityResult,
-                analysisStep: prev.loadingCompetitors ? 6 : prev.analysisStep,
+                analysisStep: prev.loadingCompetitors ? ANALYSIS_STEP_INDEX.competitors : prev.analysisStep,
                 result: prev.result
                   ? {
                       ...prev.result,
@@ -994,7 +999,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
               setState((prev) => ({
                 ...prev,
                 loadingPageSpeed: false,
-                analysisStep: prev.loadingCompetitors ? 6 : prev.analysisStep,
+                analysisStep: prev.loadingCompetitors ? ANALYSIS_STEP_INDEX.competitors : prev.analysisStep,
               }));
               tryCloseDialog(() => {
                 if (!willFetchCompetitors) toastAfterDialogClosed('Analyse fullført (hastighet kunne ikke måles)');
@@ -1005,7 +1010,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
 
         if (willFetchCompetitors) {
           if (!willFetchPageSpeed) {
-            updateState({ analysisStep: 6 });
+            updateState({ analysisStep: ANALYSIS_STEP_INDEX.competitors });
           }
           (async () => {
             let competitors: CompetitorAnalysis[] = data.competitors ?? [];
@@ -1037,7 +1042,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
               ...prev,
               loadingCompetitors: false,
               competitorProgress: null,
-              analysisStep: 6,
+              analysisStep: ANALYSIS_STEP_INDEX.competitors,
             }));
             const msg = competitors.length > 0
               ? `Analyse fullført med hastighet og ${competitors.length} konkurrent${competitors.length > 1 ? 'er' : ''}!`
