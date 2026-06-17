@@ -4,6 +4,11 @@ import { analyzePageSpeedWithLighthouse } from '@/lib/services/pagespeed';
 import { parseAccessibilityAudits } from '@/lib/services/accessibility-audits';
 import { getPremiumStatusServer } from '@/lib/premium-server';
 import { calculateOverallScore } from '@/lib/analyzers';
+import {
+  canUseDbPagespeedCache,
+  findCachedAnalysisForDomain,
+  normalizeAnalysisHostname,
+} from '@/lib/utils/pagespeed-db-cache';
 import type { AccessibilityResults, PageSpeedResults } from '@/types';
 
 export const maxDuration = 120; // PageSpeed API kan være treg – 2 min med Fluid Compute
@@ -51,25 +56,22 @@ export async function POST(request: NextRequest) {
 
     // DB-backed cache: reuse recent PageSpeed results for the same user + domain (within 7 days)
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-    let domain = '';
-    try {
-      domain = new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace(/^www\./, '');
-    } catch { /* ignore */ }
+    const domain = normalizeAnalysisHostname(url);
 
     if (domain) {
-      const { data: cached } = await supabase
+      const { data: recentWithPagespeed } = await supabase
         .from('analyses')
-        .select('pagespeed_results, accessibility_results')
+        .select('id, website_url, pagespeed_results, accessibility_results')
         .eq('user_id', user.id)
         .not('pagespeed_results', 'is', null)
         .gte('created_at', sevenDaysAgo)
-        .ilike('website_url', `%${domain}%`)
         .neq('id', analysisId)
         .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(20);
 
-      if (cached?.pagespeed_results) {
+      const cached = findCachedAnalysisForDomain(recentWithPagespeed, domain, analysisId);
+
+      if (cached && canUseDbPagespeedCache(cached, premiumStatus.isPremium)) {
         console.log(`[PageSpeed] Using DB-cached results for ${domain}`);
         const cachedResults = cached.pagespeed_results as PageSpeedResults;
         const cachedAccessibility = premiumStatus.isPremium
