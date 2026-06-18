@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isMediaboosterDomainEmail } from '@/lib/auth/internal-access';
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -48,6 +49,15 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     return NextResponse.redirect(url);
+  }
+
+  // Internal brand guide – authenticated @mediabooster.no only
+  if (request.nextUrl.pathname.startsWith('/brand')) {
+    if (!user || !isMediaboosterDomainEmail(user.email)) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
   }
 
   // Redirect logged-in users from auth pages to dashboard

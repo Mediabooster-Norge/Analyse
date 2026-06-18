@@ -1,0 +1,101 @@
+export const SELIA_COLORS = {
+  primary: { hex: "#1A5C5C", label: "Primary", usage: "CTA-knapper, lenker, aktive elementer" },
+  primaryHover: { hex: "#0D4F4F", label: "Primary hover", usage: "Hover/active states" },
+  primaryLight: { hex: "#E8F4F4", label: "Primary light", usage: "Bakgrunn for highlights, badges" },
+  accent: { hex: "#D4A574", label: "Accent", usage: "AI-elementer, «generert»-indikatorer" },
+  accentLight: { hex: "#FDF6EE", label: "Accent light", usage: "AI-paneler, forslagsbokser" },
+  success: { hex: "#16A34A", label: "Success", usage: "Gode scores, fullførte steg" },
+  warning: { hex: "#F59E0B", label: "Warning", usage: "Medium prioritet" },
+  error: { hex: "#EF4444", label: "Error", usage: "Kritiske funn, høy prioritet" },
+  background: { hex: "#FAFAF8", label: "Background", usage: "Sidebakgrunn (varm off-white)" },
+  surface: { hex: "#FFFFFF", label: "Surface", usage: "Kort, paneler" },
+  textPrimary: { hex: "#1C1917", label: "Text primary", usage: "Overskrifter, brødtekst" },
+  textSecondary: { hex: "#78716C", label: "Text secondary", usage: "Hjelpetekst, metadata" },
+  border: { hex: "#E7E5E4", label: "Border", usage: "Skiller, rammer" },
+} as const;
+
+export const BRAND_CORE = {
+  name: "Selia",
+  domain: "selia.io",
+  category: "Nettsideanalyse med AI",
+  market: "Norge – SMB, markedsførere, gründere, byråer",
+  language: "Norsk (bokmål)",
+  promise: "Fra analyse til gjennomføring på minutter.",
+  differentiation:
+    "De fleste verktøy viser deg problemene. Selia viser deg løsningene – og produserer dem for deg.",
+  elevatorPitch:
+    "Selia analyserer nettsiden din, finner hva som holder deg tilbake, og gir deg ferdige forbedringer og innhold du kan ta i bruk med én gang.",
+  values: [
+    { word: "Klarhet", description: "forståelig innsikt, ikke teknisk sjargong" },
+    { word: "Handling", description: "fra funn til ferdig tekst" },
+    { word: "Hastighet", description: "resultater på minutter, ikke dager" },
+  ],
+} as const;
+
+export const LOGO_ASSETS = [
+  {
+    id: "primary",
+    label: "Primær logo",
+    file: "/brand/Selia-logo-primary.svg",
+    format: "SVG",
+    background: "#FFFFFF",
+    usage: "Standard horisontal logo på lys bakgrunn – header, landingsside, dokumenter.",
+  },
+  {
+    id: "primary-png",
+    label: "Primær logo (PNG)",
+    file: "/brand/Selia-logo-primary.png",
+    format: "PNG",
+    background: "#FFFFFF",
+    usage: "Raster-variant for presentasjoner, e-post og verktøy uten SVG-støtte.",
+  },
+  {
+    id: "on-dark",
+    label: "Logo på mørk bakgrunn",
+    file: "/brand/Selia-logo-on-dark.png",
+    format: "PNG",
+    background: "#1A5C5C",
+    usage: "Invertert variant for teal- eller mørke flater.",
+  },
+  {
+    id: "stacked",
+    label: "Stablet logo",
+    file: "/brand/Selia-logo-stacked.png",
+    format: "PNG",
+    background: "#FFFFFF",
+    usage: "Vertikal layout – sosiale medier, kvadratiske flater, app-skjermer.",
+  },
+  {
+    id: "wordmark",
+    label: "Wordmark",
+    file: "/brand/Selia-wordmark.svg",
+    format: "SVG",
+    background: "#FFFFFF",
+    usage: "Kun tekst + punkt – når ikonet allerede er synlig eller plassen er begrenset.",
+  },
+  {
+    id: "app-icon",
+    label: "App-ikon",
+    file: "/brand/Selia-app-icon.svg",
+    format: "SVG",
+    background: "#1A5C5C",
+    usage: "Kvadratisk ikon med «S» – favicon, app, avatar, browser-fane.",
+  },
+  {
+    id: "icon-512",
+    label: "App-ikon 512",
+    file: "/brand/Selia-icon-512.png",
+    format: "PNG",
+    background: "#1A5C5C",
+    usage: "Høyoppløselig ikon for PWA, App Store og Open Graph.",
+  },
+  {
+    id: "system",
+    label: "Logo-system",
+    file: "/brand/Selia-logo-system.png",
+    format: "PNG",
+    background: "#FAFAF8",
+    usage: "Oversikt over alle logo-varianter og bruksregler.",
+    fullWidth: true,
+  },
+] as const;
