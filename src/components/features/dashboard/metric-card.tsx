@@ -84,9 +84,12 @@ export function MetricCard({
       </p>
 
       {/* Footer */}
-      <div className="flex items-center justify-between gap-1 max-[400px]:gap-1 min-[401px]:gap-2">
-        <span className="text-[9px] max-[400px]:text-[8px] min-[401px]:text-[10px] text-neutral-500 truncate">{description}</span>
-        <span className={`text-[9px] max-[400px]:text-[8px] min-[401px]:text-[10px] px-1 max-[400px]:px-1 min-[401px]:px-1.5 py-0.5 rounded-full shrink-0 ${colors.badge}`}>
+      <div className="flex items-center justify-between gap-1 max-[400px]:gap-1 min-[401px]:gap-2 min-w-0">
+        <span className="text-[9px] max-[400px]:text-[8px] min-[401px]:text-[10px] text-neutral-500 truncate min-w-0 flex-1">{description}</span>
+        <span
+          className={`text-[9px] max-[400px]:text-[8px] min-[401px]:text-[10px] px-1 max-[400px]:px-1 min-[401px]:px-1.5 py-0.5 rounded-full max-w-[42%] truncate ${colors.badge}`}
+          title={recommendation}
+        >
           {recommendation}
         </span>
       </div>

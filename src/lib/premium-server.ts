@@ -3,30 +3,39 @@ import type { User } from '@supabase/supabase-js';
 import {
   UNLIMITED_ARTICLE_EMAILS,
   FREE_MONTHLY_ANALYSIS_LIMIT,
+  FREE_MONTHLY_ARTICLE_LIMIT,
   UNLIMITED_MONTHLY_ANALYSIS_LIMIT,
+  UNLIMITED_MONTHLY_ARTICLE_LIMIT,
   isAllowlistedPremiumEmail,
+  isPaidTier,
   getMonthlyAnalysisLimit,
   getAiVisibilityChecksLimit,
+  getArticleGenerationsLimit,
+  parseSubscriptionTier,
+  tierFromLegacyPremiumFlag,
+  type SubscriptionTier,
 } from '@/lib/constants/premium';
 
-/** Article generations per month: free 5, premium 30, unlimited 999 */
-const ARTICLE_GENERATIONS = { free: 5, premium: 30, unlimited: 999 };
+export type PremiumStatusServer = {
+  subscriptionTier: SubscriptionTier;
+  /** True for Pluss or Premium (paid plans) */
+  isPremium: boolean;
+  monthlyAnalysisLimit: number;
+  articleGenerationsPerMonth: number;
+  aiVisibilityChecksPerMonth: number;
+};
 
 /**
  * Server-side premium check. Use this in API routes and Server Components.
  * Do not import from usePremium (client hook) on the server.
  */
-export async function getPremiumStatusServer(user: User | null): Promise<{
-  isPremium: boolean;
-  monthlyAnalysisLimit: number;
-  articleGenerationsPerMonth: number;
-  aiVisibilityChecksPerMonth: number;
-}> {
+export async function getPremiumStatusServer(user: User | null): Promise<PremiumStatusServer> {
   if (!user) {
     return {
+      subscriptionTier: 'free',
       isPremium: false,
-      monthlyAnalysisLimit: 5,
-      articleGenerationsPerMonth: ARTICLE_GENERATIONS.free,
+      monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT,
+      articleGenerationsPerMonth: FREE_MONTHLY_ARTICLE_LIMIT,
       aiVisibilityChecksPerMonth: 0,
     };
   }
@@ -34,10 +43,13 @@ export async function getPremiumStatusServer(user: User | null): Promise<{
   if (isAllowlistedPremiumEmail(user.email)) {
     const hasUnlimitedArticles = UNLIMITED_ARTICLE_EMAILS.includes(user.email!);
     return {
+      subscriptionTier: 'premium',
       isPremium: true,
       monthlyAnalysisLimit: UNLIMITED_MONTHLY_ANALYSIS_LIMIT,
-      articleGenerationsPerMonth: hasUnlimitedArticles ? ARTICLE_GENERATIONS.unlimited : ARTICLE_GENERATIONS.premium,
-      aiVisibilityChecksPerMonth: getAiVisibilityChecksLimit(true, user.email),
+      articleGenerationsPerMonth: hasUnlimitedArticles
+        ? UNLIMITED_MONTHLY_ARTICLE_LIMIT
+        : getArticleGenerationsLimit('premium', user.email),
+      aiVisibilityChecksPerMonth: getAiVisibilityChecksLimit('premium', user.email),
     };
   }
 
@@ -45,28 +57,34 @@ export async function getPremiumStatusServer(user: User | null): Promise<{
 
   const { data, error } = await supabase
     .from('user_profiles')
-    .select('is_premium, monthly_analysis_limit')
+    .select('is_premium, subscription_tier, monthly_analysis_limit')
     .eq('id', user.id)
     .maybeSingle();
 
   if (error || !data) {
     return {
+      subscriptionTier: 'free',
       isPremium: false,
-      monthlyAnalysisLimit: 5,
-      articleGenerationsPerMonth: ARTICLE_GENERATIONS.free,
+      monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT,
+      articleGenerationsPerMonth: FREE_MONTHLY_ARTICLE_LIMIT,
       aiVisibilityChecksPerMonth: 0,
     };
   }
 
-  const isPremium = data.is_premium ?? false;
+  const subscriptionTier =
+    data.subscription_tier != null
+      ? parseSubscriptionTier(data.subscription_tier)
+      : tierFromLegacyPremiumFlag(data.is_premium ?? false);
+
   return {
-    isPremium,
+    subscriptionTier,
+    isPremium: isPaidTier(subscriptionTier),
     monthlyAnalysisLimit: getMonthlyAnalysisLimit(
-      isPremium,
+      subscriptionTier,
       user.email,
       data.monthly_analysis_limit
     ),
-    articleGenerationsPerMonth: isPremium ? ARTICLE_GENERATIONS.premium : ARTICLE_GENERATIONS.free,
-    aiVisibilityChecksPerMonth: getAiVisibilityChecksLimit(isPremium, user.email),
+    articleGenerationsPerMonth: getArticleGenerationsLimit(subscriptionTier, user.email),
+    aiVisibilityChecksPerMonth: getAiVisibilityChecksLimit(subscriptionTier, user.email),
   };
 }

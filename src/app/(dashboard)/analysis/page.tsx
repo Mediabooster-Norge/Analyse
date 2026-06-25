@@ -194,7 +194,7 @@ export default function AnalysisPage() {
         const isTimeout = res.status === 504 || res.status === 503;
         if (data?.limitReached) {
           toast.error(data.error || 'Kunne ikke kjøre analysen på nytt', {
-            description: 'Oppgrader til Premium for flere analyser.',
+            description: 'Oppgrader til Pluss eller Premium for flere analyser.',
           });
         } else if (isTimeout) {
           toast.error('Analysen tok for lang tid og ble avbrutt', {
@@ -638,7 +638,7 @@ export default function AnalysisPage() {
               ) : (
                 <>
                   <h3 className="font-semibold text-white">Trenger du flere analyser?</h3>
-                  <p className="text-sm text-neutral-400">Oppgrader til Premium for ubegrenset tilgang.</p>
+                  <p className="text-sm text-neutral-400">Oppgrader til Pluss eller Premium for full tilgang.</p>
                 </>
               )}
             </div>

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const keywordLimit = getKeywordLimit(premiumStatus.isPremium);
+    const keywordLimit = getKeywordLimit(premiumStatus.subscriptionTier);
     const limitedKeywords = keywords
       .map((k) => k.trim().toLowerCase())
       .filter(Boolean)

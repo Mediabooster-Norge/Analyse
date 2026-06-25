@@ -66,7 +66,7 @@ const COMPARISON_ROWS = [
   ["Krever SEO-kompetanse", "Forklarer på norsk, klart språk"],
   ["Gir rapporter", "Gir rapporter og ferdig tekst"],
   ["Fokus på Google", "Fokus på Google og AI-synlighet"],
-  ["Dyrt abonnement", "Gratis å starte, Premium fra 69 kr/mnd"],
+  ["Dyrt abonnement", "Gratis å starte, Pluss fra 399 kr/mnd"],
 ] as const;
 
 const IMPLEMENTATION_PHASES = [
@@ -460,7 +460,7 @@ export function BrandGuide() {
                 <div className="px-4 py-3 text-[#78716C] bg-[#FAFAF8]">Andre verktøy</div>
                 <div className="px-4 py-3 text-[#1A5C5C] bg-[#E8F4F4]">Selia</div>
               </div>
-              {CONCRETE_COMPARISON.map(([other, selia], i) => (
+              {CONCRETE_COMPARISON.map(({ other, selia }, i) => (
                 <div key={i} className="grid grid-cols-2 text-sm border-b border-[#E7E5E4] last:border-0">
                   <div className="px-4 py-3 text-[#78716C]">{other}</div>
                   <div className="px-4 py-3 bg-[#E8F4F4]/50 font-medium">{selia}</div>
@@ -623,7 +623,7 @@ export function BrandGuide() {
                       <p className="text-sm font-medium">{feature.name}</p>
                       {"premium" in feature && feature.premium && (
                         <span className="rounded-full bg-[#FDF6EE] px-2 py-0.5 text-[10px] font-medium text-[#D4A574]">
-                          Premium
+                          Pluss
                         </span>
                       )}
                     </div>

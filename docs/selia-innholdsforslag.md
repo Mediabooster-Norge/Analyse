@@ -240,7 +240,7 @@ Bytt ut Booster-referanser. Hold sitatene korte og handlingsorienterte.
 > *Oppgrader når du trenger mer.*
 
 **Undertekst:**
-> Full analyse og AI-forslag fra dag én. Premium gir deg mer volum og AI-synlighet.
+> Full analyse og AI-forslag fra dag én. Pluss og Premium gir deg mer volum og AI-synlighet.
 
 ### Gratis – 0 kr/mnd
 
@@ -255,7 +255,7 @@ Bytt ut Booster-referanser. Hold sitatene korte og handlingsorienterte.
 
 **CTA:** `Kom i gang gratis`
 
-### Premium – 69 kr/mnd
+### Pluss – 399 kr/mnd
 
 **Ingress:** For deg som vil jobbe systematisk med synlighet og innhold.
 
@@ -263,7 +263,21 @@ Bytt ut Booster-referanser. Hold sitatene korte og handlingsorienterte.
 - 30 analyser per måned
 - 30 AI-genererte artikler per måned
 - 10 AI-synlighetssjekker per måned
-- Flere konkurrenter og nøkkelord
+- Tilgjengelighetsanalyse (WCAG)
+- Forslag til undersider
+- Prioritert support
+
+**CTA:** `Kom i gang med Pluss`
+
+### Premium – 799 kr/mnd
+
+**Ingress:** For deg som trenger høyere volum – samme funksjoner som Pluss.
+
+**Alt i Gratis, pluss:**
+- 80 analyser per måned
+- 60 AI-genererte artikler per måned
+- 40 AI-synlighetssjekker per måned
+- Tilgjengelighetsanalyse (WCAG)
 - Forslag til undersider
 - Prioritert support
 
@@ -274,7 +288,7 @@ Bytt ut Booster-referanser. Hold sitatene korte og handlingsorienterte.
 ## 12. FAQ – spørsmål og svar
 
 ### Er Selia virkelig gratis?
-Ja. Med gratis konto får du 5 analyser og 5 AI-genererte artikler per måned – inkludert full SEO-, sikkerhets-, innholds- og hastighetsanalyse med ferdige forbedringsforslag. Premium (69 kr/mnd) gir mer volum, AI-synlighet og flere konkurrenter.
+Ja. Med gratis konto får du 5 analyser og 5 AI-genererte artikler per måned – inkludert full SEO-, sikkerhets-, innholds- og hastighetsanalyse med ferdige forbedringsforslag. Pluss (399 kr/mnd) og Premium (799 kr/mnd) gir mer volum, AI-synlighet og flere konkurrenter.
 
 ### Hva skiller Selia fra andre SEO-verktøy?
 De fleste verktøy viser deg hva som er galt. Selia går videre: du får ferdigskrevne forbedringer du kan kopiere, artikler du kan publisere, og en prioritert handlingsplan – alt på norsk.
@@ -283,13 +297,13 @@ De fleste verktøy viser deg hva som er galt. Selia går videre: du får ferdigs
 SEO (tittel, meta, overskrifter, bilder, Open Graph), sikkerhet (SSL, HSTS, CSP), innhold (ordtelling, lesbarhet) og hastighet (PageSpeed, LCP, CLS). Du får konkrete forslag for hvert funn, pluss konkurrentsammenligning og nøkkelordanalyse.
 
 ### Hva er AI-genererte artikler?
-Basert på analysen får du forslag til artikkelideer – og kan la Selia skrive hele artikkelen, med meta og bildeforslag. Gratis: 5 per måned. Premium: 30.
+Basert på analysen får du forslag til artikkelideer – og kan la Selia skrive hele artikkelen, med meta og bildeforslag. Gratis: 5 per måned. Pluss: 30. Premium: 60.
 
 ### Hva er AI-synlighet?
-Selia sjekker hvordan AI-modeller (f.eks. ChatGPT) kjenner og anbefaler bedriften din. Tilgjengelig med Premium – 10 sjekker per måned.
+Selia sjekker hvordan AI-modeller (f.eks. ChatGPT) kjenner og anbefaler bedriften din. Tilgjengelig med Pluss eller Premium – 10 eller 40 sjekker per måned.
 
 ### Kan jeg sammenligne med konkurrenter?
-Ja. Legg inn konkurrentenes URL-er (opptil 2 gratis, 5 med Premium), og se side-om-side hvem som scorer best – og hva du bør gjøre for å ta igjen.
+Ja. Legg inn konkurrentenes URL-er (opptil 2 gratis, 5 med Pluss eller Premium), og se side-om-side hvem som scorer best – og hva du bør gjøre for å ta igjen.
 
 ### Trenger jeg SEO-kunnskap?
 Nei. Selia forklarer funnene på norsk og gir deg ferdig tekst du kan bruke – du trenger ikke tolke rapporter selv.

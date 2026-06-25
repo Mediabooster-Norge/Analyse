@@ -9,12 +9,20 @@ import { Building2, Loader2, Search, MapPin, Users, X } from 'lucide-react';
 
 interface CompanySearchProps {
   onSelect: (company: BregSearchResult | null) => void;
-  onManualInput: (name: string) => void;
+  onManualInput?: (name: string) => void;
   initialValue?: string;
   disabled?: boolean;
+  /** Krever valg fra Brønnøysundregistrene (ingen manuell registrering). */
+  requireBregSelection?: boolean;
 }
 
-export function CompanySearch({ onSelect, onManualInput, initialValue = '', disabled = false }: CompanySearchProps) {
+export function CompanySearch({
+  onSelect,
+  onManualInput,
+  initialValue = '',
+  disabled = false,
+  requireBregSelection = false,
+}: CompanySearchProps) {
   const [query, setQuery] = useState(initialValue);
   const [results, setResults] = useState<BregSearchResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -70,12 +78,13 @@ export function CompanySearch({ onSelect, onManualInput, initialValue = '', disa
     };
   }, [query, selectedCompany]);
 
-  // Notify parent of manual input
+  // Notify parent of manual input (skipped when BREG selection is required)
   useEffect(() => {
+    if (requireBregSelection || !onManualInput) return;
     if (!selectedCompany && query.length > 0) {
       onManualInput(query);
     }
-  }, [query, selectedCompany, onManualInput]);
+  }, [query, selectedCompany, onManualInput, requireBregSelection]);
 
   const handleSelect = (company: BregSearchResult) => {
     setSelectedCompany(company);
@@ -89,7 +98,7 @@ export function CompanySearch({ onSelect, onManualInput, initialValue = '', disa
     setQuery('');
     setResults([]);
     onSelect(null);
-    onManualInput('');
+    onManualInput?.('');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -105,13 +114,17 @@ export function CompanySearch({ onSelect, onManualInput, initialValue = '', disa
 
   return (
     <div ref={containerRef} className="relative">
-      <Label htmlFor="companySearch">Bedriftsnavn *</Label>
+      <Label htmlFor="companySearch">Bedrift *</Label>
       <div className="relative mt-2">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" />
         <Input
           id="companySearch"
           type="text"
-          placeholder="Søk etter bedrift eller skriv inn navn..."
+          placeholder={
+            requireBregSelection
+              ? "Søk og velg bedrift fra Brønnøysundregistrene..."
+              : "Søk etter bedrift eller skriv inn navn..."
+          }
           value={query}
           onChange={handleInputChange}
           onFocus={() => results.length > 0 && !selectedCompany && setIsOpen(true)}
@@ -207,14 +220,22 @@ export function CompanySearch({ onSelect, onManualInput, initialValue = '', disa
       {isOpen && results.length === 0 && query.length >= 2 && !isLoading && !selectedCompany && (
         <div className="absolute z-50 w-full mt-1 bg-white border border-neutral-200 rounded-lg shadow-lg p-4">
           <div className="text-sm text-neutral-500 text-center">
-            <p className="mb-2">Ingen bedrifter funnet i Brønnøysundregistrene</p>
-            <p className="text-xs">Du kan fortsatt registrere med bedriftsnavnet du skrev inn</p>
+            <p>
+              {requireBregSelection
+                ? "Ingen bedrifter funnet. Prøv et annet søk eller sjekk stavemåten."
+                : "Ingen bedrifter funnet i Brønnøysundregistrene"}
+            </p>
+            {!requireBregSelection && (
+              <p className="text-xs mt-2">Du kan fortsatt registrere med bedriftsnavnet du skrev inn</p>
+            )}
           </div>
         </div>
       )}
 
       <p className="text-xs text-neutral-500 mt-2">
-        Søk etter bedriften din for å automatisk fylle ut informasjon fra Brønnøysundregistrene
+        {requireBregSelection
+          ? "Velg bedriften din fra listen – vi henter og verifiserer data fra Brønnøysundregistrene."
+          : "Søk etter bedriften din for å automatisk fylle ut informasjon fra Brønnøysundregistrene"}
       </p>
     </div>
   );

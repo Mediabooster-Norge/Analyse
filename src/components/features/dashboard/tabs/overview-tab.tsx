@@ -28,6 +28,7 @@ import {
   buildAccessibilityIssueContext,
   buildAccessibilityScoreContext,
   formatAccessibilityImprovementDesc,
+  formatAccessibilityIssueCardDescription,
   formatAccessibilityIssueRecommendation,
   formatAccessibilityIssueValue,
 } from '@/lib/utils/accessibility-display';
@@ -127,6 +128,8 @@ export interface OverviewTabProps {
   accessibilityResult?: AccessibilityResults | null;
   /** Readonly shared/preview view — disables AI interactions and upgrade prompts */
   readOnly?: boolean;
+  /** Guest preview on landing/analyse — shows full metrics, accessibility data, register wall on AI click */
+  guestPreview?: boolean;
 }
 
 function accessibilityImpactToPriority(impact: AccessibilityImpact): 'high' | 'medium' | 'low' {
@@ -178,6 +181,7 @@ export function OverviewTab({
   aiVisibilityAnalysisId = null,
   accessibilityResult = null,
   readOnly = false,
+  guestPreview = false,
 }: OverviewTabProps) {
   const aiVisibility =
     resolveAiVisibilityData(
@@ -187,6 +191,7 @@ export function OverviewTab({
       aiVisibilityAnalysisId
     ) ?? null;
   const accessibilityData = accessibilityResult ?? result.accessibility ?? null;
+  const showAccessibility = isPremium || guestPreview;
   const accessibilityScore =
     accessibilityData?.score ??
     (result.pageSpeedResults?.accessibility && result.pageSpeedResults.accessibility > 0
@@ -312,7 +317,7 @@ export function OverviewTab({
                 )}
               </div>
               <div className="text-center min-w-0">
-                {!isPremium && !readOnly ? (
+                {!showAccessibility && !readOnly ? (
                   <>
                     <div className="w-12 h-12 max-[400px]:w-10 max-[400px]:h-10 min-[401px]:w-14 min-[401px]:h-14 sm:w-16 sm:h-16 mx-auto rounded-full bg-neutral-100 border-2 border-neutral-200 flex items-center justify-center">
                       <Accessibility className="w-5 h-5 max-[400px]:w-4 max-[400px]:h-4 min-[401px]:w-5 sm:w-6 sm:h-6 text-neutral-400" />
@@ -320,7 +325,7 @@ export function OverviewTab({
                     <p className="text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs text-neutral-500 mt-0.5 sm:mt-1">Tilgjengelighet</p>
                     <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-neutral-100 text-[10px] font-medium text-neutral-500">
                       <Lock className="h-2.5 w-2.5" />
-                      Premium
+                      Pluss
                     </span>
                   </>
                 ) : loadingPageSpeed ? (
@@ -399,7 +404,7 @@ export function OverviewTab({
                       ) : (
                         <span className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full bg-neutral-100 text-[10px] font-medium text-neutral-500">
                           <Lock className="h-2.5 w-2.5" />
-                          Premium
+                          Pluss
                         </span>
                       )}
                     </>
@@ -461,7 +466,7 @@ export function OverviewTab({
               }
             }
           }
-          if (isPremium && accessibilityData) {
+          if (showAccessibility && accessibilityData) {
             if (accessibilityData.issues.length > 0) {
               for (const issue of accessibilityData.issues.slice(0, 5)) {
                 issues.push({
@@ -489,7 +494,7 @@ export function OverviewTab({
                 category: 'accessibility',
               });
             }
-          } else if (isPremium && accessibilityScore != null && accessibilityScore < 100) {
+          } else if (showAccessibility && accessibilityScore != null && accessibilityScore < 100) {
             issues.push({
               label: 'Tilgjengelighet',
               desc:
@@ -631,7 +636,11 @@ export function OverviewTab({
           <div className="flex items-center gap-2 px-1">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-[#f5f3ff] border border-[#ddd6fe] text-xs text-[#6d28d9]">
               <RocketIcon className="w-3 h-3 text-[#7c3aed] shrink-0" />
-              <span>Trykk på et kort for AI-drevne forbedringsforslag</span>
+              <span>
+                {guestPreview
+                  ? 'Trykk på et kort – opprett konto for AI-forslag'
+                  : 'Trykk på et kort for AI-drevne forbedringsforslag'}
+              </span>
             </div>
           </div>
           )}
@@ -885,15 +894,15 @@ export function OverviewTab({
               <Accessibility className="w-4 h-4" />
               Tilgjengelighet (WCAG)
             </h4>
-            {!isPremium && !readOnly ? (
+            {!showAccessibility && !readOnly ? (
               <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-4 flex items-start gap-3">
                 <div className="w-9 h-9 rounded-lg bg-amber-100 flex items-center justify-center shrink-0">
                   <Lock className="h-4 w-4 text-amber-700" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-medium text-amber-800">Tilgjengelighetsanalyse er en Premium-funksjon</p>
+                  <p className="text-sm font-medium text-amber-800">Tilgjengelighetsanalyse er en Pluss-funksjon</p>
                   <p className="text-xs text-neutral-600 mt-1">
-                    Med Premium får du WCAG-score i poengoversikten og oppsummerte forbedringsforslag.
+                    Med Pluss eller Premium får du WCAG-score i poengoversikten og oppsummerte forbedringsforslag.
                   </p>
                 </div>
               </div>
@@ -961,10 +970,7 @@ export function OverviewTab({
                             readOnly={readOnly}
                             icon={Accessibility}
                             title={issue.title}
-                            description={
-                              issue.displayValue ??
-                              `${issue.affectedElements?.length ?? 0} element${(issue.affectedElements?.length ?? 0) === 1 ? '' : 'er'}`
-                            }
+                            description={formatAccessibilityIssueCardDescription(issue)}
                             value={issueValue}
                             recommendation={formatAccessibilityIssueRecommendation(issue)}
                             status={status}
@@ -1193,7 +1199,7 @@ export function OverviewTab({
       </div>
 
       {/* Upgrade CTA - only for non-premium users in the dashboard */}
-      {!isPremium && !readOnly && (
+      {!isPremium && !readOnly && !guestPreview && (
         <div className="rounded-2xl bg-neutral-900 p-4 sm:p-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4 text-center sm:text-left">
             <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center shrink-0">
@@ -1201,12 +1207,12 @@ export function OverviewTab({
             </div>
             <div>
               <h3 className="font-semibold text-white text-sm sm:text-base">Få mer ut av analyseverktøyet</h3>
-              <p className="text-xs sm:text-sm text-neutral-400">Ubegrenset analyser, 30 AI-artikler og mye mer med Premium.</p>
+              <p className="text-xs sm:text-sm text-neutral-400">30–80 analyser/mnd, AI-synlighet og WCAG med Pluss eller Premium.</p>
             </div>
           </div>
           <Button className="bg-white text-neutral-900 hover:bg-neutral-100 w-full sm:w-auto" asChild>
             <a href="/#priser">
-              Oppgrader til Premium
+              Oppgrader til Pluss
               <ChevronRight className="ml-2 h-4 w-4" />
             </a>
           </Button>

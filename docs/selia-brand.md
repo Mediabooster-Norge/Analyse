@@ -55,7 +55,7 @@ En AI-drevet nettsideanalyseplattform som kombinerer teknisk sjekk (SEO, sikkerh
 | Krever SEO-kompetanse | Forklarer på norsk, klart språk |
 | Gir rapporter | Gir rapporter **og** ferdig tekst |
 | Fokus på Google | Fokus på Google **og** AI-synlighet |
-| Dyrt abonnement | Gratis å starte, Premium fra 69 kr/mnd |
+| Dyrt abonnement | Gratis å starte, Pluss fra 399 kr/mnd |
 
 ---
 

@@ -38,6 +38,8 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-section-teal: var(--section-teal);
+  --color-section-sand: var(--section-sand);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -49,24 +51,30 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
+  --background: oklch(0.988 0.002 90);
+  --foreground: oklch(0.216 0.006 56);
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --card-foreground: oklch(0.216 0.006 56);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.216 0.006 56);
+  --primary: oklch(0.42 0.06 192);
   --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.97 0.01 192);
+  --secondary-foreground: oklch(0.42 0.06 192);
+  --muted: oklch(0.97 0.005 90);
+  --muted-foreground: oklch(0.52 0.02 56);
+  --accent: oklch(0.97 0.02 75);
+  --accent-foreground: oklch(0.42 0.06 192);
   --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
+  --border: oklch(0.922 0.005 90);
+  --input: oklch(0.922 0.005 90);
+  --ring: oklch(0.42 0.06 192);
+  --wash-strong: color-mix(in srgb, var(--primary) 16%, var(--background));
+  --wash-medium: color-mix(in srgb, var(--primary) 8%, var(--background));
+  --wash-light: color-mix(in srgb, var(--primary) 3.5%, var(--background));
+  --section-teal: var(--wash-strong);
+  --section-sand: color-mix(in srgb, #d4a574 9%, var(--background));
+  --section-card-peak: color-mix(in srgb, var(--card) 58%, var(--background));
   --chart-1: oklch(0.646 0.222 41.116);
   --chart-2: oklch(0.6 0.118 184.704);
   --chart-3: oklch(0.398 0.07 227.392);
@@ -74,7 +82,7 @@
   --chart-5: oklch(0.769 0.188 70.08);
   --sidebar: oklch(0.985 0 0);
   --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary: oklch(0.42 0.06 192);
   --sidebar-primary-foreground: oklch(0.985 0 0);
   --sidebar-accent: oklch(0.97 0 0);
   --sidebar-accent-foreground: oklch(0.205 0 0);
@@ -114,6 +122,11 @@
   --sidebar-accent-foreground: oklch(0.985 0 0);
   --sidebar-border: oklch(1 0 0 / 10%);
   --sidebar-ring: oklch(0.556 0 0);
+  --wash-strong: color-mix(in srgb, var(--primary) 10%, var(--background));
+  --wash-medium: color-mix(in srgb, var(--primary) 5.5%, var(--background));
+  --wash-light: color-mix(in srgb, var(--primary) 2.5%, var(--background));
+  --section-sand: color-mix(in srgb, #d4a574 7%, var(--background));
+  --section-card-peak: color-mix(in srgb, var(--card) 52%, var(--background));
 }
 
 @layer base {
@@ -121,12 +134,17 @@
     @apply border-border outline-ring/50;
   }
   html {
-    overflow-x: hidden;
+    overflow-x: clip;
     -webkit-text-size-adjust: 100%;
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      scroll-behavior: smooth;
+    }
   }
   body {
     @apply bg-background text-foreground antialiased;
-    overflow-x: hidden;
+    overflow-x: clip;
     min-width: 0;
   }
 }
@@ -271,6 +289,162 @@
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #a3a3a3;
+}
+
+/* Landing page – seksjonsbakgrunner.
+   Kontrakt: alle gradienter starter OG slutter med var(--background)
+   slik at overgangen mellom seksjoner blir sømløs (ingen synlig strek). */
+.bg-section-hero {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--background) 35%, var(--wash-strong)) 0%,
+    var(--wash-medium) 32%,
+    var(--wash-light) 52%,
+    color-mix(in srgb, var(--background) 70%, var(--wash-light)) 76%,
+    var(--background) 90%,
+    var(--background) 100%
+  );
+}
+
+.bg-section-card {
+  background: linear-gradient(
+    180deg,
+    var(--background) 0%,
+    color-mix(in srgb, var(--background) 82%, var(--wash-light)) 18%,
+    color-mix(in srgb, var(--background) 55%, var(--section-card-peak)) 34%,
+    var(--section-card-peak) 50%,
+    color-mix(in srgb, var(--background) 55%, var(--section-card-peak)) 66%,
+    color-mix(in srgb, var(--background) 82%, var(--wash-light)) 82%,
+    var(--background) 100%
+  );
+}
+
+.bg-section-wash {
+  background: linear-gradient(
+    180deg,
+    var(--background) 0%,
+    color-mix(in srgb, var(--background) 78%, var(--wash-light)) 16%,
+    var(--wash-light) 36%,
+    var(--wash-medium) 50%,
+    var(--wash-light) 64%,
+    color-mix(in srgb, var(--background) 78%, var(--wash-light)) 84%,
+    var(--background) 100%
+  );
+}
+
+.bg-section-stage {
+  background: linear-gradient(
+    180deg,
+    var(--background) 0%,
+    color-mix(in srgb, var(--background) 75%, var(--wash-light)) 14%,
+    var(--wash-light) 34%,
+    var(--wash-medium) 50%,
+    var(--wash-light) 66%,
+    color-mix(in srgb, var(--background) 75%, var(--wash-light)) 86%,
+    var(--background) 100%
+  );
+}
+
+.bg-section-sand {
+  background: linear-gradient(
+    180deg,
+    var(--background) 0%,
+    color-mix(in srgb, var(--background) 82%, var(--section-sand)) 18%,
+    color-mix(in srgb, var(--background) 45%, var(--section-sand)) 42%,
+    color-mix(in srgb, var(--background) 45%, var(--section-sand)) 58%,
+    color-mix(in srgb, var(--background) 82%, var(--section-sand)) 82%,
+    var(--background) 100%
+  );
+}
+
+.bg-section-pass {
+  background: linear-gradient(
+    180deg,
+    var(--background) 0%,
+    var(--background) 100%
+  );
+}
+
+.bg-section-footer-fade {
+  background: linear-gradient(
+    180deg,
+    var(--background) 0%,
+    color-mix(in srgb, var(--background) 88%, var(--muted)) 60%,
+    color-mix(in srgb, var(--background) 72%, var(--muted)) 100%
+  );
+}
+
+/* Landing testimonial marquees */
+@keyframes testimonial-marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(calc(-100% / var(--marquee-copies, 2)));
+  }
+}
+
+@keyframes testimonial-marquee-right {
+  from {
+    transform: translateX(calc(-100% / var(--marquee-copies, 2)));
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.testimonial-marquee-left {
+  --marquee-copies: 3;
+  animation: testimonial-marquee-left 64s linear infinite;
+}
+
+.testimonial-marquee-right {
+  --marquee-copies: 3;
+  animation: testimonial-marquee-right 64s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .testimonial-marquee-left,
+  .testimonial-marquee-right {
+    animation: none;
+  }
+}
+
+.testimonial-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* Generic horizontal marquee – reuses the testimonial keyframes */
+.marquee-track {
+  --marquee-copies: 3;
+  animation: testimonial-marquee-left 56s linear infinite;
+}
+
+.marquee-track-right {
+  --marquee-copies: 3;
+  animation: testimonial-marquee-right 56s linear infinite;
+}
+
+.marquee-track:hover,
+.marquee-track-right:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track,
+  .marquee-track-right {
+    animation: none;
+  }
+}
+
+/* Testimonial cards – mostly white with a very subtle brand tint */
+.testimonial-card {
+  background: linear-gradient(
+    160deg,
+    var(--card) 0%,
+    color-mix(in srgb, var(--primary) 2%, var(--card)) 55%,
+    color-mix(in srgb, var(--primary) 3.5%, var(--card)) 100%
+  );
 }
 
 /* Analysis progress animations */

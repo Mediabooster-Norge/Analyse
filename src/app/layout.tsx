@@ -20,13 +20,24 @@ const lora = Lora({
 });
 
 export const metadata: Metadata = {
-  title: "Booster | Din digitale markedssjef – og AI kollega",
-  description: "Spar titusenvis av kroner på dyre verktøy og byråtimer. Booster gir deg gratis webanalyse, SEO, sikkerhet og AI-anbefalinger på minutter.",
-  keywords: ["nettside", "analyse", "SEO", "ytelse", "sikkerhet", "gratis", "AI", "markedssjef", "digital markedsføring", "Booster"],
-  authors: [{ name: "Booster" }],
+  title: "Selia | Fra analyse til gjennomføring på minutter",
+  description:
+    "Selia analyserer nettsiden din og produserer konkrete forbedringer – meta-tekst, artikler og handlingsplaner du kan bruke med én gang. Gratis å starte.",
+  keywords: [
+    "nettsideanalyse",
+    "SEO analyse",
+    "AI nettside",
+    "gratis SEO verktøy",
+    "nettside sjekk",
+    "konkurrentanalyse",
+    "AI artikkel generator",
+    "norsk SEO",
+  ],
+  authors: [{ name: "Selia" }],
   openGraph: {
-    title: "Booster | Din digitale markedssjef – og AI kollega",
-    description: "Spar titusenvis av kroner på dyre verktøy og byråtimer. Booster gir deg gratis webanalyse, SEO, sikkerhet og AI-anbefalinger på minutter.",
+    title: "Selia | Fra analyse til gjennomføring på minutter",
+    description:
+      "Selia analyserer nettsiden din og produserer konkrete forbedringer – meta-tekst, artikler og handlingsplaner du kan bruke med én gang. Gratis å starte.",
     type: "website",
     locale: "nb_NO",
   },

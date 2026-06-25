@@ -738,7 +738,7 @@ export async function POST(request: NextRequest) {
     const premiumStatus = await getPremiumStatusServer(user);
     if (!premiumStatus.isPremium) {
       return NextResponse.json(
-        { error: 'AI-synlighet er en Premium-funksjon' },
+        { error: 'AI-synlighet er en Pluss-funksjon' },
         { status: 403 }
       );
     }

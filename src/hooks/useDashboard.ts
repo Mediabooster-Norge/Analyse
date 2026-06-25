@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { usePremium, getPremiumLimits } from '@/hooks/usePremium';
+import { usePremium } from '@/hooks/usePremium';
+import { getTierLimits } from '@/lib/constants/premium';
 import { toast } from 'sonner';
 import {
   getVisibilityKeywordOptions,
@@ -251,8 +252,8 @@ function mapAnalysisRowToResult(
 }
 
 export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardOptions) {
-  const { isPremium, monthlyAnalysisLimit, articleGenerationsPerMonth, loading: premiumLoading } = usePremium();
-  const limits = getPremiumLimits(isPremium);
+  const { subscriptionTier, isPremium, monthlyAnalysisLimit, articleGenerationsPerMonth, loading: premiumLoading } = usePremium();
+  const limits = getTierLimits(subscriptionTier);
   
   const FREE_MONTHLY_LIMIT = monthlyAnalysisLimit;
   const FREE_KEYWORD_LIMIT = limits.keywords;
@@ -669,7 +670,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
 
   const checkAiVisibility = useCallback(async (keywordOverride?: string) => {
     if (!isPremium) {
-      toast.error('AI-synlighet er en Premium-funksjon');
+      toast.error('AI-synlighet er en Pluss-funksjon');
       return;
     }
     const keywordOptions = getVisibilityKeywordOptions(state.result);
@@ -716,7 +717,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
 
       if (!response.ok) {
         if (response.status === 403) {
-          toast.error((data.error as string) || 'AI-synlighet er en Premium-funksjon');
+          toast.error((data.error as string) || 'AI-synlighet er en Pluss-funksjon');
         } else if (response.status === 429) {
           toast.error((data.error as string) || 'Du har brukt opp AI-synlighetssjekker denne måneden');
         } else if (response.status === 503) {
@@ -1759,6 +1760,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     ...state,
     
     // Premium info
+    subscriptionTier,
     isPremium,
     premiumLoading,
     limits: {

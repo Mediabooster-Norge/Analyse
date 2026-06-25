@@ -36,7 +36,11 @@ export function DashboardEmptyState({ isPremium, monthlyLimit, onStartAnalysis }
         <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-8 max-[400px]:mt-6 sm:mt-10 pt-8 sm:pt-10 border-t border-neutral-100">
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-50 text-neutral-600 text-xs font-medium">
             <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />
-            {isPremium ? 'Ubegrenset' : `${monthlyLimit} gratis/mnd`}
+            {isPremium
+              ? monthlyLimit >= 999
+                ? 'Ubegrenset'
+                : `${monthlyLimit}/mnd`
+              : `${monthlyLimit} gratis/mnd`}
           </span>
           <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-neutral-50 text-neutral-600 text-xs font-medium">
             <CheckCircle2 className="h-3.5 w-3.5 text-green-600 shrink-0" />

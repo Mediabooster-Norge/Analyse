@@ -1,9 +1,11 @@
 import type { AccessibilityIssue, AccessibilityResults } from '@/types';
 
-const MAX_ELEMENTS_IN_SUMMARY = 3;
-
 function stripHtml(html: string): string {
   return html.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+}
+
+function truncateText(text: string, max: number): string {
+  return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
 /** Short label for an affected element (from Lighthouse). */
@@ -19,47 +21,61 @@ export function formatAffectedElementLabel(
   return 'Ukjent element';
 }
 
-/** Value line for MetricCard – shows what was actually found on the page. */
+function formatElementCardPreview(
+  el: NonNullable<AccessibilityIssue['affectedElements']>[number]
+): string {
+  if (el.label) return truncateText(el.label, 48);
+  if (el.snippet) {
+    const compact = el.snippet.replace(/\s+/g, ' ').trim();
+    const tagMatch = compact.match(/^<([a-zA-Z0-9-]+)/);
+    if (tagMatch) return `<${tagMatch[1]}>`;
+    return truncateText(compact, 48);
+  }
+  if (el.selector) {
+    const last = el.selector.split('>').pop()?.trim() ?? el.selector;
+    return truncateText(last, 48);
+  }
+  return 'Ukjent element';
+}
+
+/** Short badge label for MetricCard footer (not the full Lighthouse explanation). */
+export function formatAccessibilityIssueRecommendation(issue: AccessibilityIssue): string {
+  const impactLabels: Record<AccessibilityIssue['impact'], string> = {
+    critical: 'Kritisk',
+    serious: 'Bør fikses',
+    moderate: 'Vurder fiks',
+    minor: 'Mindre viktig',
+  };
+  return impactLabels[issue.impact];
+}
+
+/** Short scope line under the title in MetricCard. */
+export function formatAccessibilityIssueCardDescription(issue: AccessibilityIssue): string {
+  const count = issue.affectedElements?.length ?? 0;
+  if (count > 0) {
+    return count === 1 ? '1 element' : `${count} elementer`;
+  }
+  if (issue.displayValue && issue.displayValue.length <= 36) {
+    return issue.displayValue;
+  }
+  return 'Påvirker siden';
+}
+
+/** Value line for MetricCard – short summary, not full selectors or audit text. */
 export function formatAccessibilityIssueValue(issue: AccessibilityIssue): string {
   if (issue.affectedElements && issue.affectedElements.length > 0) {
-    const labels = issue.affectedElements
-      .slice(0, MAX_ELEMENTS_IN_SUMMARY)
-      .map(formatAffectedElementLabel);
-    const extra =
-      issue.affectedElements.length > MAX_ELEMENTS_IN_SUMMARY
-        ? ` (+${issue.affectedElements.length - MAX_ELEMENTS_IN_SUMMARY} til)`
-        : '';
-    return labels.join(' · ') + extra;
+    const first = formatElementCardPreview(issue.affectedElements[0]);
+    const extra = issue.affectedElements.length > 1 ? ` (+${issue.affectedElements.length - 1})` : '';
+    return first + extra;
   }
-  if (issue.displayValue) return issue.displayValue;
   const plain = stripHtml(issue.description);
-  return plain.length > 100 ? `${plain.slice(0, 100)}…` : plain;
+  return truncateText(plain, 60);
 }
 
-/** Recommendation line – Lighthouse explanation for the first affected element. */
-export function formatAccessibilityIssueRecommendation(issue: AccessibilityIssue): string {
-  const first = issue.affectedElements?.[0];
-  if (first?.explanation) {
-    const text = first.explanation.length > 120 ? `${first.explanation.slice(0, 120)}…` : first.explanation;
-    return text;
-  }
-  if (first?.selector) return `Påvirket: ${first.selector}`;
-  if (issue.wcagTags && issue.wcagTags.length > 0) return issue.wcagTags.join(', ');
-  return 'Se konkrete elementer i funnet';
-}
-
-/** One-line summary for the Forbedringer chip list. */
+/** One-line summary for the Forbedringer chip list – title only, no element details. */
 export function formatAccessibilityImprovementDesc(issue: AccessibilityIssue): string {
-  if (issue.affectedElements && issue.affectedElements.length > 0) {
-    const preview = issue.affectedElements
-      .slice(0, 2)
-      .map(formatAffectedElementLabel)
-      .join(', ');
-    const suffix = issue.affectedElements.length > 2 ? '…' : '';
-    return `${issue.title}: ${preview}${suffix}`;
-  }
-  if (issue.displayValue) return `${issue.title} (${issue.displayValue})`;
-  return issue.title;
+  const colonIndex = issue.title.indexOf(':');
+  return colonIndex >= 0 ? issue.title.slice(0, colonIndex).trim() : issue.title;
 }
 
 /** Full audit context for AI – must only reference listed elements. */

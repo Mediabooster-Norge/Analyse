@@ -53,3 +53,17 @@ export const ANALYSIS_STEP_INDEX = {
 
 /** Siste steg i hovedanalysen (/api/analyze) før PageSpeed og konkurrenter. */
 export const ANALYSIS_MAIN_PHASE_LAST_INDEX = ANALYSIS_STEP_INDEX.report;
+
+/** Gratis smakebit – uten konkurrenter; «Genererer rapport» erstattes med poengberegning. */
+export const GUEST_ANALYSIS_STEPS: AnalysisStepConfig[] = ANALYSIS_STEPS.filter(
+  (step) => step.id !== 'competitors'
+).map((step) =>
+  step.id === 'report'
+    ? {
+        ...step,
+        label: 'Beregner poeng',
+        description: 'Sammenstiller score og forbedringsfunn',
+        duration: '~10s',
+      }
+    : step
+);

@@ -16,6 +16,7 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
   const message = searchParams.get('message');
   const urlError = searchParams.get('error');
+  const previewToken = searchParams.get('preview')?.trim() || '';
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -47,7 +48,20 @@ function LoginPageContent() {
         return;
       }
 
-      router.push('/dashboard');
+      let redirectPath = '/dashboard';
+      if (previewToken) {
+        const claimRes = await fetch('/api/analyze/preview/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: previewToken }),
+        });
+        const claimData = await claimRes.json();
+        if (claimRes.ok && claimData.analysisId) {
+          redirectPath = `/dashboard?analysisId=${claimData.analysisId}`;
+        }
+      }
+
+      router.push(redirectPath);
       router.refresh();
     } catch (err) {
       setError('En feil oppstod. Prøv igjen senere.');

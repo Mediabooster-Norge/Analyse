@@ -1,6 +1,6 @@
 'use client';
 
-import { BarChart3, TrendingUp, Tag, Eye, FileText, Share2, ChevronDown } from 'lucide-react';
+import { BarChart3, TrendingUp, Tag, Eye, FileText, Share2, ChevronDown, Lock } from 'lucide-react';
 import { RocketIcon } from './rocket-icon';
 import type { DashboardTab } from '@/types/dashboard';
 import {
@@ -21,6 +21,8 @@ interface TabNavigationProps {
   isPremium?: boolean;
   /** When set, only these tabs are shown (e.g. shared preview). */
   visibleTabs?: DashboardTab[];
+  /** Tabs shown but locked (preview mode) – still selectable to preview locked content. */
+  lockedTabs?: DashboardTab[];
 }
 
 const allTabs = [
@@ -46,7 +48,9 @@ export function TabNavigation({
   keywordCount,
   isPremium = false,
   visibleTabs,
+  lockedTabs = [],
 }: TabNavigationProps) {
+  const lockedSet = new Set(lockedTabs);
   const baseTabs = AI_VISIBILITY_ENABLED ? allTabs : allTabs.filter((t) => t.id !== 'ai-visibility');
   const tabs = visibleTabs
     ? baseTabs.filter((t) => visibleTabs.includes(t.id))
@@ -86,6 +90,7 @@ export function TabNavigation({
             if ('disabled' in tab && tab.disabled) return null;
             const Icon = tab.icon;
             const count = getTabCount(tab.id, competitorCount, keywordCount);
+            const isLocked = lockedSet.has(tab.id);
             return (
               <DropdownMenuItem
                 key={tab.id}
@@ -94,6 +99,7 @@ export function TabNavigation({
               >
                 <Icon className="h-4 w-4 shrink-0" />
                 <span className="flex-1">{tab.label}</span>
+                {isLocked && <Lock className="h-3 w-3 shrink-0 text-muted-foreground" />}
                 {count != null && count > 0 && (
                   <span className="text-xs text-neutral-500 tabular-nums">{count}</span>
                 )}
@@ -110,6 +116,7 @@ export function TabNavigation({
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
           const isDisabled = 'disabled' in tab && tab.disabled;
+          const isLocked = lockedSet.has(tab.id);
 
           const desktopTabBase =
             'shrink-0 rounded-lg text-xs xl:text-sm font-medium transition-all whitespace-nowrap flex items-center gap-1.5 xl:gap-2 px-2.5 py-1.5 xl:px-3 xl:py-2';
@@ -133,11 +140,18 @@ export function TabNavigation({
               onClick={() => onTabChange(tab.id)}
               type="button"
               className={`${desktopTabBase} cursor-pointer ${
-                isActive ? 'bg-white text-neutral-900 shadow-sm' : 'text-neutral-600 hover:text-neutral-900'
+                isActive
+                  ? 'bg-white text-neutral-900 shadow-sm'
+                  : isLocked
+                    ? 'text-neutral-500 hover:text-neutral-700'
+                    : 'text-neutral-600 hover:text-neutral-900'
               }`}
             >
               <Icon className="h-3.5 w-3.5 xl:h-4 xl:w-4 shrink-0" />
               <span>{tab.label}</span>
+              {isLocked && (
+                <Lock className="h-3 w-3 xl:h-3.5 xl:w-3.5 shrink-0 text-neutral-400" aria-hidden />
+              )}
               {tab.showCount && (() => {
                 const count = getTabCount(tab.id, competitorCount, keywordCount);
                 return count != null && count > 0 ? (

@@ -31,12 +31,20 @@ import {
   Tag,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { usePremium, getPremiumLimits, PREMIUM_LIMITS } from '@/hooks/usePremium';
+import { usePremium } from '@/hooks/usePremium';
 import {
   isAllowlistedPremiumEmail,
-  PREMIUM_MONTHLY_ANALYSIS_LIMIT,
   getAiVisibilityChecksLimit,
+  getTierLimits,
+  type SubscriptionTier,
 } from '@/lib/constants/premium';
+import { PRICING_TIERS } from '@/lib/brand/content';
+
+const PLAN_LABELS: Record<SubscriptionTier, string> = {
+  free: 'Gratis-plan',
+  plus: 'Pluss-abonnement',
+  premium: 'Premium-abonnement',
+};
 
 interface UserData {
   id: string;
@@ -57,24 +65,20 @@ export default function SettingsPage() {
   });
   
   // Premium status
-  const { isPremium, monthlyAnalysisLimit, loading: premiumLoading } = usePremium();
-  const limits = getPremiumLimits(isPremium);
-  const planLimits = PREMIUM_LIMITS.premium;
+  const { subscriptionTier, isPremium, monthlyAnalysisLimit, loading: premiumLoading } = usePremium();
+  const limits = getTierLimits(subscriptionTier);
   const hasUnlimitedAnalyses = Boolean(user?.email && isAllowlistedPremiumEmail(user.email));
-  const displayAnalysisLimit = hasUnlimitedAnalyses
-    ? monthlyAnalysisLimit
-    : isPremium
-      ? PREMIUM_MONTHLY_ANALYSIS_LIMIT
-      : limits.monthlyAnalyses;
+  const displayAnalysisLimit = hasUnlimitedAnalyses ? monthlyAnalysisLimit : limits.monthlyAnalyses;
   const displayAiVisibilityLimit = user?.email
-    ? getAiVisibilityChecksLimit(isPremium, user.email)
-    : planLimits.aiVisibilityChecks;
+    ? getAiVisibilityChecksLimit(subscriptionTier, user.email)
+    : limits.aiVisibilityChecks;
+  const planLabel = PLAN_LABELS[subscriptionTier];
 
   const premiumBenefits = [
-    `${planLimits.monthlyAnalyses} analyser per måned (inkl. oppdateringer)`,
-    `Opptil ${planLimits.competitors} konkurrenter per analyse`,
-    `Opptil ${planLimits.keywords} nøkkelord per analyse`,
-    `${planLimits.articleGenerationsPerMonth} AI-artikler per måned`,
+    `${limits.monthlyAnalyses} analyser per måned (inkl. oppdateringer)`,
+    `Opptil ${limits.competitors} konkurrenter per analyse`,
+    `Opptil ${limits.keywords} nøkkelord per analyse`,
+    `${limits.articleGenerationsPerMonth} AI-artikler per måned`,
     `${displayAiVisibilityLimit} AI-synlighetssjekker per måned`,
     'Tilgjengelighetsanalyse (WCAG)',
     'Foreslåtte undersider',
@@ -281,7 +285,7 @@ export default function SettingsPage() {
                 <Crown className={`h-6 w-6 ${isPremium ? 'text-white' : 'text-neutral-700'}`} />
               </div>
               <div>
-                <h3 className="font-semibold text-neutral-900">{isPremium ? 'Premium-abonnement' : 'Gratis-plan'}</h3>
+                <h3 className="font-semibold text-neutral-900">{planLabel}</h3>
                 <p className="text-sm text-neutral-500">
                   {isPremium ? 'Full tilgang til alle funksjoner' : 'Begrenset tilgang'}
                 </p>
@@ -328,7 +332,7 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <p className="text-sm text-neutral-500">Plan</p>
-                      <p className="text-2xl font-bold text-neutral-900">Premium</p>
+                      <p className="text-2xl font-bold text-neutral-900 capitalize">{subscriptionTier === 'plus' ? 'Pluss' : subscriptionTier === 'premium' ? 'Premium' : 'Gratis'}</p>
                     </div>
                   </div>
                   <p className="text-xs text-neutral-600 font-medium">Alle funksjoner inkludert</p>
@@ -337,7 +341,7 @@ export default function SettingsPage() {
 
               {/* Premium-fordeler — dynamiske verdier fra PREMIUM_LIMITS / usePremium */}
               <div>
-                <h4 className="text-sm font-semibold text-neutral-700 mb-3">Dine Premium-fordeler</h4>
+                <h4 className="text-sm font-semibold text-neutral-700 mb-3">Dine planfordeler</h4>
                 <div className="grid md:grid-cols-2 gap-2">
                   {premiumBenefits.map((benefit) => (
                     <div
@@ -360,7 +364,7 @@ export default function SettingsPage() {
                     </div>
                     <div>
                       <p className="font-medium text-neutral-900">Trenger du hjelp?</p>
-                      <p className="text-sm text-neutral-500">Vi er her for deg som Premium-kunde</p>
+                      <p className="text-sm text-neutral-500">Vi er her for deg som betalende kunde</p>
                     </div>
                   </div>
                   <Button variant="outline" size="sm" asChild className="border-neutral-200">
@@ -419,15 +423,23 @@ export default function SettingsPage() {
               </div>
 
               {/* Upgrade CTA */}
-              <div className="p-4 rounded-xl bg-gradient-to-r from-neutral-900 to-neutral-800 text-white">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="font-semibold mb-1">Oppgrader til Premium</h4>
-                    <p className="text-sm text-neutral-300">30 analyser/mnd, flere konkurrenter og mer</p>
-                  </div>
-                  <Button variant="secondary" className="bg-white text-neutral-900 hover:bg-neutral-100" asChild>
+              <div className="p-4 rounded-xl bg-gradient-to-r from-neutral-900 to-neutral-800 text-white space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-1">Oppgrader til Pluss eller Premium</h4>
+                  <p className="text-sm text-neutral-300">
+                    Pluss ({PRICING_TIERS.plus.price}/mnd): {PRICING_TIERS.plus.analysesPerMonth} analyser. Premium ({PRICING_TIERS.premium.price}/mnd): {PRICING_TIERS.premium.analysesPerMonth} analyser og høyere volum.
+                  </p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Button variant="secondary" className="bg-white text-neutral-900 hover:bg-neutral-100 flex-1" asChild>
                     <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
-                      Kom i gang
+                      Pluss – {PRICING_TIERS.plus.price}
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                  <Button variant="secondary" className="bg-white/90 text-neutral-900 hover:bg-neutral-100 flex-1" asChild>
+                    <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
+                      Premium – {PRICING_TIERS.premium.price}
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </a>
                   </Button>
@@ -444,10 +456,10 @@ export default function SettingsPage() {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Crown className="h-5 w-5 text-neutral-500" />
-              <CardTitle className="text-neutral-900">Premium-funksjoner</CardTitle>
+              <CardTitle className="text-neutral-900">Pluss-funksjoner</CardTitle>
             </div>
             <CardDescription className="text-neutral-500">
-              Få mer ut av analyseverktøyet med Premium
+              Få mer ut av analyseverktøyet med Pluss eller Premium
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -503,7 +515,7 @@ export default function SettingsPage() {
             {/* CTA */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 bg-neutral-900 rounded-lg text-white">
               <div>
-                <h3 className="font-semibold">Interessert i Premium?</h3>
+                <h3 className="font-semibold">Interessert i Pluss eller Premium?</h3>
                 <p className="text-sm text-neutral-300">
                   Kontakt oss for en skreddersydd løsning
                 </p>

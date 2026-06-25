@@ -14,6 +14,7 @@ export interface UserProfile {
   id: string;
   email: string;
   is_premium: boolean;
+  subscription_tier: 'free' | 'plus' | 'premium';
   premium_since: string | null;
   premium_expires_at: string | null;
   monthly_analysis_limit: number;

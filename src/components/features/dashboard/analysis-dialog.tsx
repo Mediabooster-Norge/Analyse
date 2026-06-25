@@ -11,18 +11,16 @@ import {
   Search,
   Tag,
   X,
-  Loader2,
-  CheckCircle2,
-  Clock,
   BarChart3,
-  Zap,
+  Loader2,
 } from 'lucide-react';
 import { RocketIcon } from './rocket-icon';
+import { AnalysisProgressView } from './analysis-progress-view';
 import { ANALYSIS_STEPS, ANALYSIS_STEP_INDEX } from './analysis-steps';
 import type { AnalysisStepConfig } from './analysis-steps';
 
 export type { AnalysisStepConfig, AnalysisStepId } from './analysis-steps';
-export { ANALYSIS_STEPS, ANALYSIS_STEP_INDEX, ANALYSIS_MAIN_PHASE_LAST_INDEX, getAnalysisStepIndex } from './analysis-steps';
+export { ANALYSIS_STEPS, ANALYSIS_STEP_INDEX, ANALYSIS_MAIN_PHASE_LAST_INDEX, GUEST_ANALYSIS_STEPS, getAnalysisStepIndex } from './analysis-steps';
 
 export interface AnalysisDialogProps {
   open: boolean;
@@ -134,132 +132,22 @@ export function AnalysisDialog({
             <VisuallyHidden.Root asChild>
               <DialogTitle>Analyserer nettside</DialogTitle>
             </VisuallyHidden.Root>
-            <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6 space-y-3 sm:space-y-4">
-              {/* Current step or PageSpeed step */}
-              <div className="rounded-xl bg-neutral-50 border border-neutral-200 p-3 sm:p-4">
-                <div className="flex items-center gap-3 sm:gap-4">
-                  {/* Progress ring - subtle */}
-                  <div className="relative w-12 sm:w-14 h-12 sm:h-14 shrink-0">
-                    <svg className="w-12 sm:w-14 h-12 sm:h-14 -rotate-90" viewBox="0 0 56 56">
-                      <circle cx="28" cy="28" r="24" fill="none" stroke="#e5e5e5" strokeWidth="3" />
-                      <circle
-                        cx="28"
-                        cy="28"
-                        r="24"
-                        fill="none"
-                        stroke="#737373"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        className="transition-all duration-700 ease-out"
-                        strokeDasharray={`${((effectiveStep + 1) / analysisSteps.length) * 150.8} 150.8`}
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <span className="text-neutral-700 text-xs sm:text-sm font-semibold">
-                        {`${effectiveStep + 1}/${analysisSteps.length}`}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <p className="text-neutral-900 text-sm sm:text-base font-medium flex items-center gap-2">
-                        {showStepLabel}
-                        <span className="inline-flex gap-0.5">
-                          <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-1 h-1 rounded-full bg-neutral-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                        </span>
-                      </p>
-                    </div>
-                    <p className="text-neutral-500 text-xs sm:text-sm hidden sm:block">
-                      {showStepDesc}
-                    </p>
-                  </div>
-
-                  {/* Timer - subtle */}
-                  <div className="flex items-center gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg bg-white border border-neutral-200">
-                    <div className="w-1.5 h-1.5 rounded-full bg-neutral-900 animate-pulse" />
-                    <span className="text-xs sm:text-sm font-medium text-neutral-700 tabular-nums">
-                      {Math.floor(elapsedTime / 60)}:{(elapsedTime % 60).toString().padStart(2, '0')}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Steps list – alle 7 steg inkl. hastighet, WCAG og konkurrenter */}
-              <div className="rounded-xl border border-neutral-200 overflow-hidden bg-white">
-                <div className="divide-y divide-neutral-100">
-                  {analysisSteps.map((step, index) => {
-                    const StepIcon = step.icon;
-                    const isComplete = index < effectiveStep;
-                    const isCurrent = index === effectiveStep;
-                    const isAsyncStepCurrent =
-                      isCurrent && (showPageSpeedStep || showCompetitorsStep);
-                    const label =
-                      isCurrent && showCompetitorsStep && step.id === 'competitors'
-                        ? showStepLabel
-                        : isCurrent && showPageSpeedStep && step.id === 'pagespeed'
-                          ? 'Måler hastighet (PageSpeed)'
-                        : isCurrent && showPageSpeedStep && step.id === 'accessibility'
-                          ? 'Sjekker tilgjengelighet (WCAG)'
-                          : step.label;
-                    return (
-                      <div
-                        key={step.id}
-                        className={`flex items-center gap-3 px-4 py-2.5 transition-all duration-300 ${
-                          isCurrent ? 'bg-neutral-50 border-l-2 border-l-neutral-400 animate-pulse' : ''
-                        }`}
-                      >
-                        <div
-                          className={`relative w-7 h-7 rounded-md flex items-center justify-center shrink-0 transition-all duration-300 ${
-                            isComplete
-                              ? 'bg-neutral-900/10'
-                              : isCurrent
-                                ? 'bg-neutral-200'
-                                : 'bg-neutral-100'
-                          }`}
-                        >
-                          {isComplete ? (
-                            <CheckCircle2 className="h-3.5 w-3.5 text-neutral-900" />
-                          ) : isCurrent ? (
-                            <>
-                              {isAsyncStepCurrent ? (
-                                <Loader2 className="h-3.5 w-3.5 text-neutral-700 animate-spin" />
-                              ) : (
-                                <StepIcon className="h-3.5 w-3.5 text-neutral-700" />
-                              )}
-                              <span className="absolute inset-0 rounded-md border border-neutral-300 animate-pulse" />
-                            </>
-                          ) : (
-                            <StepIcon className="h-3.5 w-3.5 text-neutral-400" />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className={`text-sm ${
-                            isComplete ? 'text-neutral-900 font-medium' : isCurrent ? 'text-neutral-900 font-medium' : 'text-neutral-400'
-                          }`}>
-                            {label}
-                          </p>
-                        </div>
-                        <span className={`text-xs tabular-nums shrink-0 ${
-                          isComplete ? 'text-neutral-900' : isCurrent ? 'text-neutral-600' : 'text-neutral-300'
-                        }`}>
-                          {isComplete ? '✓' : isCurrent ? 'Pågår' : step.duration}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Status message + keep-window-open warning */}
-              <p className="text-center text-xs text-neutral-400">
-                {showPageSpeedStep ? 'Vanligvis 1-2 minutter' : 'Vanligvis 1-2 minutter'}
-              </p>
-              <p className="text-center text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-                Hold dette vinduet åpent — lukker du det kan analysen gå tapt.
-              </p>
+            <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-4 sm:pb-6">
+              <AnalysisProgressView
+                analysisSteps={analysisSteps}
+                effectiveStep={effectiveStep}
+                elapsedTime={elapsedTime}
+                showStepLabel={showStepLabel ?? 'Analyserer'}
+                showStepDesc={showStepDesc}
+                asyncCurrentStep={showPageSpeedStep || showCompetitorsStep}
+                resolveStepLabel={(step, _index, isCurrent) => {
+                  if (!isCurrent) return step.label;
+                  if (showCompetitorsStep && step.id === 'competitors') return showStepLabel ?? step.label;
+                  if (showPageSpeedStep && step.id === 'pagespeed') return 'Måler hastighet (PageSpeed)';
+                  if (showPageSpeedStep && step.id === 'accessibility') return 'Sjekker tilgjengelighet (WCAG)';
+                  return step.label;
+                }}
+              />
             </div>
           </>
         ) : (

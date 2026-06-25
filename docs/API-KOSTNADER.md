@@ -33,7 +33,7 @@ Oversikt over eksterne API-kall i appen og estimert kostnad per bruker. Priser e
 
 ## 3. AI-synlighetssjekk
 
-**Flyt:** Premium-bruker kjører «Kjør sjekk» på AI-synlighet-fanen.
+**Flyt:** Pluss- eller Premium-bruker kjører «Kjør sjekk» på AI-synlighet-fanen.
 
 | API | Detaljer | Kostnad |
 |-----|----------|---------|
@@ -86,20 +86,20 @@ Oversikt over eksterne API-kall i appen og estimert kostnad per bruker. Priser e
 
 ## 8. Artikkelgenerering (generate-article)
 
-**Flyt:** Premium-bruker genererer én artikkel (kort/medium/lang).
+**Flyt:** Pluss- eller Premium-bruker genererer én artikkel (kort/medium/lang).
 
 | API | Detaljer | Kostnad |
 |-----|----------|---------|
 | OpenAI Chat | `gpt-5-mini`, 1 kall. Tokens avhenger av lengde: short ~4000, medium ~8000, long ~12000 | **ca. $0,05–0,20** per artikkel |
 | Unsplash | 1 søk etter bilde (artikkelens `featuredImageSearchQuery`). Forsidebilde hentes alltid ved generering. Gratis med attribution. | **$0** |
 
-**Anslag per artikkel:** **ca. $0,05–0,20** (kun OpenAI). Artikkelgenerering er begrenset til 30/mnd (Premium); forsidebilde har ikke egen grense.
+**Anslag per artikkel:** **ca. $0,05–0,20** (kun OpenAI). Artikkelgenerering er begrenset til 30/mnd (Pluss) eller 60/mnd (Premium); forsidebilde har ikke egen grense.
 
 ---
 
 ## 9. SoMe-innlegg (generate-social-post)
 
-**Flyt:** Premium-bruker genererer ett innlegg (LinkedIn/Instagram/X). Kan velge lengde (kort/medium/lang), tone (profesjonell/uformell/pedagogisk) og målgruppe (alle/nybegynnere/eksperter/bedriftsledere) – tilsvarende artikkelgeneratoren.
+**Flyt:** Pluss- eller Premium-bruker genererer ett innlegg (LinkedIn/Instagram/X). Kan velge lengde (kort/medium/lang), tone (profesjonell/uformell/pedagogisk) og målgruppe (alle/nybegynnere/eksperter/bedriftsledere) – tilsvarende artikkelgeneratoren.
 
 | API | Detaljer | Kostnad |
 |-----|----------|---------|

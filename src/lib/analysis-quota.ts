@@ -78,5 +78,5 @@ export function buildAnalysisLimitError(limit: number, isPremium: boolean): stri
   if (isPremium) {
     return `Du har brukt opp dine ${limit} analyser denne måneden. Oppdateringer av nøkkelord og konkurrenter teller også som analyser.`;
   }
-  return `Du har brukt opp dine ${limit} gratis analyser denne måneden. Oppgrader til Premium for flere analyser!`;
+  return `Du har brukt opp dine ${limit} gratis analyser denne måneden. Oppgrader til Pluss eller Premium for flere analyser!`;
 }

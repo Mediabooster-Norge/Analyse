@@ -441,9 +441,9 @@ export function AiVisibilityTab({
                   <Lock className="h-5 w-5 text-amber-700" />
                 </div>
                 <div className="min-w-0">
-                  <h4 className="text-sm sm:text-base font-semibold text-amber-700">AI-synlighet er en Premium-funksjon</h4>
+                  <h4 className="text-sm sm:text-base font-semibold text-amber-700">AI-synlighet er en Pluss-funksjon</h4>
                   <p className="text-xs sm:text-sm text-neutral-700 mt-1">
-                    Med Premium får du full rapport om hvordan OpenAI ChatGPT ser og anbefaler bedriften din.
+                    Med Pluss eller Premium får du full rapport om hvordan OpenAI ChatGPT ser og anbefaler bedriften din.
                   </p>
                 </div>
               </div>
@@ -461,7 +461,7 @@ export function AiVisibilityTab({
             <div className="pt-2">
               <Button asChild className="w-full sm:w-auto rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white">
                 <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
-                  Få Premium – AI-synlighet inkludert
+                  Få Pluss – AI-synlighet inkludert
                   <ArrowRight className="ml-2 h-4 w-4 inline" />
                 </a>
               </Button>

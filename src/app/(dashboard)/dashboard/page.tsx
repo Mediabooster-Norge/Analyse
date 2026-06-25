@@ -72,6 +72,7 @@ function DashboardPageContent() {
     setDialogOpen,
     remainingAnalyses,
     isPremium,
+    subscriptionTier,
     activeTab,
     setActiveTab,
     url,
@@ -237,7 +238,7 @@ function DashboardPageContent() {
             {isPremium && (
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 text-[10px] sm:text-xs font-medium border border-amber-200">
                 <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                Premium
+                {subscriptionTier === 'premium' ? 'Premium' : 'Pluss'}
               </span>
             )}
           </div>
@@ -341,7 +342,7 @@ function DashboardPageContent() {
                 </p>
                 {!isPremium && (
                   <div className="flex flex-wrap justify-center sm:justify-start gap-2 sm:gap-3 mt-2">
-                    <span className="text-[10px] sm:text-xs text-neutral-500">Premium gir:</span>
+                    <span className="text-[10px] sm:text-xs text-neutral-500">Pluss gir:</span>
                     <span className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-neutral-600">
                       <CheckCircle2 className="h-3 w-3 text-neutral-900" />30 analyser/mnd
                     </span>
@@ -355,7 +356,7 @@ function DashboardPageContent() {
             {!isPremium && (
               <Button asChild className="bg-neutral-900 hover:bg-neutral-800 text-white w-full sm:w-auto">
                 <a href="https://mediabooster.no/kontakt" target="_blank" rel="noopener noreferrer">
-                  Oppgrader til Premium
+                  Oppgrader til Pluss
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </a>
               </Button>
