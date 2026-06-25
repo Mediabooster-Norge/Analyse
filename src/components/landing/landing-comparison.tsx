@@ -9,15 +9,15 @@ import {
   landingSectionEyebrow,
   landingSectionLead,
   landingSectionPad,
+  landingSectionSandFade,
   landingSectionTitle,
-  landingSectionWash,
 } from "./landing-typography";
 
 export function LandingComparison() {
   const { problem, solution } = COMPARISON_HIGHLIGHT;
 
   return (
-    <section className={`${landingSectionPad} ${landingSectionWash}`}>
+    <section className={`${landingSectionPad} ${landingSectionSandFade}`}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="grid md:grid-cols-2 gap-10 md:gap-14 lg:gap-16 items-start">
           <div className="md:sticky md:top-28">

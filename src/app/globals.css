@@ -310,45 +310,42 @@
   background: linear-gradient(
     180deg,
     var(--background) 0%,
-    color-mix(in srgb, var(--background) 88%, var(--wash-light)) 10%,
-    color-mix(in srgb, var(--background) 74%, var(--wash-light)) 24%,
-    color-mix(in srgb, var(--background) 58%, var(--section-card-peak)) 38%,
+    color-mix(in srgb, var(--background) 84%, var(--wash-light)) 10%,
+    color-mix(in srgb, var(--background) 68%, var(--wash-light)) 24%,
+    color-mix(in srgb, var(--background) 48%, var(--section-card-peak)) 38%,
     var(--section-card-peak) 50%,
-    color-mix(in srgb, var(--background) 58%, var(--section-card-peak)) 62%,
-    color-mix(in srgb, var(--background) 74%, var(--wash-light)) 76%,
-    color-mix(in srgb, var(--background) 88%, var(--wash-light)) 90%,
+    color-mix(in srgb, var(--background) 48%, var(--section-card-peak)) 62%,
+    color-mix(in srgb, var(--background) 68%, var(--wash-light)) 76%,
+    color-mix(in srgb, var(--background) 84%, var(--wash-light)) 90%,
     var(--background) 100%
   );
 }
 
+/* Lys, kjølig grønn wash – det letteste grønne nivået. */
 .bg-section-wash {
   background: linear-gradient(
     180deg,
     var(--background) 0%,
-    color-mix(in srgb, var(--background) 90%, var(--wash-light)) 8%,
-    color-mix(in srgb, var(--background) 76%, var(--wash-light)) 20%,
-    var(--wash-light) 32%,
-    color-mix(in srgb, var(--background) 68%, var(--wash-medium)) 46%,
-    color-mix(in srgb, var(--background) 68%, var(--wash-medium)) 54%,
-    var(--wash-light) 68%,
-    color-mix(in srgb, var(--background) 76%, var(--wash-light)) 80%,
-    color-mix(in srgb, var(--background) 90%, var(--wash-light)) 92%,
+    color-mix(in srgb, var(--background) 90%, var(--wash-light)) 12%,
+    var(--wash-light) 34%,
+    color-mix(in srgb, var(--background) 72%, var(--wash-medium)) 50%,
+    var(--wash-light) 66%,
+    color-mix(in srgb, var(--background) 90%, var(--wash-light)) 88%,
     var(--background) 100%
   );
 }
 
+/* Dyp, kjølig grønn scene – tydelig mørkere enn wash, løfter demo-panelet. */
 .bg-section-stage {
   background: linear-gradient(
     180deg,
     var(--background) 0%,
-    color-mix(in srgb, var(--background) 88%, var(--wash-light)) 10%,
-    color-mix(in srgb, var(--background) 72%, var(--wash-light)) 22%,
-    var(--wash-light) 34%,
-    color-mix(in srgb, var(--background) 62%, var(--wash-medium)) 48%,
-    color-mix(in srgb, var(--background) 62%, var(--wash-medium)) 56%,
-    var(--wash-light) 70%,
-    color-mix(in srgb, var(--background) 72%, var(--wash-light)) 82%,
-    color-mix(in srgb, var(--background) 88%, var(--wash-light)) 94%,
+    color-mix(in srgb, var(--background) 80%, var(--wash-light)) 10%,
+    color-mix(in srgb, var(--background) 50%, var(--wash-medium)) 26%,
+    color-mix(in srgb, var(--background) 34%, var(--wash-strong)) 42%,
+    color-mix(in srgb, var(--background) 34%, var(--wash-strong)) 58%,
+    color-mix(in srgb, var(--background) 50%, var(--wash-medium)) 74%,
+    color-mix(in srgb, var(--background) 80%, var(--wash-light)) 90%,
     var(--background) 100%
   );
 }
@@ -357,10 +354,10 @@
   background: linear-gradient(
     180deg,
     var(--background) 0%,
-    color-mix(in srgb, var(--background) 82%, var(--section-sand)) 18%,
-    color-mix(in srgb, var(--background) 45%, var(--section-sand)) 42%,
-    color-mix(in srgb, var(--background) 45%, var(--section-sand)) 58%,
-    color-mix(in srgb, var(--background) 82%, var(--section-sand)) 82%,
+    color-mix(in srgb, var(--background) 78%, var(--section-sand)) 18%,
+    color-mix(in srgb, var(--background) 36%, var(--section-sand)) 42%,
+    color-mix(in srgb, var(--background) 36%, var(--section-sand)) 58%,
+    color-mix(in srgb, var(--background) 78%, var(--section-sand)) 82%,
     var(--background) 100%
   );
 }
@@ -369,10 +366,10 @@
   background: linear-gradient(
     180deg,
     var(--background) 0%,
-    color-mix(in srgb, var(--background) 92%, var(--wash-light)) 18%,
-    color-mix(in srgb, var(--background) 86%, var(--wash-light)) 38%,
-    color-mix(in srgb, var(--background) 86%, var(--wash-light)) 62%,
-    color-mix(in srgb, var(--background) 92%, var(--wash-light)) 82%,
+    color-mix(in srgb, var(--background) 90%, var(--wash-light)) 18%,
+    color-mix(in srgb, var(--background) 82%, var(--wash-light)) 38%,
+    color-mix(in srgb, var(--background) 82%, var(--wash-light)) 62%,
+    color-mix(in srgb, var(--background) 90%, var(--wash-light)) 82%,
     var(--background) 100%
   );
 }

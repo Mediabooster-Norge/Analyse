@@ -24,8 +24,8 @@ import {
   landingSectionHeaderMb,
   landingSectionLead,
   landingSectionPad,
-  landingSectionSandFade,
   landingSectionTitle,
+  landingSectionWash,
 } from "./landing-typography";
 import { Reveal } from "./reveal";
 
@@ -105,7 +105,7 @@ function MarqueeRow({
 
 export function LandingFeatures() {
   return (
-    <section className={`${landingSectionPad} overflow-hidden ${landingSectionSandFade}`}>
+    <section className={`${landingSectionPad} overflow-hidden ${landingSectionWash}`}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <Reveal>
           <div className={`max-w-2xl ${landingSectionHeaderMb}`}>
