@@ -1,4 +1,4 @@
-import { Link2, Gauge, Lightbulb } from "lucide-react";
+import { Link2, Gauge, UserPlus, ChevronRight } from "lucide-react";
 import { LANDING_STEPS, LANDING_STEPS_SECTION } from "@/lib/brand/content";
 import {
   landingAccentMono,
@@ -12,7 +12,7 @@ import {
   landingSectionTitle,
 } from "./landing-typography";
 
-const STEP_ICONS = [Link2, Gauge, Lightbulb] as const;
+const STEP_ICONS = [Link2, Gauge, UserPlus] as const;
 
 export function LandingSteps() {
   return (
@@ -27,26 +27,30 @@ export function LandingSteps() {
           <p className={landingSectionLead}>{LANDING_STEPS_SECTION.lead}</p>
         </div>
 
-        <ol className="relative grid gap-4 sm:gap-5 md:grid-cols-3">
-          <div
-            className="hidden md:block absolute inset-x-[16%] top-[3.625rem] h-px bg-gradient-to-r from-transparent via-border to-transparent"
-            aria-hidden
-          />
+        <ol className="flex flex-col md:flex-row md:items-stretch gap-3 md:gap-0">
           {LANDING_STEPS.map(({ step, title, text }, i) => {
             const Icon = STEP_ICONS[i] ?? Link2;
+            const isLast = i === LANDING_STEPS.length - 1;
             return (
-              <li
-                key={step}
-                className="relative rounded-2xl border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <span className="inline-flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                    <Icon className="size-5" />
-                  </span>
-                  <span className={landingAccentMono}>{step.padStart(2, "0")}</span>
+              <li key={step} className="flex flex-col md:flex-row md:flex-1 md:min-w-0 items-stretch">
+                <div className="flex-1 rounded-xl border border-border/60 bg-background/60 px-5 py-4 sm:px-6 sm:py-5">
+                  <div className="flex items-center gap-3 mb-3">
+                    <span className="inline-flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                      <Icon className="size-4" />
+                    </span>
+                    <span className={landingAccentMono}>{step.padStart(2, "0")}</span>
+                  </div>
+                  <h3 className={`${landingCardTitle} text-base`}>{title}</h3>
+                  <p className={`${landingCardBody} text-sm`}>{text}</p>
                 </div>
-                <h3 className={landingCardTitle}>{title}</h3>
-                <p className={landingCardBody}>{text}</p>
+                {!isLast && (
+                  <div
+                    className="flex items-center justify-center py-2 md:py-0 md:px-3 text-muted-foreground/50 shrink-0"
+                    aria-hidden
+                  >
+                    <ChevronRight className="size-5 rotate-90 md:rotate-0" />
+                  </div>
+                )}
               </li>
             );
           })}

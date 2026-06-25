@@ -114,6 +114,8 @@ interface DashboardState {
   // Full article generation (1 free / 30 premium per month)
   remainingArticleGenerations: number;
   articleGenerationsLimit: number;
+  remainingAiVisibilityChecks: number;
+  aiVisibilityChecksLimit: number;
   generatedArticleResult: GeneratedArticleResult | null;
   generatingArticleIndex: number | null;
 
@@ -252,7 +254,7 @@ function mapAnalysisRowToResult(
 }
 
 export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardOptions) {
-  const { subscriptionTier, isPremium, monthlyAnalysisLimit, articleGenerationsPerMonth, loading: premiumLoading } = usePremium();
+  const { subscriptionTier, isPremium, monthlyAnalysisLimit, articleGenerationsPerMonth, aiVisibilityChecksPerMonth, loading: premiumLoading } = usePremium();
   const limits = getTierLimits(subscriptionTier);
   
   const FREE_MONTHLY_LIMIT = monthlyAnalysisLimit;
@@ -260,6 +262,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
   const FREE_COMPETITOR_LIMIT = limits.competitors;
   const FREE_UPDATE_LIMIT = isPremium ? 999 : 5;
   const ARTICLE_GENERATIONS_LIMIT = articleGenerationsPerMonth;
+  const AI_VISIBILITY_CHECKS_LIMIT = aiVisibilityChecksPerMonth;
 
   // State
   const [state, setState] = useState<DashboardState>({
@@ -312,6 +315,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     articleSuggestionsSavedAt: null,
     remainingArticleGenerations: ARTICLE_GENERATIONS_LIMIT, // Start with full limit, updated from DB
     articleGenerationsLimit: ARTICLE_GENERATIONS_LIMIT,
+    remainingAiVisibilityChecks: AI_VISIBILITY_CHECKS_LIMIT,
+    aiVisibilityChecksLimit: AI_VISIBILITY_CHECKS_LIMIT,
     generatedArticleResult: null,
     generatingArticleIndex: null,
     socialPostSuggestions: null,
@@ -361,6 +366,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             remainingKeywordUpdates: data.remainingKeywordUpdates ?? 2,
             remainingArticleGenerations: data.remainingArticleGenerations ?? state.remainingArticleGenerations,
             articleGenerationsLimit: data.articleGenerationsLimit ?? state.articleGenerationsLimit,
+            remainingAiVisibilityChecks: data.remainingAiVisibilityChecks ?? state.remainingAiVisibilityChecks,
+            aiVisibilityChecksLimit: data.aiVisibilityChecksLimit ?? state.aiVisibilityChecksLimit,
             currentAnalysisId: data.currentAnalysisId || null,
             companyId: data.companyId || null,
             competitorUrls: cachedCompetitors,
@@ -413,13 +420,23 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
 
         const analysisCount = (monthlyAnalyses?.length || 0) + (quotaEventCount ?? 0);
 
-        const { count: articleGenCount } = await supabase
-          .from('article_generations')
-          .select('*', { count: 'exact', head: true })
-          .eq('user_id', user.id)
-          .gte('created_at', firstDayOfMonth);
+        const [{ count: articleGenCount }, { count: aiVisibilityCheckCount }] = await Promise.all([
+          supabase
+            .from('article_generations')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', firstDayOfMonth),
+          supabase
+            .from('ai_visibility_checks')
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .gte('created_at', firstDayOfMonth),
+        ]);
 
         const remainingArticleGens = Math.max(0, ARTICLE_GENERATIONS_LIMIT - (articleGenCount ?? 0));
+        const remainingAiVisibility = isPremium
+          ? Math.max(0, AI_VISIBILITY_CHECKS_LIMIT - (aiVisibilityCheckCount ?? 0))
+          : 0;
 
         // Fetch analysis
         let analysisQuery = supabase
@@ -518,6 +535,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             remainingAnalyses: Math.max(0, FREE_MONTHLY_LIMIT - analysisCount),
             remainingArticleGenerations: remainingArticleGens,
             articleGenerationsLimit: ARTICLE_GENERATIONS_LIMIT,
+            remainingAiVisibilityChecks: remainingAiVisibility,
+            aiVisibilityChecksLimit: AI_VISIBILITY_CHECKS_LIMIT,
             userName: firstName || null,
             articleSuggestions: savedArticleSuggestions,
             articleSuggestionsSavedAt: savedArticleSuggestionsAt,
@@ -545,6 +564,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
             remainingAnalyses: Math.max(0, FREE_MONTHLY_LIMIT - analysisCount),
             remainingArticleGenerations: remainingArticleGens,
             articleGenerationsLimit: ARTICLE_GENERATIONS_LIMIT,
+            remainingAiVisibilityChecks: remainingAiVisibility,
+            aiVisibilityChecksLimit: AI_VISIBILITY_CHECKS_LIMIT,
           });
         }
       }
@@ -553,7 +574,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     }
     
     fetchData();
-  }, [analysisIdFromUrl, showNewDialog, FREE_MONTHLY_LIMIT, ARTICLE_GENERATIONS_LIMIT, isPremium, updateState]);
+  }, [analysisIdFromUrl, showNewDialog, FREE_MONTHLY_LIMIT, ARTICLE_GENERATIONS_LIMIT, AI_VISIBILITY_CHECKS_LIMIT, isPremium, updateState]);
 
   // Save to cache when data changes
   useEffect(() => {
@@ -570,6 +591,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           remainingKeywordUpdates: state.remainingKeywordUpdates,
           remainingArticleGenerations: state.remainingArticleGenerations,
           articleGenerationsLimit: state.articleGenerationsLimit,
+          remainingAiVisibilityChecks: state.remainingAiVisibilityChecks,
+          aiVisibilityChecksLimit: state.aiVisibilityChecksLimit,
           socialPostSuggestions: state.socialPostSuggestions,
           socialPostSuggestionsSavedAt: state.socialPostSuggestionsSavedAt,
           selectedSocialPlatform: state.selectedSocialPlatform,
@@ -589,6 +612,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
   }, [state.result, state.companyName, state.companyUrl, state.url, state.userName,
       state.remainingAnalyses, state.remainingCompetitorUpdates, state.remainingKeywordUpdates,
       state.remainingArticleGenerations, state.articleGenerationsLimit,
+      state.remainingAiVisibilityChecks, state.aiVisibilityChecksLimit,
       state.socialPostSuggestions, state.socialPostSuggestionsSavedAt, state.selectedSocialPlatform,
       state.currentAnalysisId, state.companyId,
       state.aiVisibilityResult, state.aiVisibilityAnalysisId, state.aiVisibilityKeyword,
@@ -673,6 +697,10 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
       toast.error('AI-synlighet er en Pluss-funksjon');
       return;
     }
+    if (state.remainingAiVisibilityChecks <= 0) {
+      toast.error('Du har brukt opp AI-synlighetssjekker denne måneden');
+      return;
+    }
     const keywordOptions = getVisibilityKeywordOptions(state.result);
     const focusKeyword = resolveVisibilityKeywordSelection(
       keywordOverride ?? state.aiVisibilityKeyword,
@@ -720,6 +748,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           toast.error((data.error as string) || 'AI-synlighet er en Pluss-funksjon');
         } else if (response.status === 429) {
           toast.error((data.error as string) || 'Du har brukt opp AI-synlighetssjekker denne måneden');
+          updateState({ remainingAiVisibilityChecks: 0 });
         } else if (response.status === 503) {
           toast.error((data.error as string) || 'AI-synlighet kunne ikke sjekkes pga. API-begrensning. Prøv igjen senere.');
         } else if (response.status === 401) {
@@ -744,6 +773,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
           aiVisibilityResult: visibility,
           aiVisibilityAnalysisId: prev.currentAnalysisId,
           aiVisibilityKeyword: focusKeyword,
+          ...(typeof data.remaining === 'number' ? { remainingAiVisibilityChecks: data.remaining } : {}),
+          ...(typeof data.limit === 'number' ? { aiVisibilityChecksLimit: data.limit } : {}),
           result: prev.result
             ? { ...prev.result, aiVisibility: visibility }
             : prev.result,
@@ -770,6 +801,7 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     state.result,
     state.aiVisibilityKeyword,
     state.currentAnalysisId,
+    state.remainingAiVisibilityChecks,
     isPremium,
     updateState,
   ]);
@@ -1803,6 +1835,8 @@ export function useDashboard({ analysisIdFromUrl, showNewDialog }: UseDashboardO
     fetchArticleSuggestions,
     remainingArticleGenerations: state.remainingArticleGenerations,
     articleGenerationsLimit: state.articleGenerationsLimit,
+    remainingAiVisibilityChecks: state.remainingAiVisibilityChecks,
+    aiVisibilityChecksLimit: state.aiVisibilityChecksLimit,
     generatedArticleResult: state.generatedArticleResult,
     generatingArticleIndex: state.generatingArticleIndex,
     fetchGenerateArticle,

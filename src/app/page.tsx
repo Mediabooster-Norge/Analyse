@@ -6,13 +6,13 @@ import type { User } from "@supabase/supabase-js";
 import {
   AnalyzeUrlModalProvider,
   LandingNav,
+  LandingStructuredData,
   LandingHero,
   LandingSteps,
-  LandingPillars,
+  LandingComparison,
   LandingDemo,
   LandingFeatures,
   LandingAudiences,
-  LandingTestimonials,
   LandingPricing,
   LandingFaq,
   LandingFinalCta,
@@ -38,15 +38,16 @@ export default function LandingPage() {
   return (
     <AnalyzeUrlModalProvider user={user}>
       <div className="min-h-screen bg-background text-foreground">
+        <LandingStructuredData />
         <LandingNav user={user} loading={loading} />
         <main>
           <LandingHero user={user} />
           <LandingSteps />
-          <LandingPillars />
           <LandingDemo />
+          <LandingComparison />
           <LandingFeatures />
           <LandingAudiences />
-          <LandingTestimonials />
+          {/* Testimonials skjult inntil vi har ekte kundesitater */}
           <LandingPricing />
           <LandingFaq />
           <LandingFinalCta user={user} />

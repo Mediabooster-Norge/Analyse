@@ -29,6 +29,8 @@ import {
   buildVisibilityMatchTerms,
   resolveVisibilityJudgment,
   judgeVisibilityResponse,
+  wilsonInterval,
+  blendVisibilityScore,
 } from '@/lib/ai-visibility-judge';
 
 const PASS = '✅';
@@ -131,16 +133,17 @@ test('regexFallbackJudgment: Mediabooster AS in recommendation list', () => {
 });
 
 async function runResolveTests() {
-  await testAsync('resolveVisibilityJudgment: clear list mention → positive without LLM', async () => {
+  // Navngitte spørsmål kortslutter på tydelig navnematch (uten LLM).
+  await testAsync('resolveVisibilityJudgment: named clear mention → positive without LLM', async () => {
     const terms = buildVisibilityMatchTerms('mediabooster.no', 'mediabooster.no');
     const j = await resolveVisibilityJudgment({
       response:
-        '1. Mediabooster AS – passer for SMB. 2. Effekt Media AS. 3. Solid Media.',
-      queryType: 'unprompted',
+        'Mediabooster AS er et kjent byrå innen digital markedsføring og leverer gode resultater.',
+      queryType: 'named',
       companyName: 'mediabooster.no',
       domain: 'mediabooster.no',
       keyword: 'digital markedsføring',
-      question: 'Kan du anbefale en bedrift som tilbyr digital markedsføring?',
+      question: 'Hva er Mediabooster kjent for innen digital markedsføring?',
       matchTerms: terms,
       notFoundPhrases: NOT_FOUND,
     });
@@ -173,6 +176,60 @@ test('calcWeightedScorePercent: unprompted weight 2 doubles impact', () => {
 
 test('calcWeightedScorePercent: empty returns undefined', () => {
   assert(calcWeightedScorePercent([]) === undefined, 'expected undefined');
+});
+
+test('wilsonInterval: total 0 → [0,0]', () => {
+  const ci = wilsonInterval(0, 0);
+  assert(ci.low === 0 && ci.high === 0, JSON.stringify(ci));
+});
+
+test('wilsonInterval: small N gives wide band, large N narrower', () => {
+  const small = wilsonInterval(1, 2); // 50% av 2
+  const large = wilsonInterval(50, 100); // 50% av 100
+  const smallWidth = small.high - small.low;
+  const largeWidth = large.high - large.low;
+  assert(smallWidth > largeWidth, `expected wider band for small N: ${smallWidth} vs ${largeWidth}`);
+  assert(small.low >= 0 && small.high <= 1, 'bounds within [0,1]');
+});
+
+test('wilsonInterval: all known still has uncertainty below 1 for small N', () => {
+  const ci = wilsonInterval(3, 3);
+  assert(ci.high === 1 || ci.high <= 1, 'high <= 1');
+  assert(ci.low < 1, `expected low < 1 with only 3 samples, got ${ci.low}`);
+});
+
+test('blendVisibilityScore: empty categories → 0', () => {
+  const r = blendVisibilityScore([
+    { known: 0, total: 0, weight: 0.5 },
+    { known: 0, total: 0, weight: 0.3 },
+  ]);
+  assert(r.score === 0 && r.low === 0 && r.high === 0, JSON.stringify(r));
+});
+
+test('blendVisibilityScore: missing category renormalizes weights', () => {
+  // Kun named tilstede (alle kjent) → score skal bli 100 selv om unprompted/discovery mangler.
+  const r = blendVisibilityScore([
+    { known: 0, total: 0, weight: 0.5 },
+    { known: 4, total: 4, weight: 0.3 },
+    { known: 0, total: 0, weight: 0.2 },
+  ]);
+  assert(r.score === 100, `expected 100 when only present category is fully known, got ${r.score}`);
+});
+
+test('blendVisibilityScore: unprompted weighted higher than discovery', () => {
+  // Anbefaling (unprompted) full, oppdagelse null → score skal trekkes mot unprompted.
+  const recHigh = blendVisibilityScore([
+    { known: 5, total: 5, weight: 0.5 },
+    { known: 0, total: 5, weight: 0.3 },
+    { known: 0, total: 3, weight: 0.2 },
+  ]);
+  // Motsatt: oppdagelse full, anbefaling null.
+  const discHigh = blendVisibilityScore([
+    { known: 0, total: 5, weight: 0.5 },
+    { known: 0, total: 5, weight: 0.3 },
+    { known: 3, total: 3, weight: 0.2 },
+  ]);
+  assert(recHigh.score > discHigh.score, `unprompted should weigh more: ${recHigh.score} vs ${discHigh.score}`);
 });
 
 test('calcWeightedScorePercent: recommendation vs knowledge scenario', () => {

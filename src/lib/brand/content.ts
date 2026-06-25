@@ -107,19 +107,19 @@ export const VALUE_PILLARS = [
 ] as const;
 
 export const COMPARISON_SECTION = {
-  title: "Hva skjer etter analysen?",
-  titleMuted: "Avhenger av verktøyet.",
-  lead: "De fleste verktøy stopper ved feillista. Selia fortsetter til du har tekst du kan lime inn på nettsiden din.",
+  eyebrow: "Derfor Selia",
+  title: "Funn er bare starten",
+  lead: "Mange verktøy stopper ved feillista. Selia gir deg teksten ferdig – klar til å lime inn.",
 } as const;
 
 export const COMPARISON_HIGHLIGHT = {
   problem: {
     label: "Vanlig SEO-rapport",
     finding: "Meta description mangler",
-    outcome: "Du må finne ut hva som skal stå, eller sende rapporten til noen som kan SEO.",
+    outcome: "Du får feilen. Teksten må du skrive selv.",
   },
   solution: {
-    label: "Selia",
+    label: "Selia rapport",
     finding: "Meta description mangler",
     copy: "Oslo Rør AS tilbyr døgnåpen rørleggertjeneste i Oslo og Akershus. Fast pris på bad, VVS og akuttutrykning.",
     note: "158 tegn · klar til å lime inn",
@@ -128,10 +128,10 @@ export const COMPARISON_HIGHLIGHT = {
 
 export const CONCRETE_COMPARISON = [
   { other: "Feilmelding uten forslag", selia: "Ferdig tekst du kan kopiere" },
-  { other: "SEO-sjargong du må tolke", selia: "Tydelige forklaringer, punkt for punkt" },
-  { other: "Rapport i PDF, resten er opp til deg", selia: "Prioritert handlingsplan inkludert" },
-  { other: "Byråtime for å skrive meta og innhold", selia: "AI-forslag per funn, på sekunder" },
-  { other: "Flere verktøy for analyse og innhold", selia: "Analyse, artikler og SoMe i én flyt" },
+  { other: "SEO-sjargong du må tolke", selia: "Forklaringer du forstår" },
+  { other: "Rapport du må eksportere selv", selia: "Del analyse med én lenke" },
+  { other: "Byråtime for meta og innhold", selia: "AI-forslag per funn" },
+  { other: "Flere verktøy for analyse og innhold", selia: "Alt samlet i én flyt" },
 ] as const;
 
 export const AUDIENCES_SECTION = {
@@ -334,26 +334,26 @@ export const FAQ_ITEMS = [
 ] as const;
 
 export const LANDING_STEPS_SECTION = {
-  eyebrow: "Tre steg",
-  title: "Slik fungerer det",
-  lead: "Tre enkle steg fra nettadresse til forslag du kan bruke på nettsiden din.",
+  eyebrow: "Kom i gang",
+  title: "Fra URL til første innsikt på minutter",
+  lead: "Ingen registrering for å starte. Lim inn adressen og se med én gang hva som bremser siden din.",
 } as const;
 
 export const LANDING_STEPS = [
   {
     step: "1",
     title: "Lim inn nettsiden",
-    text: "Skriv inn nettadressen til siden du vil sjekke. Analysen starter med én gang, uten registrering.",
+    text: "Skriv inn nettadressen til siden du vil sjekke. Analysen starter med én gang.",
   },
   {
     step: "2",
-    title: "Se hva som må fikses",
-    text: "Få en tydelig score og de viktigste funnene gratis. Du ser med én gang hva som bremser synligheten din.",
+    title: "Se score og funn gratis",
+    text: "Få en tydelig score og de viktigste funnene uten å opprette konto.",
   },
   {
     step: "3",
-    title: "Få forslag du kan bruke",
-    text: "Opprett gratis konto for full rapport, AI-forslag per funn og en prioritert plan for hva du bør gjøre først.",
+    title: "Opprett konto når du vil ha mer",
+    text: "Vil du ha full rapport, AI-forslag og handlingsplan? Da oppretter du gratis konto – når det passer deg.",
   },
 ] as const;
 

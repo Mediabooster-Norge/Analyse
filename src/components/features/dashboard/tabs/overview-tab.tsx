@@ -104,6 +104,8 @@ export interface OverviewTabProps {
   hasCompetitors: boolean;
   remainingArticleGenerations: number;
   articleGenerationsLimit: number;
+  remainingAnalyses?: number;
+  monthlyAnalysisLimit?: number;
   generatedArticleResult: GeneratedArticleResult | null;
   generatingArticleIndex: number | null;
   fetchGenerateArticle: (suggestion: { title: string; rationale?: string }, index: number) => void;
@@ -169,6 +171,8 @@ export function OverviewTab({
   hasCompetitors,
   remainingArticleGenerations,
   articleGenerationsLimit,
+  remainingAnalyses = 0,
+  monthlyAnalysisLimit = 0,
   generatedArticleResult,
   generatingArticleIndex,
   fetchGenerateArticle,
@@ -241,6 +245,17 @@ export function OverviewTab({
   return (
     <>
       <SummaryCard score={result.overallScore} />
+
+      {monthlyAnalysisLimit > 0 && (
+        <div className="flex flex-wrap items-center gap-2 text-[10px] max-[400px]:text-[9px] min-[401px]:text-xs sm:text-sm">
+          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
+            <strong className="text-neutral-900">
+              {remainingAnalyses}/{monthlyAnalysisLimit}
+            </strong>{' '}
+            analyser igjen denne måneden
+          </span>
+        </div>
+      )}
 
       {/* Poengoversikt + Forbedringer – hver sin full bredde-rad */}
       <div className="space-y-2 max-[400px]:space-y-2 min-[401px]:space-y-3 sm:space-y-4">

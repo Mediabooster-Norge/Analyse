@@ -91,6 +91,8 @@ export interface AiVisibilityTabProps {
   setAiVisibilityKeyword: (keyword: string | null) => void;
   onCheckAiVisibility: (keywordOverride?: string) => Promise<void>;
   onGoToKeywords: () => void;
+  remainingAiVisibilityChecks: number;
+  aiVisibilityChecksLimit: number;
   fetchAISuggestion?: (
     element: string,
     currentValue: string,
@@ -114,6 +116,8 @@ export function AiVisibilityTab({
   setAiVisibilityKeyword,
   onCheckAiVisibility,
   onGoToKeywords,
+  remainingAiVisibilityChecks,
+  aiVisibilityChecksLimit,
   fetchAISuggestion,
 }: AiVisibilityTabProps) {
   const [checkMessageIndex, setCheckMessageIndex] = useState(0);
@@ -295,14 +299,34 @@ export function AiVisibilityTab({
           <Eye className="h-3.5 w-3.5 text-neutral-600" />
           AI-synlighet
         </h3>
-          <p className="text-[10px] sm:text-sm text-neutral-500 leading-relaxed">
-            Tester OpenAI via API med live websøk (Norge, gpt-4o). ChatGPT-appen kan gi rikere svar (kart, lister) – andre AI-verktøy kan også gi andre resultater.
+          <p className="text-[10px] sm:text-sm text-neutral-600 leading-relaxed">
+            Vi sjekker om AI (som ChatGPT) kjenner bedriften din når noen spør om tjenester innen et{' '}
+            <span className="font-medium text-neutral-700">bransjenøkkelord</span> – for eksempel hva dere
+            tilbyr, som «digital markedsføring» eller «regnskap». Du velger nøkkelordet, så tester vi om AI
+            anbefaler dere uoppfordret, kjenner dere når dere navngis, og finner nettsiden deres.
           </p>
+          <p className="text-[10px] sm:text-xs text-neutral-400 mt-1.5 leading-relaxed">
+            Basert på OpenAI med live websøk i Norge. ChatGPT-appen kan gi andre svar (kart og lister).
+          </p>
+          {isPremium && aiVisibilityChecksLimit > 0 && (
+            <div className="flex flex-wrap items-center gap-2 mt-2.5 text-[10px] sm:text-xs">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-neutral-100 text-neutral-600">
+                <strong className="text-neutral-900">
+                  {remainingAiVisibilityChecks}/{aiVisibilityChecksLimit}
+                </strong>{' '}
+                sjekker igjen denne måneden
+              </span>
+            </div>
+          )}
       </div>
 
       {isPremium && (
         <div className="px-3 max-[400px]:px-2 min-[401px]:px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100 bg-white">
-          <p className="text-xs sm:text-sm font-medium text-neutral-900 mb-2">Bransjenøkkelord</p>
+          <p className="text-xs sm:text-sm font-medium text-neutral-900 mb-1">Bransjenøkkelord</p>
+          <p className="text-[10px] sm:text-xs text-neutral-500 mb-2.5 leading-relaxed">
+            Skriv inn et ord eller en kort setning som beskriver hva bedriften tilbyr. Sjekken bruker dette
+            når den spør AI om anbefalinger i bransjen – uten å nevne bedriften din først.
+          </p>
           <div className="flex flex-col sm:flex-row gap-2">
             <Input
               value={customKeywordInput}
@@ -392,8 +416,9 @@ export function AiVisibilityTab({
 
       {isPremium && (
         <div className="px-3 max-[400px]:px-2 min-[401px]:px-4 sm:px-6 py-3 sm:py-4 border-b border-neutral-100 bg-neutral-50/50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <p className="text-[10px] sm:text-xs text-neutral-500">
-            Ett nøkkelord om gangen. Bytt nøkkelord og kjør ny sjekk for å teste andre temaer.
+          <p className="text-[10px] sm:text-xs text-neutral-500 leading-relaxed">
+            Du tester ett bransjenøkkelord om gangen. Vil du sjekke et annet område? Bytt nøkkelord og kjør
+            sjekken på nytt.
           </p>
           <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full sm:w-auto sm:justify-end">
             {selectedKeyword && (
@@ -413,7 +438,7 @@ export function AiVisibilityTab({
             )}
             <Button
               onClick={() => void onCheckAiVisibility(selectedKeyword ?? undefined)}
-              disabled={checkingAiVisibility || !selectedKeyword}
+              disabled={checkingAiVisibility || !selectedKeyword || remainingAiVisibilityChecks <= 0}
               className="w-full sm:w-auto shrink-0 rounded-lg bg-neutral-900 hover:bg-neutral-800 text-white disabled:opacity-70"
             >
               {checkingAiVisibility ? (
@@ -512,56 +537,19 @@ export function AiVisibilityTab({
                             {visData.score}
                           </span>
                           <span className="text-sm text-neutral-400">/100</span>
-                          {visData.details.scoreStability && (
-                            <p className="text-[10px] text-neutral-500 mt-1">
-                              Stabilitet: {visData.details.scoreStability.minScore}–{visData.details.scoreStability.maxScore} / 100
-                            </p>
-                          )}
+                          {visData.details.scoreStability &&
+                            visData.details.scoreStability.maxScore >
+                              visData.details.scoreStability.minScore && (
+                              <p className="text-[10px] text-neutral-500 mt-1">
+                                Sannsynlig spenn: {visData.details.scoreStability.minScore}–
+                                {visData.details.scoreStability.maxScore} / 100
+                              </p>
+                            )}
                         </div>
                       </div>
                       <div className="flex-1 min-w-0 text-center sm:text-left">
                         <h4 className={`font-semibold ${levelColor}`}>{levelLabel}</h4>
                         <p className="text-sm text-neutral-500 mt-1 leading-relaxed">{visData.description}</p>
-                        {(visData.recommendationScore !== undefined || visData.knowledgeScore !== undefined || visData.discoveryScore !== undefined) && (
-                          <div className="grid grid-cols-3 gap-2 mt-3">
-                            {visData.recommendationScore !== undefined && (
-                              <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2">
-                                <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
-                                  Anbefaling
-                                </p>
-                                <p className="text-lg font-bold text-neutral-900 tabular-nums">
-                                  {visData.recommendationScore}
-                                  <span className="text-xs font-normal text-neutral-400">/100</span>
-                                </p>
-                                <p className="text-[10px] text-neutral-500 mt-0.5">Uoppfordret</p>
-                              </div>
-                            )}
-                            {visData.knowledgeScore !== undefined && (
-                              <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2">
-                                <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
-                                  Kjennskap
-                                </p>
-                                <p className="text-lg font-bold text-neutral-900 tabular-nums">
-                                  {visData.knowledgeScore}
-                                  <span className="text-xs font-normal text-neutral-400">/100</span>
-                                </p>
-                                <p className="text-[10px] text-neutral-500 mt-0.5">Navngitt</p>
-                              </div>
-                            )}
-                            {visData.discoveryScore !== undefined && (
-                              <div className="rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2">
-                                <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
-                                  Oppdagelse
-                                </p>
-                                <p className="text-lg font-bold text-neutral-900 tabular-nums">
-                                  {visData.discoveryScore}
-                                  <span className="text-xs font-normal text-neutral-400">/100</span>
-                                </p>
-                                <p className="text-[10px] text-neutral-500 mt-0.5">Søkbar</p>
-                              </div>
-                            )}
-                          </div>
-                        )}
                         {visData.focusKeyword && (
                           <span className="inline-flex items-center gap-1 mt-3 px-2.5 py-1 rounded-full bg-neutral-100 text-neutral-600 text-xs font-medium">
                             <Tag className="h-3 w-3" />
@@ -578,6 +566,46 @@ export function AiVisibilityTab({
                           )}
                       </div>
                     </div>
+                    {(visData.recommendationScore !== undefined || visData.knowledgeScore !== undefined || visData.discoveryScore !== undefined) && (
+                      <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-4 w-full">
+                        {visData.recommendationScore !== undefined && (
+                          <div className="min-w-0 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-center sm:text-left">
+                            <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+                              Anbefaling
+                            </p>
+                            <p className="text-lg font-bold text-neutral-900 tabular-nums">
+                              {visData.recommendationScore}
+                              <span className="text-xs font-normal text-neutral-400">/100</span>
+                            </p>
+                            <p className="text-[10px] text-neutral-500 mt-0.5">Uoppfordret</p>
+                          </div>
+                        )}
+                        {visData.knowledgeScore !== undefined && (
+                          <div className="min-w-0 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-center sm:text-left">
+                            <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+                              Kjennskap
+                            </p>
+                            <p className="text-lg font-bold text-neutral-900 tabular-nums">
+                              {visData.knowledgeScore}
+                              <span className="text-xs font-normal text-neutral-400">/100</span>
+                            </p>
+                            <p className="text-[10px] text-neutral-500 mt-0.5">Navngitt</p>
+                          </div>
+                        )}
+                        {visData.discoveryScore !== undefined && (
+                          <div className="min-w-0 rounded-xl border border-neutral-200 bg-neutral-50 px-3 py-2.5 text-center sm:text-left">
+                            <p className="text-[10px] font-medium uppercase tracking-wide text-neutral-500">
+                              Oppdagelse
+                            </p>
+                            <p className="text-lg font-bold text-neutral-900 tabular-nums">
+                              {visData.discoveryScore}
+                              <span className="text-xs font-normal text-neutral-400">/100</span>
+                            </p>
+                            <p className="text-[10px] text-neutral-500 mt-0.5">Søkbar</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   <div className="lg:col-span-3 rounded-2xl border border-neutral-200 bg-white divide-y divide-neutral-100">

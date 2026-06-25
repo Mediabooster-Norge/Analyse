@@ -120,6 +120,69 @@ export function calcWeightedScorePercent(
 }
 
 /**
+ * Wilson score-intervall for en binomisk andel (successes/total).
+ *
+ * Dette er et ærlig usikkerhetsmål: med få spørsmål blir båndet bredt, med mange
+ * blir det smalt. Brukes for å vise hvor pålitelig AI-synlighetsscoren er, i stedet
+ * for det gamle (villedende) målet som kun gjentok en deterministisk dommer.
+ */
+export function wilsonInterval(
+  successes: number,
+  total: number,
+  z = 1.96
+): { low: number; high: number } {
+  if (total <= 0) return { low: 0, high: 0 };
+  const p = successes / total;
+  const z2 = z * z;
+  const denom = 1 + z2 / total;
+  const center = p + z2 / (2 * total);
+  const margin = z * Math.sqrt((p * (1 - p) + z2 / (4 * total)) / total);
+  return {
+    low: Math.max(0, (center - margin) / denom),
+    high: Math.min(1, (center + margin) / denom),
+  };
+}
+
+export type VisibilityCategoryStat = {
+  /** Antall spørsmål der bedriften ble gjenkjent/anbefalt. */
+  known: number;
+  /** Antall scorbare spørsmål i kategorien. */
+  total: number;
+  /** Relativ vekt i totalscoren (renormaliseres over tilstedeværende kategorier). */
+  weight: number;
+};
+
+/**
+ * Blander kategori-scorer (unprompted/named/discovery) til én totalscore, og
+ * returnerer et Wilson-basert usikkerhetsbånd. Kategorier uten spørsmål hoppes
+ * over og vektene renormaliseres, slik at en manglende kategori ikke trekker
+ * scoren mot null.
+ */
+export function blendVisibilityScore(
+  cats: VisibilityCategoryStat[]
+): { score: number; low: number; high: number } {
+  const present = cats.filter((c) => c.total > 0 && c.weight > 0);
+  if (present.length === 0) return { score: 0, low: 0, high: 0 };
+  const weightSum = present.reduce((sum, c) => sum + c.weight, 0);
+  let score = 0;
+  let low = 0;
+  let high = 0;
+  for (const c of present) {
+    const w = c.weight / weightSum;
+    const p = c.known / c.total;
+    const ci = wilsonInterval(c.known, c.total);
+    score += w * p;
+    low += w * ci.low;
+    high += w * ci.high;
+  }
+  return {
+    score: Math.round(score * 100),
+    low: Math.round(low * 100),
+    high: Math.round(high * 100),
+  };
+}
+
+/**
  * Kombinerer navnegjenkjenning + LLM-dommer.
  * Tydelig nevnt firmanavn i svaret teller alltid – dommeren skal ikke underkjenne det.
  */
@@ -127,7 +190,11 @@ export async function resolveVisibilityJudgment(input: ResolveJudgmentInput): Pr
   const responseLower = input.response.toLowerCase();
   const regexResult = regexFallbackJudgment(responseLower, input.matchTerms, input.notFoundPhrases);
 
-  if (regexResult.positive && !regexResult.uncertain) {
+  // For navngitte/oppdagelses-spørsmål holder det at navnet står tydelig i svaret –
+  // da kan vi kortslutte uten LLM. For nøytrale (unprompted) spørsmål er det IKKE nok
+  // at navnet nevnes: bedriften må faktisk anbefales/listes som relevant. Derfor lar vi
+  // alltid dommeren vurdere unprompted, og bruker regex kun som fallback ved feil.
+  if (regexResult.positive && !regexResult.uncertain && input.queryType !== 'unprompted') {
     return regexResult;
   }
 

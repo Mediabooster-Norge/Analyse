@@ -135,6 +135,8 @@ function DashboardPageContent() {
     fetchArticleSuggestions,
     remainingArticleGenerations,
     articleGenerationsLimit,
+    remainingAiVisibilityChecks,
+    aiVisibilityChecksLimit,
     generatedArticleResult,
     generatingArticleIndex,
     fetchGenerateArticle,
@@ -588,6 +590,8 @@ function DashboardPageContent() {
               hasCompetitors={Boolean(result?.competitors?.length)}
               remainingArticleGenerations={remainingArticleGenerations}
               articleGenerationsLimit={articleGenerationsLimit}
+              remainingAnalyses={remainingAnalyses}
+              monthlyAnalysisLimit={FREE_MONTHLY_LIMIT}
               generatedArticleResult={generatedArticleResult}
               generatingArticleIndex={generatingArticleIndex}
               fetchGenerateArticle={fetchGenerateArticle}
@@ -674,6 +678,8 @@ function DashboardPageContent() {
               setAiVisibilityKeyword={setAiVisibilityKeyword}
               onCheckAiVisibility={checkAiVisibility}
               onGoToKeywords={() => setActiveTab('keywords')}
+              remainingAiVisibilityChecks={remainingAiVisibilityChecks}
+              aiVisibilityChecksLimit={aiVisibilityChecksLimit}
               fetchAISuggestion={fetchAISuggestion}
             />
           )}

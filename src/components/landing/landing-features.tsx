@@ -85,7 +85,10 @@ function MarqueeRow({
 }) {
   const loop = Array.from({ length: MARQUEE_COPIES }, () => items).flat();
   return (
-    <div className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]">
+    <div
+      aria-hidden
+      className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]"
+    >
       <div
         className={`${
           direction === "left" ? "marquee-track" : "marquee-track-right"

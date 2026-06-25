@@ -60,7 +60,10 @@ function MarqueeRow({
   const loop = buildMarqueeLoop(items);
 
   return (
-    <div className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
+    <div
+      aria-hidden
+      className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]"
+    >
       <div
         className={cn(
           "testimonial-marquee-track flex w-max items-stretch gap-3 py-0.5 will-change-transform",

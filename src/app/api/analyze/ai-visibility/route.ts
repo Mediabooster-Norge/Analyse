@@ -10,7 +10,8 @@ import {
   resolveInsightModel,
   optionalTemperature,
   chatCompletionTokenLimit,
-  AI_VISIBILITY_WEB_SEARCH_TOOL,
+  buildWebSearchTool,
+  type WebSearchLocation,
 } from '@/lib/ai-visibility-models';
 import { normalizeVisibilityKeyword } from '@/lib/utils/visibility-keywords';
 import { cleanAiVisibilityResponse, compactAiVisibilityResponse } from '@/lib/utils/ai-visibility-response';
@@ -20,6 +21,8 @@ import {
   buildVisibilityMatchTerms,
   getVisibilityDisplayName,
   calcWeightedScorePercent,
+  blendVisibilityScore,
+  type VisibilityCategoryStat,
   type VisibilityQueryType,
 } from '@/lib/ai-visibility-judge';
 
@@ -32,6 +35,8 @@ interface AIVisibilityRequest {
   keywords?: string[];
   /** Lagre resultat på denne analysen (krever at bruker eier den) */
   analysisId?: string;
+  /** Valgfri lokasjon for websøk (by/region). Utelates → nasjonalt søk. */
+  location?: WebSearchLocation;
 }
 
 const openai = new OpenAI({
@@ -47,11 +52,62 @@ const QUERY_CONCURRENCY = 4;
 /** Lav temperatur for mer reproduserbar score mellom kjøringer. */
 const QUERY_TEMPERATURE = 0.2;
 
+/** Antall forsøk på websøk-kallet før vi faller tilbake til modellkunnskap. */
+const QUERY_MAX_ATTEMPTS = 2;
+
 /**
- * Vi ønsker en mer stabil score uten å måtte gjenta alle websøk-spørringene flere ganger.
- * Derfor kjører vi dommer-/klassifiseringssteg 3 ganger og velger median basert på total score.
+ * Versjon av scoringslogikken. Økes når formel/score endres slik at gamle
+ * cachede resultater (med annen beregning) ikke serveres som om de var nye.
  */
-const AI_VISIBILITY_JUDGE_RUNS = 3;
+const SCORE_VERSION = 2;
+
+/**
+ * Vekting av de tre kategoriene i totalscoren. Nøytrale (unprompted) spørsmål er
+ * det vanskeligste og mest verdifulle signalet på reell AI-synlighet og vektes
+ * høyest. «Navngitt» (kjennskap) og «oppdagelse» (finnbarhet) er lettere signaler.
+ */
+const CATEGORY_WEIGHTS: Record<QueryType, number> = {
+  unprompted: 0.5,
+  named: 0.3,
+  discovery: 0.2,
+};
+
+/** Ett forsøk med websøk via Responses API, med enkel backoff mellom forsøk. */
+async function callWithWebSearch(params: {
+  model: string;
+  webSearchTool: ReturnType<typeof buildWebSearchTool>;
+  maxOutputTokens: number;
+  prompt: string;
+}): Promise<string> {
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= QUERY_MAX_ATTEMPTS; attempt++) {
+    try {
+      const response = await openai.responses.create({
+        model: params.model,
+        tools: [params.webSearchTool],
+        // Tving websøk på alle spørsmålstyper (for å være mer ChatGPT-lignende).
+        tool_choice: 'required',
+        max_output_tokens: params.maxOutputTokens,
+        input: [
+          { role: 'developer', content: VISIBILITY_DEVELOPER_INSTRUCTION },
+          { role: 'user', content: params.prompt },
+        ],
+        ...optionalTemperature(params.model, QUERY_TEMPERATURE),
+      });
+      return (response.output_text || '').trim().replace(/\n{3,}/g, '\n\n');
+    } catch (err) {
+      lastErr = err;
+      const status =
+        err && typeof err === 'object' && 'status' in err
+          ? (err as { status?: number }).status
+          : undefined;
+      // 429 (kvote/tilgang) nytter sjelden å prøve på nytt umiddelbart – avbryt straks.
+      if (status === 429 || attempt === QUERY_MAX_ATTEMPTS) break;
+      await new Promise((r) => setTimeout(r, 400 * attempt));
+    }
+  }
+  throw lastErr ?? new Error('web search failed');
+}
 
 /** Instruksjon til modellen ved websøk – ikke vist til bruker. */
 const VISIBILITY_DEVELOPER_INSTRUCTION =
@@ -84,13 +140,19 @@ type AIVisibilityPayload = {
   score: number;
   level: 'high' | 'medium' | 'low' | 'none';
   description: string;
+  /** Versjon av scoringslogikken (for cache-invalidering). */
+  scoreVersion?: number;
   details: {
     queriesTested: number;
     timesCited: number;
     timesMentioned: number;
     webSearchCount?: number;
     estimatedCount?: number;
-    /** Stabilitet (min/max/median) basert på flere dommerkjøringer (uten å gjenta alle websøk). */
+    /**
+     * Usikkerhetsbånd for scoren (Wilson 95% konfidensintervall basert på antall
+     * scorbare spørsmål). `runs` = antall spørsmål som inngår i scoren (utvalgsstørrelse),
+     * `minScore`/`maxScore` = nedre/øvre grense, `medianScore` = selve scoren.
+     */
     scoreStability?: {
       runs: number;
       minScore: number;
@@ -148,7 +210,8 @@ async function mapWithConcurrency<T, R>(
 async function runOneVisibilityCheck(
   url: string,
   companyName?: string,
-  keywords: string[] = []
+  keywords: string[] = [],
+  location?: WebSearchLocation
 ): Promise<AIVisibilityPayload> {
   keywords = keywords.map(normalizeVisibilityKeyword).filter(Boolean);
   let domain: string;
@@ -173,24 +236,30 @@ async function runOneVisibilityCheck(
   })();
   type QuerySpec = { web: string; model: string; type: QueryType; weight: number };
 
+  // Lokal kontekst i spørsmålsteksten kun når vi faktisk kjenner stedet – ellers nasjonalt.
+  const localePhrase = location?.city?.trim()
+    ? `i ${location.city.trim()}-området`
+    : 'i Norge';
+
   let specs: QuerySpec[];
   if (hasKeyword) {
     // Nøytrale spørsmål: nevner IKKE bedriften. Måler om AI anbefaler den uoppfordret.
+    // Alle spørsmål i en kategori har lik vekt – granularitet kommer fra antall spørsmål.
     const unprompted: QuerySpec[] = [
       {
-        type: 'unprompted', weight: 2,
-        web: `Kan du anbefale en bedrift i Oslo som leverer ${k}?${UNPROMPTED_WEB_BRIEF}`,
-        model: `Kan du anbefale en bedrift i Oslo som leverer ${k}?`,
+        type: 'unprompted', weight: 1,
+        web: `Kan du anbefale en bedrift ${localePhrase} som leverer ${k}?${UNPROMPTED_WEB_BRIEF}`,
+        model: `Kan du anbefale en bedrift ${localePhrase} som leverer ${k}?`,
       },
       {
         type: 'unprompted', weight: 1,
-        web: `Kan du anbefale en bedrift i Norge som tilbyr ${k}? Nevn konkrete firmanavn.${UNPROMPTED_WEB_BRIEF}`,
-        model: `Kan du anbefale en bedrift i Norge som tilbyr ${k}? Nevn konkrete firmanavn.`,
+        web: `Hvilke leverandører av ${k} vil du anbefale ${localePhrase}? Nevn konkrete firmanavn.${UNPROMPTED_WEB_BRIEF}`,
+        model: `Hvilke leverandører av ${k} vil du anbefale ${localePhrase}? Nevn konkrete firmanavn.`,
       },
       {
         type: 'unprompted', weight: 1,
-        web: `Hvem bør jeg velge for ${k} i Oslo-området? Gi anbefalinger med navn.${UNPROMPTED_WEB_BRIEF}`,
-        model: `Hvem bør jeg velge for ${k} i Oslo-området? Gi anbefalinger med navn.`,
+        web: `Hvem bør jeg velge for ${k} ${localePhrase}? Gi anbefalinger med navn.${UNPROMPTED_WEB_BRIEF}`,
+        model: `Hvem bør jeg velge for ${k} ${localePhrase}? Gi anbefalinger med navn.`,
       },
       {
         type: 'unprompted', weight: 1,
@@ -202,23 +271,33 @@ async function runOneVisibilityCheck(
         web: `Hvilke byråer eller leverandører er best på ${k} i Norge?${UNPROMPTED_WEB_BRIEF}`,
         model: `Hvilke byråer eller leverandører er best på ${k} i Norge? Nevn navn.`,
       },
+      {
+        type: 'unprompted', weight: 1,
+        web: `Jeg ser etter en leverandør av ${k}. Hvilke norske selskaper anbefaler du?${UNPROMPTED_WEB_BRIEF}`,
+        model: `Jeg ser etter en leverandør av ${k}. Hvilke norske selskaper anbefaler du?`,
+      },
     ];
     // Navngitte spørsmål: nevner bedriften. Måler om AI faktisk kjenner den.
     const named: QuerySpec[] = [
       {
-        type: 'named', weight: 2,
+        type: 'named', weight: 1,
         web: `Er ${displayName} blant de ledende innen ${k} i Norge?${NAMED_WEB_BRIEF}`,
         model: `Er ${displayName} blant de ledende innen ${k} i Norge?`,
       },
       {
-        type: 'named', weight: 2,
+        type: 'named', weight: 1,
         web: `Kan du anbefale ${displayName} for ${k}? Hva er styrkene?${NAMED_WEB_BRIEF}`,
         model: `Kan du anbefale ${displayName} for ${k}?`,
       },
       {
-        type: 'named', weight: 2,
+        type: 'named', weight: 1,
         web: `Hvordan skiller ${displayName} seg fra andre innen ${k}?${NAMED_WEB_BRIEF}`,
         model: `Hvordan skiller ${displayName} seg fra andre innen ${k}?`,
+      },
+      {
+        type: 'named', weight: 1,
+        web: `Hva er ${displayName} kjent for innen ${k}?${NAMED_WEB_BRIEF}`,
+        model: `Hva er ${displayName} kjent for innen ${k}?`,
       },
     ];
     // Oppdagelsesspørsmål: søker etter bedriftens nettside + nøkkelord.
@@ -227,14 +306,19 @@ async function runOneVisibilityCheck(
     // Maps/lokale bedriftslister som API-et ikke har.
     const discovery: QuerySpec[] = [
       {
-        type: 'discovery', weight: 2,
+        type: 'discovery', weight: 1,
         web: `Søk etter ${domain} og vurder: tilbyr de ${k}?${DISCOVERY_WEB_BRIEF}`,
         model: `Tilbyr ${displayName} (${domain}) ${k}? Beskriv kort.`,
       },
       {
-        type: 'discovery', weight: 2,
+        type: 'discovery', weight: 1,
         web: `Hva sier anmeldelser og omtale om ${displayName} (${domain}) når det gjelder ${k}?${DISCOVERY_WEB_BRIEF}`,
         model: `Hva sier omtale om ${displayName} innen ${k}?`,
+      },
+      {
+        type: 'discovery', weight: 1,
+        web: `Basert på nettstedet ${domain}, hvor relevant er ${displayName} for ${k}?${DISCOVERY_WEB_BRIEF}`,
+        model: `Hvor relevant er ${displayName} (${domain}) for ${k}? Beskriv kort.`,
       },
     ];
     specs = [...unprompted, ...named, ...discovery];
@@ -312,6 +396,7 @@ async function runOneVisibilityCheck(
 
   const modelMode = getAiVisibilityModelMode();
   const modelProfile = resolveModelProfile(modelMode);
+  const webSearchTool = buildWebSearchTool(location);
 
   const queryResults = await mapWithConcurrency<QuerySpec, QueryResult>(
     specs,
@@ -323,19 +408,12 @@ async function runOneVisibilityCheck(
       const queryModel = resolveQueryModel(spec.type, modelMode);
 
       try {
-        const response = await openai.responses.create({
+        resultContent = await callWithWebSearch({
           model: queryModel,
-          tools: [AI_VISIBILITY_WEB_SEARCH_TOOL],
-          // Tving websøk på alle spørsmålstyper (for å være mer ChatGPT-lignende).
-          tool_choice: 'required',
-          max_output_tokens: maxOutputTokensForQueryType(spec.type),
-          input: [
-            { role: 'developer', content: VISIBILITY_DEVELOPER_INSTRUCTION },
-            { role: 'user', content: spec.web },
-          ],
-          ...optionalTemperature(queryModel, QUERY_TEMPERATURE),
+          webSearchTool,
+          maxOutputTokens: maxOutputTokensForQueryType(spec.type),
+          prompt: spec.web,
         });
-        resultContent = (response.output_text || '').trim().replace(/\n{3,}/g, '\n\n');
         usedWebSearch = true;
       } catch (err) {
         const isQuotaOrAccess =
@@ -398,103 +476,72 @@ async function runOneVisibilityCheck(
 
   const judgeCandidates = queryResults.filter((r) => !r.error && r.judgmentResponse.trim());
 
-  type JudgeRun = {
-    score: number;
-    recommendationScore: number | undefined;
-    knowledgeScore: number | undefined;
-    discoveryScore: number | undefined;
-    citedCount: number;
-    uncertainCount: number;
-    webSearchCount: number;
-    estimatedCount: number;
-    source: 'web_search' | 'model_knowledge';
-    validCount: number;
-    scorable: QueryResult[];
-    scorePool: QueryResult[];
-    finalResults: QueryResult[];
-  };
+  // Én dommer-pass (temperatur 0, tilnærmet deterministisk). Vi gjentar IKKE dommeren
+  // flere ganger – det målte tidligere kun dommerens determinisme, ikke reell variasjon
+  // mellom kjøringer. Usikkerheten i scoren stammer fra utvalgsstørrelsen og uttrykkes
+  // via et Wilson-konfidensintervall i stedet.
+  const judgedResults = await mapWithConcurrency<QueryResult, QueryResult>(
+    judgeCandidates,
+    QUERY_CONCURRENCY,
+    async (result) => {
+      const judgment = await resolveVisibilityJudgment({
+        response: result.judgmentResponse,
+        queryType: result.type as VisibilityQueryType,
+        companyName: displayName,
+        domain,
+        keyword: k,
+        question: result.modelQuestion,
+        matchTerms,
+        notFoundPhrases,
+      });
+      const flags = judgmentToFlags(judgment);
+      return { ...result, known: flags.known, uncertain: flags.uncertain };
+    }
+  );
 
-  const judgeRuns: JudgeRun[] = [];
-  for (let judgeRunIndex = 0; judgeRunIndex < AI_VISIBILITY_JUDGE_RUNS; judgeRunIndex++) {
-    const judgedResults = await mapWithConcurrency<QueryResult, QueryResult>(
-      judgeCandidates,
-      QUERY_CONCURRENCY,
-      async (result) => {
-        const judgment = await resolveVisibilityJudgment({
-          response: result.judgmentResponse,
-          queryType: result.type as VisibilityQueryType,
-          companyName: displayName,
-          domain,
-          keyword: k,
-          question: result.modelQuestion,
-          matchTerms,
-          notFoundPhrases,
-        });
-        const flags = judgmentToFlags(judgment);
-        return { ...result, known: flags.known, uncertain: flags.uncertain };
-      }
-    );
+  const judgedByQuery = new Map(judgedResults.map((r) => [r.query, r]));
+  const finalResults = queryResults.map((r) => judgedByQuery.get(r.query) ?? r);
 
-    const judgedByQuery = new Map(judgedResults.map((r) => [r.query, r]));
-    const finalResults = queryResults.map((r) => judgedByQuery.get(r.query) ?? r);
+  const valid = finalResults.filter((r) => !r.error);
+  const scorable = valid.filter((r) => r.usedWebSearch);
+  const scorePool = scorable.length > 0 ? scorable : valid;
 
-    const valid = finalResults.filter((r) => !r.error);
-    const scorable = valid.filter((r) => r.usedWebSearch);
-    const scorePool = scorable.length > 0 ? scorable : valid;
+  const unpromptedScorable = scorable.filter((r) => r.type === 'unprompted');
+  const namedScorable = scorable.filter((r) => r.type === 'named');
+  const discoveryScorable = scorable.filter((r) => r.type === 'discovery');
+  const recommendationScore = calcWeightedScorePercent(unpromptedScorable);
+  const knowledgeScore = calcWeightedScorePercent(namedScorable);
+  const discoveryScore = calcWeightedScorePercent(discoveryScorable);
 
-    const totalWeight = scorePool.reduce((sum, r) => sum + r.weight, 0);
-    const earnedWeight = scorePool.reduce((sum, r) => sum + (r.known ? r.weight : 0), 0);
-    const score = totalWeight > 0 ? Math.round((earnedWeight / totalWeight) * 100) : 0;
+  // Totalscore = vektet blanding av kategoriene (unprompted vektes høyest), med
+  // Wilson-basert usikkerhetsbånd. Når ingen live-søk lyktes faller vi tilbake til
+  // én samlet andel over alle gyldige svar (modellkunnskap).
+  const countKnown = (rs: QueryResult[]) => rs.filter((r) => r.known).length;
+  const categoryStats: VisibilityCategoryStat[] =
+    scorable.length > 0
+      ? [
+          { known: countKnown(unpromptedScorable), total: unpromptedScorable.length, weight: CATEGORY_WEIGHTS.unprompted },
+          { known: countKnown(namedScorable), total: namedScorable.length, weight: CATEGORY_WEIGHTS.named },
+          { known: countKnown(discoveryScorable), total: discoveryScorable.length, weight: CATEGORY_WEIGHTS.discovery },
+        ]
+      : [{ known: countKnown(scorePool), total: scorePool.length, weight: 1 }];
 
-    const unpromptedScorable = scorable.filter((r) => r.type === 'unprompted');
-    const namedScorable = scorable.filter((r) => r.type === 'named');
-    const discoveryScorable = scorable.filter((r) => r.type === 'discovery');
-    const recommendationScore = calcWeightedScorePercent(unpromptedScorable);
-    const knowledgeScore = calcWeightedScorePercent(namedScorable);
-    const discoveryScore = calcWeightedScorePercent(discoveryScorable);
+  const { score, low: scoreLow, high: scoreHigh } = blendVisibilityScore(categoryStats);
+  const sampleSize = scorePool.length;
 
-    const citedCount = scorePool.filter((r) => r.known).length;
-    const uncertainCount = scorePool.filter((r) => r.uncertain).length;
-    const webSearchCount = valid.filter((r) => r.usedWebSearch).length;
-    const estimatedCount = valid.filter((r) => !r.usedWebSearch).length;
+  const citedCount = scorePool.filter((r) => r.known).length;
+  const uncertainCount = scorePool.filter((r) => r.uncertain).length;
+  const webSearchCount = valid.filter((r) => r.usedWebSearch).length;
+  const estimatedCount = valid.filter((r) => !r.usedWebSearch).length;
 
-    // source = web_search kun når flertallet av gyldige spørringer faktisk brukte live søk.
-    const source: 'web_search' | 'model_knowledge' =
-      valid.length > 0 && webSearchCount >= valid.length / 2 ? 'web_search' : 'model_knowledge';
-
-    judgeRuns.push({
-      score,
-      recommendationScore,
-      knowledgeScore,
-      discoveryScore,
-      citedCount,
-      uncertainCount,
-      webSearchCount,
-      estimatedCount,
-      source,
-      validCount: valid.length,
-      scorable,
-      scorePool,
-      finalResults,
-    });
-  }
-
-  const scores = judgeRuns.map((r) => r.score).slice().sort((a, b) => a - b);
-  const medianScore = scores[Math.floor(scores.length / 2)] ?? 0;
-  const minScore = Math.min(...scores);
-  const maxScore = Math.max(...scores);
-
-  const medianRun =
-    judgeRuns.find((r) => r.score === medianScore) ??
-    judgeRuns.slice().sort((a, b) => a.score - b.score)[Math.floor(judgeRuns.length / 2)] ??
-    judgeRuns[0];
-
-  const { score, recommendationScore, knowledgeScore, discoveryScore } = medianRun;
+  // source = web_search kun når flertallet av gyldige spørringer faktisk brukte live søk.
+  const source: 'web_search' | 'model_knowledge' =
+    valid.length > 0 && webSearchCount >= valid.length / 2 ? 'web_search' : 'model_knowledge';
 
   // Konkurrent-innsikt: hva anbefalte AI i de nøytrale spørsmålene der bedriften IKKE dukket opp?
   let competitorsMentioned: string[] | undefined;
   let insight: string | undefined;
-  const unpromptedMisses = medianRun.scorePool
+  const unpromptedMisses = scorePool
     .filter((r) => r.type === 'unprompted' && !r.known && r.judgmentResponse)
     .map((r) => r.judgmentResponse);
 
@@ -506,59 +553,36 @@ async function runOneVisibilityCheck(
     }
   }
 
-  let level: 'high' | 'medium' | 'low' | 'none';
-  let description: string;
-
-  if (score >= 70) {
-    level = 'high';
-    description = 'AI anbefaler bedriften på nøytrale spørsmål og kjenner den godt.';
-  } else if (score >= 40) {
-    level = 'medium';
-    description = 'AI kjenner bedriften, men anbefaler den sjelden uoppfordret.';
-  } else if (score > 0) {
-    level = 'low';
-    description = 'AI har begrenset kjennskap til bedriften, og anbefaler den nesten aldri uoppfordret.';
-  } else {
-    level = 'none';
-    description = 'AI finner ikke bedriften – verken navngitt eller på nøytrale spørsmål.';
-  }
-
-  const rec = recommendationScore ?? 0;
-  const know = knowledgeScore ?? 0;
-  const disc = discoveryScore ?? 0;
-
-  if (disc >= 70 && know >= 70 && rec < 30) {
-    description = 'AI finner og kjenner bedriften godt, men nevner den sjelden i generelle anbefalinger. ChatGPT-appen (kart/lokale lister) kan gi et bedre bilde.';
-    if (level === 'low') level = 'medium';
-  } else if (know >= 50 && rec < 35 && disc < 50) {
-    description = 'AI kjenner bedriften når den navngis, men anbefaler den sjelden på egne bransjespørsmål.';
-    if (level === 'high') level = 'medium';
-  } else if (rec >= 50 && know < 35) {
-    description = 'AI nevner bedriften på nøytrale spørsmål, men viser svak kjennskap når den navngis direkte.';
-  }
+  const { level, description } = resolveLevelAndDescription(
+    score,
+    recommendationScore,
+    knowledgeScore,
+    discoveryScore
+  );
 
   return {
     score,
+    scoreVersion: SCORE_VERSION,
     level,
     description,
     ...(recommendationScore !== undefined ? { recommendationScore } : {}),
     ...(knowledgeScore !== undefined ? { knowledgeScore } : {}),
     ...(discoveryScore !== undefined ? { discoveryScore } : {}),
     details: {
-      queriesTested: medianRun.scorePool.length,
-      timesCited: medianRun.citedCount,
-      timesMentioned: medianRun.uncertainCount,
-      webSearchCount: medianRun.webSearchCount,
-      estimatedCount: medianRun.estimatedCount,
+      queriesTested: scorePool.length,
+      timesCited: citedCount,
+      timesMentioned: uncertainCount,
+      webSearchCount,
+      estimatedCount,
       scoreStability: {
-        runs: AI_VISIBILITY_JUDGE_RUNS,
-        minScore,
-        maxScore,
-        medianScore,
+        runs: sampleSize,
+        minScore: scoreLow,
+        maxScore: scoreHigh,
+        medianScore: score,
       },
       ...(competitorsMentioned ? { competitorsMentioned } : {}),
       ...(insight ? { insight } : {}),
-      queries: medianRun.finalResults.map((r) => ({
+      queries: finalResults.map((r) => ({
         query: r.query,
         cited: r.known,
         mentioned: r.uncertain,
@@ -566,24 +590,63 @@ async function runOneVisibilityCheck(
         type: r.type,
         usedWebSearch: r.usedWebSearch,
         estimated: !r.usedWebSearch && !r.error,
-        scored: medianRun.scorable.length > 0 ? r.usedWebSearch && !r.error : !r.error,
+        scored: scorable.length > 0 ? r.usedWebSearch && !r.error : !r.error,
       })),
     },
     recommendations: [
-      medianRun.scorable.length > 0 &&
-        medianRun.estimatedCount > 0 &&
+      scorable.length > 0 &&
+        estimatedCount > 0 &&
         'Noen svar ble estimert uten live websøk og telles ikke i hovedscore – kjør sjekken på nytt for fullstendig bilde.',
       score < 70 && 'Publiser mer innhold som svarer på vanlige spørsmål i din bransje',
       score < 50 && 'Øk online tilstedeværelse gjennom PR, artikler og bransjekataloger',
-      medianRun.citedCount === 0 && 'Skap autoritativt innhold som etablerer bedriften som en kjent ekspert',
+      citedCount === 0 && 'Skap autoritativt innhold som etablerer bedriften som en kjent ekspert',
       competitorsMentioned &&
         competitorsMentioned.length > 0 &&
         `AI anbefaler i dag andre aktører (f.eks. ${competitorsMentioned.slice(0, 3).join(', ')}) på nøytrale spørsmål – jobb med omtale og innhold for å bli nevnt`,
     ].filter(Boolean) as string[],
-    source: medianRun.validCount > 0 ? medianRun.source : undefined,
+    source: valid.length > 0 ? source : undefined,
     modelProfile,
     ...(hasKeyword ? { focusKeyword: rawKeyword } : {}),
   };
+}
+
+/**
+ * Avleder nivå og en konsistent beskrivelse fra totalscore og kategori-scorene.
+ * Erstatter det tidligere lappeteppet av overstyringer.
+ */
+function resolveLevelAndDescription(
+  score: number,
+  recommendationScore: number | undefined,
+  knowledgeScore: number | undefined,
+  discoveryScore: number | undefined
+): { level: 'high' | 'medium' | 'low' | 'none'; description: string } {
+  const level: 'high' | 'medium' | 'low' | 'none' =
+    score >= 70 ? 'high' : score >= 40 ? 'medium' : score > 0 ? 'low' : 'none';
+
+  if (level === 'none') {
+    return {
+      level,
+      description: 'AI finner ikke bedriften – verken navngitt eller på nøytrale spørsmål.',
+    };
+  }
+
+  const rec = recommendationScore ?? score;
+  const know = knowledgeScore ?? score;
+  const disc = discoveryScore ?? score;
+
+  let description: string;
+  if (rec >= 60) {
+    description = 'AI anbefaler bedriften uoppfordret på nøytrale bransjespørsmål – sterk AI-synlighet.';
+  } else if (know >= 60 && rec < 35) {
+    description = 'AI kjenner bedriften når den navngis, men anbefaler den sjelden uoppfordret. Jobb med innhold og omtale for å bli anbefalt.';
+  } else if (disc >= 60 && know < 60 && rec < 35) {
+    description = 'AI finner nettsiden, men har svak kjennskap og anbefaler bedriften sjelden uoppfordret. ChatGPT-appen (kart/lokale lister) kan gi et bedre bilde.';
+  } else if (level === 'medium') {
+    description = 'AI kjenner bedriften delvis, men anbefaler den sjelden uoppfordret. Synligheten kan styrkes.';
+  } else {
+    description = 'AI har begrenset kjennskap til bedriften, og anbefaler den nesten aldri uoppfordret.';
+  }
+  return { level, description };
 }
 
 /** Trekker ut konkurrentnavn + kort innsikt fra nøytrale AI-svar der bedriften ikke ble anbefalt. */
@@ -636,6 +699,11 @@ async function extractCompetitorInsight(
 }
 
 function buildPayloadWithDescription(mainPayload: AIVisibilityPayload): AIVisibilityPayload {
+  // Behold den nyanserte beskrivelsen fra scoringen når den finnes (nye resultater
+  // setter den alltid). Faller kun tilbake til en nivåbasert tekst for eldre payloads.
+  if (mainPayload.description?.trim()) {
+    return mainPayload;
+  }
   return {
     ...mainPayload,
     description:
@@ -765,7 +833,7 @@ export async function POST(request: NextRequest) {
 
     const used = count ?? 0;
     const body = (await request.json()) as AIVisibilityRequest;
-    const { url, companyName, keywords = [], analysisId } = body;
+    const { url, companyName, keywords = [], analysisId, location } = body;
 
     if (!url) {
       return NextResponse.json({ error: 'URL is required' }, { status: 400 });
@@ -824,9 +892,10 @@ export async function POST(request: NextRequest) {
       });
 
     // Cache-treff: server umiddelbart uten å belaste månedskvote (ingen ny kostnad).
+    // Krev gjeldende scoreVersion slik at gamle resultater (annen formel) regnes på nytt.
     const cached = await getCachedPayload(supabase, cacheKey);
-    const hasCompatibleStability = cached?.details.scoreStability?.runs === AI_VISIBILITY_JUDGE_RUNS;
-    if (cached && cached.details.queriesTested > 0 && hasCompatibleStability) {
+    const hasCompatibleScore = cached?.scoreVersion === SCORE_VERSION;
+    if (cached && cached.details.queriesTested > 0 && hasCompatibleScore) {
       const { payload, checkedAt } = buildResponsePayload(cached);
       try {
         await savePayloadToAnalysis(payload, checkedAt);
@@ -859,7 +928,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const mainPayload = await runOneVisibilityCheck(url, companyName, normalizedKeywords);
+    const mainPayload = await runOneVisibilityCheck(url, companyName, normalizedKeywords, location);
 
     if (mainPayload.details.queriesTested === 0) {
       return NextResponse.json(

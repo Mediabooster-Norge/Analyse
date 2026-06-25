@@ -12,6 +12,7 @@ import {
   isPaidTier,
   getMonthlyAnalysisLimit,
   getArticleGenerationsLimit,
+  getAiVisibilityChecksLimit,
   getTierLimits,
   parseSubscriptionTier,
   tierFromLegacyPremiumFlag,
@@ -25,6 +26,7 @@ interface PremiumStatus {
   isPremium: boolean;
   monthlyAnalysisLimit: number;
   articleGenerationsPerMonth: number;
+  aiVisibilityChecksPerMonth: number;
   premiumExpiresAt: Date | null;
   loading: boolean;
 }
@@ -47,6 +49,7 @@ export function usePremium(): PremiumStatus {
     isPremium: false,
     monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT,
     articleGenerationsPerMonth: TIER_LIMITS.free.articleGenerationsPerMonth,
+    aiVisibilityChecksPerMonth: TIER_LIMITS.free.aiVisibilityChecks,
     premiumExpiresAt: null,
     loading: true,
   });
@@ -64,6 +67,7 @@ export function usePremium(): PremiumStatus {
             isPremium: false,
             monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT,
             articleGenerationsPerMonth: TIER_LIMITS.free.articleGenerationsPerMonth,
+            aiVisibilityChecksPerMonth: TIER_LIMITS.free.aiVisibilityChecks,
             premiumExpiresAt: null,
             loading: false,
           });
@@ -79,6 +83,7 @@ export function usePremium(): PremiumStatus {
             articleGenerationsPerMonth: hasUnlimitedArticles
               ? UNLIMITED_MONTHLY_ARTICLE_LIMIT
               : getArticleGenerationsLimit('premium', user.email),
+            aiVisibilityChecksPerMonth: getAiVisibilityChecksLimit('premium', user.email),
             premiumExpiresAt: null,
             loading: false,
           });
@@ -94,6 +99,7 @@ export function usePremium(): PremiumStatus {
             isPremium: false,
             monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT,
             articleGenerationsPerMonth: TIER_LIMITS.free.articleGenerationsPerMonth,
+            aiVisibilityChecksPerMonth: TIER_LIMITS.free.aiVisibilityChecks,
             premiumExpiresAt: null,
             loading: false,
           });
@@ -116,6 +122,7 @@ export function usePremium(): PremiumStatus {
               profile.monthly_analysis_limit
             ),
             articleGenerationsPerMonth: getArticleGenerationsLimit(subscriptionTier, user.email),
+            aiVisibilityChecksPerMonth: getAiVisibilityChecksLimit(subscriptionTier, user.email),
             premiumExpiresAt: profile.premium_expires_at
               ? new Date(profile.premium_expires_at)
               : null,
@@ -127,6 +134,7 @@ export function usePremium(): PremiumStatus {
             isPremium: false,
             monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT,
             articleGenerationsPerMonth: TIER_LIMITS.free.articleGenerationsPerMonth,
+            aiVisibilityChecksPerMonth: TIER_LIMITS.free.aiVisibilityChecks,
             premiumExpiresAt: null,
             loading: false,
           });
@@ -138,6 +146,7 @@ export function usePremium(): PremiumStatus {
           isPremium: false,
           monthlyAnalysisLimit: FREE_MONTHLY_ANALYSIS_LIMIT,
           articleGenerationsPerMonth: TIER_LIMITS.free.articleGenerationsPerMonth,
+          aiVisibilityChecksPerMonth: TIER_LIMITS.free.aiVisibilityChecks,
           premiumExpiresAt: null,
           loading: false,
         });

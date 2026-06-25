@@ -21,18 +21,36 @@ export function getNamedQueryModel(): string {
   return NAMED_QUERY_MODEL;
 }
 
-export const AI_VISIBILITY_WEB_SEARCH_TOOL = {
-  type: 'web_search' as const,
-  /** Mer søkekontekst – bedre for lokale/bransje-anbefalinger. */
-  search_context_size: 'high' as const,
-  user_location: {
-    type: 'approximate' as const,
-    country: 'NO',
-    region: 'Oslo',
-    city: 'Oslo',
-    timezone: 'Europe/Oslo',
-  },
-};
+export interface WebSearchLocation {
+  /** Fylke/region, f.eks. «Vestland». Utelates for nasjonalt søk. */
+  region?: string | null;
+  /** By/sted, f.eks. «Bergen». Utelates for nasjonalt søk. */
+  city?: string | null;
+}
+
+/**
+ * Bygger web_search-verktøyet med valgfri lokasjon.
+ *
+ * Tidligere var lokasjonen hardkodet til Oslo, noe som systematisk favoriserte
+ * Oslo-bedrifter på nøytrale anbefalingsspørsmål. Standard er nå nasjonalt (kun
+ * land = NO); by/region settes kun når vi faktisk kjenner bedriftens sted.
+ */
+export function buildWebSearchTool(location?: WebSearchLocation) {
+  const city = location?.city?.trim() || undefined;
+  const region = location?.region?.trim() || undefined;
+  return {
+    type: 'web_search' as const,
+    /** Mer søkekontekst – bedre for lokale/bransje-anbefalinger. */
+    search_context_size: 'high' as const,
+    user_location: {
+      type: 'approximate' as const,
+      country: 'NO',
+      ...(region ? { region } : {}),
+      ...(city ? { city } : {}),
+      timezone: 'Europe/Oslo',
+    },
+  };
+}
 
 export function getAiVisibilityModelMode(): AiVisibilityModelMode {
   const raw = process.env.AI_VISIBILITY_QUERY_MODEL?.toLowerCase().trim();

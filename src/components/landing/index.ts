@@ -1,7 +1,8 @@
 export { AnalyzeUrlDialog, AnalyzeUrlModalProvider, useAnalyzeUrlModal } from "./analyze-url-dialog";
 export { LandingNav } from "./landing-nav";
+export { LandingStructuredData } from "./landing-structured-data";
 export { LandingHero } from "./landing-hero";
-export { LandingPillars } from "./landing-pillars";
+export { LandingComparison } from "./landing-comparison";
 export { LandingDemo } from "./landing-demo";
 export { LandingFeatures } from "./landing-features";
 export { LandingAudiences } from "./landing-audiences";

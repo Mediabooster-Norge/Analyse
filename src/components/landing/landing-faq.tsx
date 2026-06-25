@@ -9,19 +9,38 @@ import {
   landingFaqAnswer,
   landingFaqQuestion,
   landingSectionCard,
+  landingSectionEyebrow,
   landingSectionLead,
   landingSectionPad,
   landingSectionTitle,
   landingSectionTitleMuted,
 } from "./landing-typography";
 
+const FAQ_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ_ITEMS.map(({ q, a }) => ({
+    "@type": "Question",
+    name: q,
+    acceptedAnswer: {
+      "@type": "Answer",
+      text: a,
+    },
+  })),
+};
+
 export function LandingFaq() {
   return (
     <section className={`${landingSectionPad} ${landingSectionCard}`}>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }}
+      />
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="grid md:grid-cols-2 gap-8 md:gap-12">
           <div>
             <div className="md:sticky md:top-28">
+              <p className={landingSectionEyebrow}>Hjelp</p>
               <h2 className={landingSectionTitle}>
                 Ofte stilte
                 <br />
