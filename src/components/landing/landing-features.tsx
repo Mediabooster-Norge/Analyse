@@ -24,7 +24,7 @@ import {
   landingSectionHeaderMb,
   landingSectionLead,
   landingSectionPad,
-  landingSectionPass,
+  landingSectionSandFade,
   landingSectionTitle,
 } from "./landing-typography";
 import { Reveal } from "./reveal";
@@ -87,7 +87,7 @@ function MarqueeRow({
   return (
     <div
       aria-hidden
-      className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_4%,black_96%,transparent)]"
+      className="overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_24%,black_76%,transparent)]"
     >
       <div
         className={`${
@@ -105,7 +105,7 @@ function MarqueeRow({
 
 export function LandingFeatures() {
   return (
-    <section className={`${landingSectionPad} overflow-hidden ${landingSectionPass}`}>
+    <section className={`${landingSectionPad} overflow-hidden ${landingSectionSandFade}`}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <Reveal>
           <div className={`max-w-2xl ${landingSectionHeaderMb}`}>

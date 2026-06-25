@@ -14,6 +14,7 @@ import {
   landingSectionPad,
   landingSectionTitle,
   landingSectionTitleMuted,
+  landingSectionWash,
 } from "./landing-typography";
 
 const FAQ_JSON_LD = {
@@ -31,7 +32,7 @@ const FAQ_JSON_LD = {
 
 export function LandingFaq() {
   return (
-    <section className={`${landingSectionPad} ${landingSectionCard}`}>
+    <section id="faq" className={`${landingSectionPad} scroll-mt-20 ${landingSectionWash}`}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(FAQ_JSON_LD) }}

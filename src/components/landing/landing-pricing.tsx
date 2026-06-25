@@ -19,7 +19,7 @@ import {
   landingPricePeriod,
   landingSectionLead,
   landingSectionPad,
-  landingSectionStage,
+  landingSectionSandFade,
   landingSectionTitle,
   landingSectionTitleMuted,
 } from "./landing-typography";
@@ -79,7 +79,7 @@ export function LandingPricing() {
   const free = PRICING_TIERS.free;
 
   return (
-    <section className={`${landingSectionPad} ${landingSectionStage}`}>
+    <section id="priser" className={`${landingSectionPad} scroll-mt-20 ${landingSectionSandFade}`}>
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="max-w-2xl mb-10 sm:mb-12">
           <h2 className={landingSectionTitle}>
